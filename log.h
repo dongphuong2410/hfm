@@ -31,7 +31,7 @@ typedef enum {
 
 /**
   * @brief Init logger
-  * @param[in] logger  Logger output type
+  * @param logger  Logger output type
   *
   * If the logger_t is TEXTFILE, add another param for filename
   */
@@ -45,8 +45,8 @@ void log_close(void);
 
 /**
   * @brief Function for writing log
-  * @param[in] level Log level
-  * @param[in] message String message or string message format
+  * @param level Log level
+  * @param message String message or string message format
   */
 void writelog(level_t level, const char *message, ...);
 
