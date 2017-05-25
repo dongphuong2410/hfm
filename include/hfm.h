@@ -2,11 +2,12 @@
   * @file hfm.h
   * @author phuong.do
   * @date 2017-05-24
-  * @brief Main logic of the program, managing a VM 
+  * @brief Main logic of the program, managing a VM
   */
 #ifndef __HFM_HFM_H__
 #define __HFM_HFM_H__
 
+#include <glib.h>
 #include "private.h"
 
 /**
@@ -24,7 +25,7 @@ vmhdlr_t *hfm_init(char *vm);
   * @param policies List of policy
   * @return Succeed or fail
   */
-status_t hfm_set_policies(vmhdlr_t *vm, GSList *policies);
+hfm_status_t hfm_set_policies(vmhdlr_t *vm, GSList *policies);
 
 /**
   * brief Start monitoring the vm
@@ -32,7 +33,7 @@ status_t hfm_set_policies(vmhdlr_t *vm, GSList *policies);
   * @param vm Pointer to vmhdlr_t
   * @return Succeed or fail
   */
-status_t hfm_run(vmhdlr_t *vm);
+hfm_status_t hfm_run(vmhdlr_t *vm);
 
 /**
   * brief Close the vm

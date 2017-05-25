@@ -7,6 +7,8 @@
 #ifndef __HFM_ES_H
 #define __HFM_ES_H
 
+#include "output_format.h"
+
 /**
   * @brief Init es output module
   *

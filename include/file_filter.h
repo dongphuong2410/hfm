@@ -7,6 +7,8 @@
 #ifndef __HFM_FILE_FILTER_H__
 #define __HFM_FILE_FILTER_H__
 
+#include <stdint.h>
+
 /**
   * @brief Check if a filepath/directory path matching with the pattern
   * @param filename Filename string

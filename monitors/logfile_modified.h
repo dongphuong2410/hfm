@@ -15,6 +15,6 @@
   * @param policy Pointer to policy
   * @return FAIL or success
   */
-status_t logfile_modified(vmhdlr_t *hdlr, policy_t *policy);
+hfm_status_t logfile_modified(vmhdlr_t *hdlr, policy_t *policy);
 
 #endif
