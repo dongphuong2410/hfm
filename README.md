@@ -1,1 +1,1 @@
-My gh-pages branch
+A simple README file for gh-pages branch
