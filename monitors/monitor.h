@@ -8,6 +8,8 @@
 #ifndef __HFM_MONITOR_H__
 #define __HFM_MONITOR_H__
 
+#include "private.h"
+
 /**
   * @brief Set the function pointers for mon_add_trap
   *
@@ -22,6 +24,6 @@ void mon_init(monitor_t type);
   * @param policy Pointer to a policy
   * @return FAIL or SUCCESS
   */
-status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy);
+hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy);
 
 #endif

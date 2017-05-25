@@ -7,6 +7,8 @@
 #ifndef __HFM_CONSOLE_H
 #define __HFM_CONSOLE_H
 
+#include "output_format.h"
+
 /**
   * @brief Init console output module
   */

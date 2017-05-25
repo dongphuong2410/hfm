@@ -7,6 +7,9 @@
 #ifndef __HFM_PRIVATE_H__
 #define __HFM_PRIVATE_H__
 
+#include <stdint.h>
+#include <libvmi/libvmi.h>
+
 #define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
 
 /**
@@ -15,7 +18,7 @@
 typedef enum {
     SUCCESS,
     FAIL
-} status_t;
+} hfm_status_t;
 
 /**
   * @brief monitoring plugin id
@@ -53,9 +56,8 @@ typedef enum {
 typedef enum {
     ADDR_VA,    /** < Virtual Address */
     ADDR_RVA    /** < Relative virtual address */
-} addr_t;
+} addr_type_t;
 
-typedef struct _vmhdlr vmhdlr_t;
 
 typedef struct _trap_info {
 
@@ -76,9 +78,9 @@ typedef struct _policy {
     severity_t severity;
 } policy_t;
 
-typedef struct {
+typedef struct _vmhdlr {
     char rekall[PATH_MAX_LEN];
-    vmi_t vmi;
+    vmi_instance_t vmi;
     page_mode_t pm;
     uint32_t vcpus;
     uint32_t memsize;

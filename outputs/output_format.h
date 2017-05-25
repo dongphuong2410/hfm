@@ -7,6 +7,7 @@
 #ifndef __HFM_OUTPUT_FORMAT_H__
 #define __HFM_OUTPUT_FORMAT_H__
 
+#include "private.h"
 
 typedef enum {
     OUT_CONSOLE,
@@ -19,7 +20,7 @@ typedef struct _output_info {
     int pid;
     int vmid;
     int policy_id;
-    action_t action;
+    monitor_t action;
     char filepath[PATH_MAX_LEN];
     char extpath[PATH_MAX_LEN];
 } output_info_t;
