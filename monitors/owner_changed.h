@@ -1,5 +1,5 @@
 /**
-  * @file ownser_changed.h
+  * @file owner_changed.h
   * @author phuong.do
   * @date 2017-05-24
   * @brief Permission_changed monitor plugin

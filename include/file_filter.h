@@ -1,5 +1,5 @@
 /**
-  * @file log.h
+  * @file file_filter.h
   * @author phuong.do
   * @date 2017-05-24
   * @brief Implement functions related to file filtering
