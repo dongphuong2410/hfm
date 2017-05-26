@@ -1,5 +1,5 @@
 /**
-  * @file log.h
+  * @file vmi_helper.h
   * @author phuong.do
   * @date 2017-05-24
   * @brief Provide services related to LibVMI
