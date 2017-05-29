@@ -31,11 +31,12 @@ typedef enum {
 
 /**
   * @brief Init logger
+  * @param level Log level
   * @param logger  Logger output type
   *
   * If the logger_t is TEXTFILE, add another param for filename
   */
-void log_init(logger_t logger, ...);
+void log_init(level_t level, logger_t logger, ...);
 
 
 /**

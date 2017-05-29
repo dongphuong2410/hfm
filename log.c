@@ -7,19 +7,19 @@
 
 void _get_time(char *buffer);
 
-logger_t logger = LOG_CONSOLE;
+level_t cur_level;
 FILE *fp;
 const char *str_level[] = {"FATAL", "ERROR", "WARN", "INFO", "DEBUG"};
 
-void log_init(logger_t l, ...)
+void log_init(level_t level, logger_t logger, ...)
 {
-    logger = l;
-    if (l == LOG_CONSOLE) {
+    cur_level = level;
+    if (logger == LOG_CONSOLE) {
         fp = stdout;
     }
     else {
         va_list args;
-        va_start(args, l);
+        va_start(args, logger);
         char *filepath = va_arg(args, char *);
         fp = fopen(filepath, "a");
         if (fp == NULL) {
@@ -36,7 +36,7 @@ void log_close(void)
 
 void writelog(level_t level, const char *message, ...)
 {
-    if (level > CURRENT_LEVEL)
+    if (level > cur_level)
         return;
     char curtime[26];
     _get_time(curtime);

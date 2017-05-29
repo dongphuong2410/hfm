@@ -23,7 +23,7 @@ config_t *config_init(const char *config_file);
   *
   * @param cfg config handler
   * @param key Key string
-  * @return Value > 0 if exist, return -1 if not exist
+  * @return Value >= 0 if exist, return -1 if not exist
   */
 int config_get_int(config_t *cfg, const char *key);
 
@@ -34,7 +34,7 @@ int config_get_int(config_t *cfg, const char *key);
   * @param key Key string
   * @return Pointer to value, return NULL if not exist
   */
-const char *config_get_str(config_t *cfg, const char *key);
+char *config_get_str(config_t *cfg, const char *key);
 
 /**
   * @brief Close the config, release resource
