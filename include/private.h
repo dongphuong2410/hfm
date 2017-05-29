@@ -59,10 +59,18 @@ typedef enum {
 } addr_type_t;
 
 
+/**
+  * @brief This struct will be used to transfer neccessary information to callbacks in plugins
+  *
+  * @see drakvuf/src/libdrakvuf/libdrakvuf.h, line 201
+  */
 typedef struct _trap_info {
 
 } trap_info_t;
 
+/**
+  * @brief Save all data relating to a trap
+  */
 typedef struct _trap {
     unsigned int vcpu;
     uint16_t altp2m_idx;
