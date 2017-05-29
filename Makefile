@@ -6,6 +6,7 @@ SUBDIRS = monitors outputs
 
 SRC= main.c log.c config.c policy.c hfm.c vmi_helper.c file_filter.c
 
+CFLAGS+= -DCURRENT_LEVEL=LV_WARN
 .PHONY : all $(SUBDIRS) clean
 
 all: hfm $(SUBDIRS)
