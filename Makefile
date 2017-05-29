@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-ggdb -O0 -I./include -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
 LDFLAGS=-lvmi -lglib-2.0
 
-SUBDIRS = monitors outputs
+SUBDIRS = monitors outputs tests
 
 SRC= main.c log.c config.c policy.c hfm.c vmi_helper.c file_filter.c
 
@@ -24,4 +24,5 @@ clean:
 		$(MAKE) -C $$dir -f Makefile $@; \
 	done
 
-
+TESTDIR=tests
+include UnitTest.mk
