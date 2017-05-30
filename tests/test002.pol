@@ -1,0 +1,8 @@
+#Warning when files is created in System32 directory
+10 WARNING CREATE C:/Windows/System32/ OPTIONS="RECURSIVE DIR"
+
+#Alert when dll files is created
+20 CRITICAL DELETE C:/Windows/System32/*.dll OPTIONS="EXTRACT"
+
+    # Testing trim line with space
+	# Testing trim line with tab

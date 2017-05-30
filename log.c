@@ -7,7 +7,7 @@
 
 void _get_time(char *buffer);
 
-level_t cur_level;
+level_t cur_level = LV_ERROR;
 FILE *fp;
 const char *str_level[] = {"FATAL", "ERROR", "WARN", "INFO", "DEBUG"};
 
@@ -41,6 +41,7 @@ void writelog(level_t level, const char *message, ...)
     char curtime[26];
     _get_time(curtime);
 
+    if (!fp) fp = stdout;   //this help logger works even when no log_init called
     fprintf(fp, "%s ", curtime);
     fprintf(fp, "%s ", str_level[level]);
 
