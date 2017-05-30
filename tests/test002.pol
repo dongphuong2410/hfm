@@ -6,3 +6,9 @@
 
     # Testing trim line with space
 	# Testing trim line with tab
+
+#Testing invalid severity
+40 CRITCAL DELETE C:/Windows OPTIONS="DIR"
+
+#Testing invalid action
+40 WARNING  MMODIFY_LOGFILE C:/Windows OPTIONS="DIR"
