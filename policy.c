@@ -15,7 +15,12 @@ severity_t _lookup_severity(const char *str);
 monitor_t _lookup_action(const char *str);
 uint8_t _parse_options(char *str);
 void _free_policy(policy_t *policy);
+int _check_valid(policy_t *policy);
 
+/**
+  * Parsing the policy file
+  * Policy format : <id> <severity> <action> <filepath> OPTIONS="[RECURSIVE] [EXTRACT] [DIR]"
+  */
 GSList *get_policies(const char *policy_file)
 {
     FILE *fp = fopen(policy_file, "r");
@@ -26,33 +31,29 @@ GSList *get_policies(const char *policy_file)
 
     GSList *list = NULL;
     char buff[MAX_LEN];
+    int linecnt = 0;
     while (fgets(buff, MAX_LEN, fp)) {
+        linecnt++;
         char *line = _trim_left(buff);
         if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')         //Ignore comment or empty line
             continue;
 
-        char *token = strtok(line, " \t");
-        int id = atoi(token);
-        severity_t severity = _lookup_severity(strtok(NULL, " \t"));
-        monitor_t action = _lookup_action(strtok(NULL, " \t"));
-        char *filepath = strdup(strtok(NULL, " \t"));
-        uint8_t options = _parse_options(strtok(NULL, "\r\n"));
-        if (id == 0
-                || severity == SEVERITY_INVALID
-                || action == MON_INVALID
-                || filepath == NULL
-                || options == -1) {
-            writelog(LV_WARN, "Invalid policy statement : %s", line);
-            free(filepath);
-            continue;
+        char *token = strtok(line, " \t\r\n");
+        policy_t *new_policy = (policy_t *)calloc(1, sizeof(policy_t));
+        new_policy->id          = atoi(token);
+        new_policy->severity    = _lookup_severity(strtok(NULL, " \t\r\n"));
+        new_policy->type        = _lookup_action(strtok(NULL, " \t\r\n"));
+        char *filepath = strtok(NULL, " \t\r\n");
+        if (filepath)
+            strcpy(new_policy->path, filepath);
+        new_policy->options     = _parse_options(strtok(NULL, "\r\n"));
+        if (_check_valid(new_policy)) {
+            list = g_slist_append(list, new_policy);
         }
-        policy_t *one_policy = (policy_t *)malloc(sizeof(policy_t));
-        one_policy->id = id;
-        one_policy->type = action;
-        one_policy->options = options;
-        strcpy(one_policy->path, filepath);
-        one_policy->severity = severity;
-        list = g_slist_append(list, one_policy);
+        else {
+            writelog(LV_WARN, "Invalid policy statement at line %d\n", linecnt);
+            free(new_policy);
+        }
     }
     fclose(fp);
 done:
@@ -145,4 +146,16 @@ uint8_t _parse_options(char *str)
 void _free_policy(policy_t *policy)
 {
     free(policy);
+}
+
+int _check_valid(policy_t *policy)
+{
+    if (policy->id == 0
+            || policy->severity == SEVERITY_INVALID
+            || policy->type == MON_INVALID
+            || policy->path[0] == '\0'
+            )
+            return 0;
+    else
+        return 1;
 }
