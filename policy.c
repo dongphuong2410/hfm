@@ -11,9 +11,9 @@
 #define MAX_LEN 1024
 
 char * _trim_left(char *str);
-severity_t _convert_severity(const char *str);
-monitor_t _convert_action(const char *str);
-uint8_t _convert_options(char *str);
+severity_t _lookup_severity(const char *str);
+monitor_t _lookup_action(const char *str);
+uint8_t _parse_options(char *str);
 void _free_policy(policy_t *policy);
 
 GSList *get_policies(const char *policy_file)
@@ -33,10 +33,10 @@ GSList *get_policies(const char *policy_file)
 
         char *token = strtok(line, " \t");
         int id = atoi(token);
-        severity_t severity = _convert_severity(strtok(NULL, " \t"));
-        monitor_t action = _convert_action(strtok(NULL, " \t"));
+        severity_t severity = _lookup_severity(strtok(NULL, " \t"));
+        monitor_t action = _lookup_action(strtok(NULL, " \t"));
         char *filepath = strdup(strtok(NULL, " \t"));
-        uint8_t options = _convert_options(strtok(NULL, "\r\n"));
+        uint8_t options = _parse_options(strtok(NULL, "\r\n"));
         if (id == 0
                 || severity == SEVERITY_INVALID
                 || action == MON_INVALID
@@ -83,7 +83,7 @@ int strcicmp(const char *a, const char *b)
     }
 }
 
-severity_t _convert_severity(const char *str)
+severity_t _lookup_severity(const char *str)
 {
     if (!strcicmp(str, "WARNING")) {
         return WARNING;
@@ -94,7 +94,7 @@ severity_t _convert_severity(const char *str)
     return SEVERITY_INVALID;
 }
 
-monitor_t _convert_action(const char *str)
+monitor_t _lookup_action(const char *str)
 {
     if (!strcicmp(str, "CREATE")) {
         return MON_CREATE;
@@ -123,7 +123,7 @@ monitor_t _convert_action(const char *str)
     return MON_INVALID;
 }
 
-uint8_t _convert_options(char *str)
+uint8_t _parse_options(char *str)
 {
     uint8_t options = 0;
     char *opt = strtok(str, " \t\n\"");
