@@ -4,6 +4,12 @@
 #Alert when dll files is created
 20 CRITICAL DELETE C:/Windows/System32/*.dll OPTIONS="EXTRACT"
 
+#Testing policy with NULL OPTIONS
+80 WARNING  MODIFY_LOGFILE C:/Windows
+
+#Testing policy with NULL PATH
+100 WARNING  MODIFY_LOGFILE 
+
     # Testing trim line with space
 	# Testing trim line with tab
 
@@ -11,4 +17,4 @@
 40 CRITCAL DELETE C:/Windows OPTIONS="DIR"
 
 #Testing invalid action
-40 WARNING  MMODIFY_LOGFILE C:/Windows OPTIONS="DIR"
+60 WARNING  MMODIFY_LOGFILE C:/Windows OPTIONS="DIR"
