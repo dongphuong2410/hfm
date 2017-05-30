@@ -12,6 +12,11 @@
 
 #define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
 
+#define POLICY_OPTIONS_DIR 0x01             /** Policy options flag : this is directory */
+#define POLICY_OPTIONS_RECURSIVE 0x02       /** Policy options flag : allow recursive */
+#define POLICY_OPTIONS_EXTRACT 0x04       /** Policy options flag : allow file extracting */
+
+
 /**
   * @brief Return status code
   */
@@ -24,20 +29,22 @@ typedef enum {
   * @brief monitoring plugin id
   */
 typedef enum {
+    MON_INVALID,
     MON_CREATE,
     MON_DELETE,
-    MON_CONTENT_MODIFY,
-    MON_LOGFILE_MODIFY,
-    MON_ATTR_READONLY_CHANGE,
-    MON_ATTR_PERMISSION_CHANGE,
-    MON_ATTR_OWNERSHIP_CHANGE,
-    MON_ATTR_HIDDEN_CHANGE
+    MON_MODIFY_CONTENT,
+    MON_MODIFY_LOGFILE,
+    MON_CHANGE_ATTR_READONLY,
+    MON_CHANGE_ATTR_PERMISSION,
+    MON_CHANGE_ATTR_OWNERSHIP,
+    MON_CHANGE_ATTR_HIDDEN
 } monitor_t;
 
 /**
   * @brief Policy severity
   */
 typedef enum {
+    SEVERITY_INVALID,
     WARNING,
     CRITICAL
 } severity_t;
@@ -78,11 +85,10 @@ typedef struct _trap {
 } trap_t;
 
 typedef struct _policy {
+    int id;
     char path[PATH_MAX_LEN];
     monitor_t type;
-    int8_t is_dir;
-    int8_t is_recursive;
-    int8_t is_extract;
+    uint8_t options;
     severity_t severity;
 } policy_t;
 

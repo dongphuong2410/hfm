@@ -17,5 +17,12 @@
   */
 GSList *get_policies(const char *policy_file);
 
+/**
+  * @brief Free policy list after done with it
+  *
+  * @param list List of policies obtained by calling get_policies
+  */
+void free_policies(GSList *list);
+
 
 #endif
