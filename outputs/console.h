@@ -19,6 +19,12 @@ void out_console_init(void);
   *
   * @param info Output info
   */
-void out_console_write(output_info_t *info);
+void out_console_write(output_t *output, output_info_t *info);
+
+/**
+  * @brief Close resources
+  * @param output Output handler
+  */
+void out_console_close(output_t *output);
 
 #endif
