@@ -16,7 +16,7 @@ typedef enum {
 } output_type_t;
 
 typedef struct _output_info {
-    char *time;
+    char time[PATH_MAX_LEN];
     int pid;
     int vmid;
     int policy_id;
@@ -25,7 +25,12 @@ typedef struct _output_info {
     char extpath[PATH_MAX_LEN];
 } output_info_t;
 
-typedef struct _output output_t;
+typedef struct _output {
+    output_type_t type;
+    void (*writefc)(struct _output *output, output_info_t *info);
+    void (*closefc)(struct _output *output);
+    FILE *fp;
+} output_t;
 
 /**
   * @brief Init output module
@@ -42,5 +47,12 @@ output_t *out_init(output_type_t type, ...);
   * @param info Struct contains the information to log
   */
 void out_write(output_t *out, output_info_t *info);
+
+/**
+  * @brief Close and release resources
+  * @param out Output handler
+  */
+void out_close(output_t *out);
+char *action_tostr(monitor_t type);
 
 #endif
