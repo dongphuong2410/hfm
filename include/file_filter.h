@@ -9,12 +9,34 @@
 
 #include <stdint.h>
 
+typedef struct _filter filter_t;
+
+/**
+  * @brief  Init the file filter and return the handler
+  * @return filter_t handler
+  */
+filter_t *filter_init(void);
+
+/**
+  * @brief Close the filter
+  * @param filter handler
+  */
+void filter_close(filter_t *filter);
+
+/**
+  * @brief Add a pattern
+  * @param filter Handler
+  * @param pattern Pattern string
+  * @return 0 if success, others if error
+  */
+int filter_add(filter_t *filter, const char *pattern, int id);
+
 /**
   * @brief Check if a filepath/directory path matching with the pattern
-  * @param filename Filename string
-  * @param pattern Pattern string
-  * @return 1 if match, 0 if not match
+  * @param filter Filter handler
+  * @param filepath Filepath string
+  * @return number of matching pattern
   */
-int8_t match_file(const char *filename, const char *pattern);
+int filter_match(filter_t *filter, const char *filepath, int *arr);
 
 #endif

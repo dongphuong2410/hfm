@@ -4,7 +4,7 @@ LDFLAGS=-lvmi -lglib-2.0
 
 SUBDIRS = monitors outputs tests
 
-SRC= main.c log.c config.c policy.c hfm.c vmi_helper.c file_filter.c
+SRC= main.c log.c config.c policy.c hfm.c vmi_helper.c file_filter.c fnmatch.c
 
 CFLAGS+= -DCURRENT_LEVEL=LV_WARN
 .PHONY : all $(SUBDIRS) clean
