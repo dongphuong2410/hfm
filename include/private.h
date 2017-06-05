@@ -11,11 +11,13 @@
 #include <libvmi/libvmi.h>
 
 #define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
+#define STR_BUFF 1024
 
 #define POLICY_OPTIONS_DIR 0x01             /** Policy options flag : this is directory */
 #define POLICY_OPTIONS_RECURSIVE 0x02       /** Policy options flag : allow recursive */
 #define POLICY_OPTIONS_EXTRACT 0x04       /** Policy options flag : allow file extracting */
 
+#define DEFAULT_CONFIG "hfm.cfg"
 
 /**
   * @brief Return status code
@@ -94,6 +96,7 @@ typedef struct _policy {
 
 typedef struct _vmhdlr {
     char rekall[PATH_MAX_LEN];
+    char name[STR_BUFF];
     vmi_instance_t vmi;
     page_mode_t pm;
     uint32_t vcpus;
