@@ -37,6 +37,16 @@ int config_get_int(config_t *cfg, const char *key);
 char *config_get_str(config_t *cfg, const char *key);
 
 /**
+  * @brief Add new str config
+  */
+void config_set_str(config_t *cfg, const char *key, const char *value);
+
+/**
+  * @brief Add new int config
+  */
+void config_set_int(config_t *cfg, const char *key, int value);
+
+/**
   * @brief Close the config, release resource
   *
   * @param cfg Pointer to config_t

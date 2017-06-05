@@ -12,7 +12,7 @@ struct _config {
 config_t *config_init(const char *config_file)
 {
     config_t *c = (config_t *)calloc(1, sizeof(config_t));
-    c->hash = g_hash_table_new(g_str_hash, g_str_equal);
+    c->hash = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
     //Read (key,value) from files
     //and insert into hashtable
@@ -74,4 +74,14 @@ void config_close(config_t *cfg)
 {
     g_hash_table_destroy(cfg->hash);
     free(cfg);
+}
+
+void config_set_str(config_t *cfg, const char *key, const char *value)
+{
+    g_hash_table_insert(cfg->hash, g_strdup(key), g_strdup(value));
+}
+
+void config_set_int(config_t *cfg, const char *key, int value)
+{
+    g_hash_table_insert(cfg->hash, g_strdup(key), g_strdup_printf("%d", value));
 }
