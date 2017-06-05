@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "log.h"
 #include "config.h"
@@ -12,25 +13,36 @@
   * Read configuration from command line
   * and merge with config from config file
   */
-config_t *_read_config(int argc, char **argv);
+static config_t *_read_config(int argc, char **argv);
 
 /**
   * Parse vmlist string and init the VM handlers (hfm)
   */
-GSList *_init_vms(const char *str_vmlist);
-
-/**
-  * Create a thread for monitoring the vm
-  */
-void _start_monitor(vmhdlr_t *vm);
+static int _init_vms(const char *str_vmlist, vmhdlr_t **);
 
 config_t *config;           /* config handler */
-GSList *policies;           /* List of policies */
 
+static struct sigaction act;
+int interrupted = 0;
+static void close_handler(int sig) {
+    interrupted = sig;
+}
 
 int main(int argc, char **argv)
 {
-    GSList *vms;                /* List of vm handler */
+    vmhdlr_t *vms[VM_MAX];                /* List of vm handler */
+    GThread *threads[VM_MAX];
+    GSList *policies;           /* List of policies */
+    int vmnum;
+
+    //Signal handler
+    act.sa_handler = close_handler;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+    sigaction(SIGHUP, &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGALRM, &act, NULL);
 
     //Read configuration
     config = _read_config(argc, argv);
@@ -58,11 +70,18 @@ int main(int argc, char **argv)
         goto done;
     }
     else {
-        vms = _init_vms(config_get_str(config, "vmlist"));
+        vmnum = _init_vms(config_get_str(config, "vmlist"), vms);
     }
 
     //Start monitoring threads for each vm
-    g_slist_foreach(vms, (GFunc)_start_monitor, NULL);
+    int i;
+    for (i = 0; i < vmnum; i++) {
+        threads[i] = g_thread_new(vms[i]->name, (GThreadFunc)hfm_run, vms[i]);
+    }
+
+    for (i = 0; i < vmnum; i++) {
+        g_thread_join(threads[i]);
+    }
 done:
     free_policies(policies);
     log_close();
@@ -108,22 +127,20 @@ config_t *_read_config(int argc, char **argv)
     return cfg;
 }
 
-GSList *_init_vms(const char *str_vmlist)
+int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
 {
-    GSList *list = NULL;
+    int cnt = 0;
     char s[STR_BUFF];
     strncpy(s, str_vmlist, STR_BUFF);
     char *token = strtok(s, ",");
     while (token) {
-        vmhdlr_t *vmhdlr = hfm_init(token);
-        if (vmhdlr)
-            list = g_slist_append(list, vmhdlr);
+        if (cnt >= VM_MAX) {
+            writelog(LV_WARN, "Number of VMs exceed the quota (%d). Ignore the others", VM_MAX);
+            break;
+        }
+        vms[cnt++] = hfm_init(token);
         token = strtok(NULL, ",");
     }
-    return list;
+    return cnt;
 }
 
-void _start_monitor(vmhdlr_t *vm)
-{
-    printf("Start monitor vm %s\n", vm->name);
-}

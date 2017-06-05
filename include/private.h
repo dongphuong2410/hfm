@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <libvmi/libvmi.h>
 
+#define VM_MAX 10
 #define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
 #define STR_BUFF 1024
 
