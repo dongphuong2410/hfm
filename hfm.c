@@ -6,6 +6,8 @@
 #include "private.h"
 #include "log.h"
 
+extern int interrupted;
+
 vmhdlr_t *hfm_init(char *vm)
 {
     writelog(LV_DEBUG, "Init vm %s", vm);
@@ -21,10 +23,11 @@ hfm_status_t hfm_set_policies(vmhdlr_t *vm, GSList *policies)
 
 hfm_status_t hfm_run(vmhdlr_t *vm)
 {
-    while (1) {
+    while (!interrupted) {
         printf("VM %s is running\n", vm->name);
         sleep(5);
     }
+    printf("VM %s exitted safely\n", vm->name);
     return FAIL;
 }
 
