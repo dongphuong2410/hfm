@@ -3,6 +3,7 @@
 #include <glib.h>
 
 #include "vmi_helper.h"
+#include "xen_helper.h"
 #include "log.h"
 
 static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event);
@@ -14,6 +15,7 @@ static bool _remove_trap(vmhdlr_t *handler, trap_t *trap);
 
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static hfm_status_t _register_events(vmhdlr_t *handler);
+static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
 
 hfm_status_t vh_init(vmhdlr_t *handler)
 {
@@ -26,9 +28,8 @@ hfm_status_t vh_init(vmhdlr_t *handler)
         goto error;
     }
     /* Create altp2m view */
-    int rc = xc_altp2m_set_domain_state(handler->xen->xc, handler->domID, 1);
-    if (rc < 0) {
-        writelog(LV_ERROR, "Failed to enable altp2m on domain %s", handler->name);
+    if (SUCCESS != _setup_altp2m(handler)) {
+        goto error;
     }
 
     return SUCCESS;
@@ -134,6 +135,35 @@ static hfm_status_t _register_events(vmhdlr_t *handler)
     handler->mem_event.data = handler;
     if (VMI_FAILURE == vmi_register_event(handler->vmi, &handler->mem_event)) {
         writelog(LV_ERROR, "Failed to register generic mem event on %s", handler->name);
+        goto error;
+    }
+    return SUCCESS;
+error:
+    return FAIL;
+}
+
+static hfm_status_t _setup_altp2m(vmhdlr_t *handler) {
+    int rc = xen_enable_altp2m(handler->xen);
+    if (rc < 0) {
+        writelog(LV_ERROR, "Failed to enable altp2m on domain %s", handler->name);
+        goto error;
+    }
+
+    rc = xen_create_view(handler->xen, &handler->altp2m_idx);
+    if (rc < 0) {
+        writelog(LV_ERROR, "Failed to create altp2m view idx on domain %s", handler->name);
+        goto error;
+    }
+
+    rc = xen_create_view(handler->xen, &handler->altp2m_idr);
+    if (rc < 0) {
+        writelog(LV_ERROR, "Failed to create altp2m view idr on domain %s", handler->name);
+        goto error;
+    }
+
+    rc = xen_switch_view(handler->xen, handler->altp2m_idx);
+    if (rc < 0) {
+        writelog(LV_ERROR, "Failed to switch to altp2m idx view on domain %s", handler->name);
         goto error;
     }
     return SUCCESS;

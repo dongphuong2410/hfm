@@ -101,11 +101,11 @@ typedef struct _policy {
 typedef struct _xen_interface {
     xc_interface *xc;
     libxl_ctx *xl_ctx;
+    domid_t domID;
 } xen_interface_t;
 
 typedef struct _vmhdlr {
     xen_interface_t *xen;
-    domid_t domID;
     char rekall[PATH_MAX_LEN];
     char name[STR_BUFF];
     vmi_instance_t vmi;
@@ -113,6 +113,7 @@ typedef struct _vmhdlr {
     uint32_t vcpus;
     uint32_t memsize;
     uint32_t init_memsize;
+    uint16_t altp2m_idx, altp2m_idr;
 
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
