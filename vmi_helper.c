@@ -26,6 +26,10 @@ hfm_status_t vh_init(vmhdlr_t *handler)
         goto error;
     }
     /* Create altp2m view */
+    int rc = xc_altp2m_set_domain_state(handler->xen->xc, handler->domID, 1);
+    if (rc < 0) {
+        writelog(LV_ERROR, "Failed to enable altp2m on domain %s", handler->name);
+    }
 
     return SUCCESS;
 error:

@@ -13,5 +13,6 @@
 
 xen_interface_t *xen_init_interface(void);
 void xen_free_interface(xen_interface_t *xen);
+int xen_get_domid(xen_interface_t *xen, const char *name, domid_t *domID);
 
 #endif

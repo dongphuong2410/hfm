@@ -28,6 +28,17 @@ done:
     return xen;
 }
 
+int xen_get_domid(xen_interface_t *xen, const char *name, domid_t *domID)
+{
+    uint32_t _domID = ~0U;
+    libxl_name_to_domid(xen->xl_ctx, name, &_domID);
+    if (!_domID || _domID == ~0U) {
+        return -1;
+    }
+    *domID = _domID;
+    return 0;
+}
+
 void xen_free_interface(xen_interface_t *xen)
 {
     if (xen) {
