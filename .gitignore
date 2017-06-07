@@ -1,1 +1,11 @@
 html/
+**/*.a
+**/*.swp    
+**/*.swo
+hfm
+tests/*.out
+tests/tmp
+test001
+test002
+test003
+test004
