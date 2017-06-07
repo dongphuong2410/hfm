@@ -101,7 +101,6 @@ typedef struct _policy {
 typedef struct _xen_interface {
     xc_interface *xc;
     libxl_ctx *xl_ctx;
-    xentoollog_logger *xl_logger;
 } xen_interface_t;
 
 typedef struct _vmhdlr {
