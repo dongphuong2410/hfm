@@ -73,8 +73,13 @@ int main(int argc, char **argv)
         vmnum = _init_vms(config_get_str(config, "vmlist"), vms);
     }
 
-    //Start monitoring threads for each vm
     int i;
+    //Set policies
+    for (i = 0; i < vmnum; i++) {
+        hfm_set_policies(vms[i], policies);
+    }
+
+    //Start monitoring threads for each vm
     for (i = 0; i < vmnum; i++) {
         threads[i] = g_thread_new(vms[i]->name, (GThreadFunc)hfm_run, vms[i]);
     }
@@ -138,7 +143,10 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
             writelog(LV_WARN, "Number of VMs exceed the quota (%d). Ignore the others", VM_MAX);
             break;
         }
-        vms[cnt++] = hfm_init(token);
+        vmhdlr_t *hdlr = hfm_init(token);
+        if (hdlr) {
+            vms[cnt++] = hdlr;
+        }
         token = strtok(NULL, ",");
     }
     return cnt;

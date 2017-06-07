@@ -12,7 +12,7 @@ run : ready $(TESTDIR)/$(X)
 
 test_one: ready $(CMP)/$(X).want
 	@echo "Testing $X"
-	@$(MAKE) --no-print-directory run > $(TMP)/$X.got
+	@$(MAKE) --no-print-directory run > $(TMP)/$X.got 2> /dev/null
 	@if diff -s $(TMP)/$X.got $(CMP)/$X.want > /dev/null;    \
 		then echo PASSED $X ; \
 		else echo FAILED $X, got $(TMP)/$X.got;    \
