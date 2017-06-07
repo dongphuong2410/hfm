@@ -9,6 +9,9 @@
 
 #include <stdint.h>
 #include <libvmi/libvmi.h>
+#include <libvmi/events.h>
+#include <xenctrl.h>
+#include <libxl_utils.h>
 
 #define VM_MAX 10
 #define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
@@ -74,9 +77,9 @@ typedef enum {
   *
   * @see drakvuf/src/libdrakvuf/libdrakvuf.h, line 201
   */
-typedef struct _trap_info {
+typedef struct _trap_data {
 
-} trap_info_t;
+} trap_data_t;
 
 /**
   * @brief Save all data relating to a trap
@@ -95,13 +98,26 @@ typedef struct _policy {
     severity_t severity;
 } policy_t;
 
+typedef struct _xen_interface {
+    xc_interface *xc;
+    libxl_ctx *xl_ctx;
+    xentoollog_logger *xl_logger;
+} xen_interface_t;
+
 typedef struct _vmhdlr {
+    xen_interface_t *xen;
     char rekall[PATH_MAX_LEN];
     char name[STR_BUFF];
     vmi_instance_t vmi;
     page_mode_t pm;
     uint32_t vcpus;
     uint32_t memsize;
+    uint32_t init_memsize;
+
+    vmi_event_t interrupt_event;
+    vmi_event_t mem_event;
+    vmi_event_t *step_event[16];
+
 } vmhdlr_t;
 
 #endif  /* __HFM_PRIVATE_H__ */
