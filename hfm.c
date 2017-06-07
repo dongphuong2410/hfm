@@ -19,10 +19,15 @@ vmhdlr_t *hfm_init(char *vm)
         writelog(LV_ERROR, "Failed to init XEN on domain %s", vmhdlr->name);
         goto error_init_xen;
     }
+    if (xen_get_domid(vmhdlr->xen, vmhdlr->name, &vmhdlr->domID) == -1) {
+        writelog(LV_ERROR, "Failed to get domID from domain name");
+        goto error_init_vh;
+    }
     if (FAIL == vh_init(vmhdlr)) {
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
         goto error_init_vh;
     }
+    printf("domID %d\n", vmhdlr->domID);
     goto done;
 
 error_init_vh:
