@@ -11,8 +11,10 @@
 #include <libxl_utils.h>
 #include "private.h"
 
-xen_interface_t *xen_init_interface(void);
+xen_interface_t *xen_init_interface(const char *name);
 void xen_free_interface(xen_interface_t *xen);
-int xen_get_domid(xen_interface_t *xen, const char *name, domid_t *domID);
+int xen_enable_altp2m(xen_interface_t *xen);
+int xen_create_view(xen_interface_t *xen, uint16_t *idx);
+int xen_switch_view(xen_interface_t *xen, uint16_t idx);
 
 #endif
