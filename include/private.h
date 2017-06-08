@@ -106,7 +106,6 @@ typedef struct _xen_interface {
 
 typedef struct _vmhdlr {
     xen_interface_t *xen;
-    char rekall[PATH_MAX_LEN];
     char name[STR_BUFF];
     vmi_instance_t vmi;
     page_mode_t pm;

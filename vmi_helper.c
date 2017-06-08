@@ -4,7 +4,24 @@
 
 #include "vmi_helper.h"
 #include "xen_helper.h"
+#include "config.h"
 #include "log.h"
+
+/**
+* hfm maintains two page tables (two views), first page table (ORIGINAL_IDX) maps the kernel
+* with no modification. The second (altp2m_idx, shadow table) adds breakpoints to the kernel
+*
+* ORIGIN_IDX is activated : 
+* (1) For a single instruction after trapping a read (such a read is likely the result of Kernel
+*  Patch Protection. This allows to hide the present of hfm from other checking software
+* (2) For a single instruction after trapping a guest trace-emplaced breakpoint. This allows
+* the kernel to execute as expected after servicing the breakpoint.
+*
+* ALTP2M_IDX is activate : following a single-step execution, this restore the breakpoints after condition
+* (1) or (2)
+*/
+
+#define ORIGIN_IDX 0
 
 static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
@@ -16,6 +33,8 @@ static bool _remove_trap(vmhdlr_t *handler, trap_t *trap);
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static hfm_status_t _register_events(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
+
+extern config_t *config;
 
 hfm_status_t vh_init(vmhdlr_t *handler)
 {
@@ -56,7 +75,15 @@ void vh_close(vmhdlr_t *handler)
 
 static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
-    return 0;
+    event_response_t rsp = 0;
+    vmhdlr_t *handler = event->data;
+    printf("Breakpoint triggered\n");
+    event->slat_id = ORIGIN_IDX;
+    handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
+    handler->step_event[event->vcpu_id]->data = handler;
+    return rsp |
+            VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP |
+            VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
 static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
@@ -71,7 +98,10 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 
 static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
-    return 0;
+    vmhdlr_t *handler = event->data;
+    event->slat_id = handler->altp2m_idx;
+    return VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP |
+            VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
 static bool _add_trap(vmhdlr_t *handler, trap_t *trap)
@@ -91,8 +121,9 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
         writelog(LV_ERROR, "Failed to init LibVMI on domain %s", handler->name);
         goto error;
     }
+    char *rekall_profile = config_get_str(config, "rekall_profile");
     GHashTable *vmicfg = g_hash_table_new(g_str_hash, g_str_equal);
-    g_hash_table_insert(vmicfg, "rekall_profile", handler->rekall);
+    g_hash_table_insert(vmicfg, "rekall_profile", rekall_profile);
     g_hash_table_insert(vmicfg, "os_type", "Windows");
     uint64_t flags = VMI_PM_INITFLAG_TRANSITION_PAGES;
     if (VMI_PM_UNKNOWN == vmi_init_paging(handler->vmi, flags)) {
@@ -152,12 +183,6 @@ static hfm_status_t _setup_altp2m(vmhdlr_t *handler) {
     rc = xen_create_view(handler->xen, &handler->altp2m_idx);
     if (rc < 0) {
         writelog(LV_ERROR, "Failed to create altp2m view idx on domain %s", handler->name);
-        goto error;
-    }
-
-    rc = xen_create_view(handler->xen, &handler->altp2m_idr);
-    if (rc < 0) {
-        writelog(LV_ERROR, "Failed to create altp2m view idr on domain %s", handler->name);
         goto error;
     }
 
