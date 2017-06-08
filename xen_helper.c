@@ -58,3 +58,27 @@ int xen_switch_view(xen_interface_t *xen, uint16_t idx)
 {
     return xc_altp2m_switch_to_view(xen->xc, xen->domID, idx);
 }
+
+addr_t xen_extend_extra_frame(xen_interface_t *xen, uint64_t proposed_memsize)
+{
+    int rc;
+    xen_pfn_t gfn = 0;
+    rc = xc_domain_setmaxmem(xen->xc, xen->domID, proposed_memsize);
+    if (rc < 0) {
+        writelog(LV_DEBUG, "Failed to increase memory size on guest to %lx", proposed_memsize);
+        goto done;
+    }
+    rc = xc_domain_increase_reservation_exact(xen->xc, xen->domID, 1, 0, 0, &gfn);
+    if (rc < 0) {
+        writelog(LV_DEBUG, "Failed to increase reservation on guest");
+        goto done;
+    }
+    rc = xc_domain_populate_physmap_exact(xen->xc, xen->domID, 1, 0, 0, &gfn);
+    if (rc < 0) {
+        writelog(LV_DEBUG, "Failed to populate GFN at 0x%lx", gfn);
+        gfn = 0;
+        goto done;
+    }
+done:
+    return gfn;
+}

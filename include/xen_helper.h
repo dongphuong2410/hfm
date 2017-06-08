@@ -17,4 +17,12 @@ int xen_enable_altp2m(xen_interface_t *xen);
 int xen_create_view(xen_interface_t *xen, uint16_t *idx);
 int xen_switch_view(xen_interface_t *xen, uint16_t idx);
 
+/**
+  * @brief Extend the vm memory to proposed_memsize
+  * @param xen Pointer to xen
+  * @param proposed_memsize Size of memory that want to extend to
+  * @return Address of the memory frame that has been added
+  */
+addr_t xen_extend_extra_frame(xen_interface_t *xen, uint64_t proposed_memsize);
+
 #endif

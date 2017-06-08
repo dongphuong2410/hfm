@@ -23,6 +23,9 @@
 
 #define DEFAULT_CONFIG "hfm.cfg"
 
+#define PAGE_OFFSET_BITS 12
+#define PAGE_SIZE (1 << PAGE_OFFSET_BITS)
+
 /**
   * @brief Return status code
   */
@@ -78,7 +81,6 @@ typedef enum {
   * @see drakvuf/src/libdrakvuf/libdrakvuf.h, line 201
   */
 typedef struct _trap_data {
-
 } trap_data_t;
 
 /**
@@ -88,6 +90,8 @@ typedef struct _trap {
     unsigned int vcpu;
     uint16_t altp2m_idx;
     trap_type_t type;
+    char name[STR_BUFF];
+    addr_t vaddr;
 } trap_t;
 
 typedef struct _policy {
@@ -112,7 +116,8 @@ typedef struct _vmhdlr {
     uint32_t vcpus;
     uint32_t memsize;
     uint32_t init_memsize;
-    uint16_t altp2m_idx, altp2m_idr;
+    uint16_t altp2m_idx;
+    addr_t remapped;
 
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
