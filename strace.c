@@ -7,7 +7,6 @@
 #include "xen_helper.h"
 
 static void _setup_mem_trap(vmhdlr_t *handler, addr_t va);
-static addr_t _allocate_shadow_frame(vmhdlr_t *handler);
 
 hfm_status_t strace_register(vmhdlr_t *handler, const char *func_name)
 {
@@ -30,6 +29,7 @@ done:
 
 static void _setup_mem_trap(vmhdlr_t *handler, addr_t va)
 {
+    printf("Setup memtrap\n");
     status_t status;
     vmi_pause_vm(handler->vmi);
     addr_t pa = vmi_translate_kv2p(handler->vmi, va);
