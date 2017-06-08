@@ -8,6 +8,7 @@
 #include "log.h"
 #include "vmi_helper.h"
 #include "xen_helper.h"
+#include "strace.h"     //TODO : Temporary here
 
 extern int interrupted;
 
@@ -23,6 +24,7 @@ vmhdlr_t *hfm_init(char *vm)
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
         goto error_init_vh;
     }
+    strace_register(vmhdlr, "NtCreateFile");
     goto done;
 
 error_init_vh:
