@@ -44,12 +44,10 @@ hfm_status_t hfm_set_policies(vmhdlr_t *vm, GSList *policies)
 hfm_status_t hfm_run(vmhdlr_t *vm)
 {
     while (!interrupted) {
-        printf("VM %s is running\n", vm->name);
-        sleep(5);
+        vh_listen(vm);
     }
     hfm_close(vm);
-    printf("VM %s exitted safely\n", vm->name);
-    return FAIL;
+    return SUCCESS;
 }
 
 void hfm_close(vmhdlr_t *vm)

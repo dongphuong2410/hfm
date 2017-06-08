@@ -18,12 +18,11 @@
 hfm_status_t vh_init(vmhdlr_t *handler);
 
 /**
-  * @brief Start monitoring a vm
+  * @brief Listen to an event on a vm
   *
   * @param handler Pointer to vmhdlr_t
-  * @return FAIL or SUCCESS
   */
-hfm_status_t vh_run(vmhdlr_t *handler);
+void vh_listen(vmhdlr_t *handler);
 
 /**
   * @brief Monitor a syscall

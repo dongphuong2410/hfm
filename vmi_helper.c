@@ -56,9 +56,9 @@ error:
     return FAIL;
 }
 
-hfm_status_t vh_run(vmhdlr_t *handler)
+void vh_listen(vmhdlr_t *handler)
 {
-    return FAIL;
+    vmi_events_listen(handler->vmi, 500);
 }
 
 hfm_status_t vh_monitor_syscall(vmhdlr_t *handler, const char *name, void *pre_cb, void *post_cb)
@@ -88,7 +88,10 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
 
 static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
-    return 0;
+    printf("Mem_cb called\n");
+    event->slat_id = ORIGIN_IDX;
+    return VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP
+            | VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
 static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
