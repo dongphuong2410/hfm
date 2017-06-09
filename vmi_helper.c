@@ -1,5 +1,6 @@
 #include <libvmi/libvmi.h>
 #include <libvmi/events.h>
+#include <libvmi/slat.h>
 #include <glib.h>
 
 #include "vmi_helper.h"
@@ -38,6 +39,12 @@ extern config_t *config;
 
 hfm_status_t vh_init(vmhdlr_t *handler)
 {
+    /* Init xen interface*/
+    if ((handler->xen = xen_init_interface(handler->name)) == NULL) {
+        writelog(LV_ERROR, "Failed to init XEN on domain %s", handler->name);
+        xen_free_interface(handler->xen);
+        goto error;
+    }
     /* Init LibVMI */
     if (SUCCESS != _init_vmi(handler)) {
         goto error;
@@ -69,8 +76,12 @@ hfm_status_t vh_monitor_syscall(vmhdlr_t *handler, const char *name, void *pre_c
 void vh_close(vmhdlr_t *handler)
 {
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
-    if (handler->vmi)
-        vmi_destroy(handler->vmi);
+    vmi_pause_vm(handler->vmi);
+    vmi_slat_switch(handler->vmi, ORIGIN_IDX);
+    vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
+    vmi_resume_vm(handler->vmi);
+
+    vmi_destroy(handler->vmi);
 }
 
 static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
@@ -178,20 +189,20 @@ error:
 }
 
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler) {
-    int rc = xen_enable_altp2m(handler->xen);
-    if (rc < 0) {
+    status_t status = vmi_slat_set_domain_state(handler->vmi, 1);
+    if (status != VMI_SUCCESS) {
         writelog(LV_ERROR, "Failed to enable altp2m on domain %s", handler->name);
         goto error;
     }
 
-    rc = xen_create_view(handler->xen, &handler->altp2m_idx);
-    if (rc < 0) {
+    status = vmi_slat_create(handler->vmi, &handler->altp2m_idx);
+    if (status != VMI_SUCCESS) {
         writelog(LV_ERROR, "Failed to create altp2m view idx on domain %s", handler->name);
         goto error;
     }
 
-    rc = xen_switch_view(handler->xen, handler->altp2m_idx);
-    if (rc < 0) {
+    status = vmi_slat_switch(handler->vmi, handler->altp2m_idx);
+    if (status != VMI_SUCCESS) {
         writelog(LV_ERROR, "Failed to switch to altp2m idx view on domain %s", handler->name);
         goto error;
     }

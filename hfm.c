@@ -16,20 +16,13 @@ vmhdlr_t *hfm_init(char *vm)
 {
     vmhdlr_t *vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
     strncpy(vmhdlr->name, vm, STR_BUFF);
-    if ((vmhdlr->xen = xen_init_interface(vmhdlr->name)) == NULL) {
-        writelog(LV_ERROR, "Failed to init XEN on domain %s", vmhdlr->name);
-        goto error_init_xen;
-    }
     if (FAIL == vh_init(vmhdlr)) {
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
-        goto error_init_vh;
+        goto error;
     }
-    strace_register(vmhdlr, "NtCreateFile");
     goto done;
 
-error_init_vh:
-    xen_free_interface(vmhdlr->xen);
-error_init_xen:
+error:
     free(vmhdlr);
     vmhdlr = NULL;
 done:
@@ -38,7 +31,8 @@ done:
 
 hfm_status_t hfm_set_policies(vmhdlr_t *vm, GSList *policies)
 {
-    return FAIL;
+    strace_register(vm, "NtCreateFile");
+    return SUCCESS;
 }
 
 hfm_status_t hfm_run(vmhdlr_t *vm)
