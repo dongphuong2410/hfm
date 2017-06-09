@@ -1,12 +1,12 @@
 /**
-  * @file monitor.h
+  * @file libmon.h
   * @author phuong.do
   * @date 2017-05-24
   * @brief Abstract file for the plugins
   */
 
-#ifndef __HFM_MONITOR_H__
-#define __HFM_MONITOR_H__
+#ifndef __HFM_LIBMON_H__
+#define __HFM_LIBMON_H__
 
 #include "private.h"
 

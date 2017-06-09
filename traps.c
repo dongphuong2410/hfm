@@ -28,5 +28,5 @@ done:
 
 void traps_destroy(vmhdlr_t *handler)
 {
-    vh_delete_trap(handler); 
+    vh_delete_trap(handler);
 }
