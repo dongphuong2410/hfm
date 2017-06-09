@@ -32,29 +32,31 @@ static bool _add_trap(vmhdlr_t *handler, trap_t *trap);
 static bool _remove_trap(vmhdlr_t *handler, trap_t *trap);
 
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
+static void _close_vmi(vmhdlr_t *handler);
 static hfm_status_t _register_events(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
+static void _reset_altp2m(vmhdlr_t *handler);
 
 extern config_t *config;
 
 hfm_status_t vh_init(vmhdlr_t *handler)
 {
+    /* Init LibVMI */
+    if (SUCCESS != _init_vmi(handler)) {
+        goto error;
+    }
     /* Init xen interface*/
     if ((handler->xen = xen_init_interface(handler->name)) == NULL) {
         writelog(LV_ERROR, "Failed to init XEN on domain %s", handler->name);
         xen_free_interface(handler->xen);
         goto error;
     }
-    /* Init LibVMI */
-    if (SUCCESS != _init_vmi(handler)) {
+    /* Create altp2m view */
+    if (SUCCESS != _setup_altp2m(handler)) {
         goto error;
     }
     /* Register events */
     if (SUCCESS != _register_events(handler)) {
-        goto error;
-    }
-    /* Create altp2m view */
-    if (SUCCESS != _setup_altp2m(handler)) {
         goto error;
     }
 
@@ -68,13 +70,16 @@ void vh_close(vmhdlr_t *handler)
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
     vmi_pause_vm(handler->vmi);
 
+    /* Reset altp2m view */
+    _reset_altp2m(handler);
+
+    /* Close xen interface */
     xen_free_interface(handler->xen);
 
-    vmi_slat_switch(handler->vmi, ORIGIN_IDX);
-    vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
     vmi_resume_vm(handler->vmi);
 
-    vmi_destroy(handler->vmi);
+    /* Close LibVMI */
+    _close_vmi(handler);
 }
 
 void vh_listen(vmhdlr_t *handler)
@@ -164,6 +169,11 @@ error:
     return FAIL;
 }
 
+static void _close_vmi(vmhdlr_t *handler)
+{
+    vmi_destroy(handler->vmi);
+}
+
 static hfm_status_t _register_events(vmhdlr_t *handler)
 {
     int i;
@@ -213,4 +223,9 @@ static hfm_status_t _setup_altp2m(vmhdlr_t *handler) {
     return SUCCESS;
 error:
     return FAIL;
+}
+
+static void _reset_altp2m(vmhdlr_t *handler) {
+    vmi_slat_switch(handler->vmi, ORIGIN_IDX);
+    vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
 }
