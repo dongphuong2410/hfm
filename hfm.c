@@ -52,7 +52,9 @@ hfm_status_t hfm_run(vmhdlr_t *vm)
 
 void hfm_close(vmhdlr_t *vm)
 {
+    strace_destroy(vm);
     vh_close(vm);
+    xen_set_maxmem(vm->xen, vm->init_memsize);
     xen_free_interface(vm->xen);
     free(vm);
 }
