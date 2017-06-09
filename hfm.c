@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <xenctrl.h>
 
 #include "hfm.h"
 #include "private.h"
 #include "log.h"
 #include "vmi_helper.h"
-#include "xen_helper.h"
 #include "strace.h"     //TODO : Temporary here
 
 extern int interrupted;
@@ -47,6 +45,5 @@ hfm_status_t hfm_run(vmhdlr_t *vm)
 void hfm_close(vmhdlr_t *vm)
 {
     vh_close(vm);
-    xen_free_interface(vm->xen);
     free(vm);
 }

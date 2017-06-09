@@ -77,6 +77,9 @@ void vh_close(vmhdlr_t *handler)
 {
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
     vmi_pause_vm(handler->vmi);
+
+    xen_free_interface(handler->xen);
+
     vmi_slat_switch(handler->vmi, ORIGIN_IDX);
     vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
     vmi_resume_vm(handler->vmi);
