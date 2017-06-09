@@ -1,6 +1,5 @@
 /**
-  * @file vmi_helper.h
-  * @author phuong.do
+  * @file vmi_helper.h * @author phuong.do
   * @date 2017-05-24
   * @brief Provide services related to LibVMI
   */
@@ -41,4 +40,15 @@ hfm_status_t vh_monitor_syscall(vmhdlr_t *handler, const char *name, void *pre_c
   */
 void vh_close(vmhdlr_t *handler);
 
+/**
+  * @brief Inject a trap to the machine
+  * @param handler Pointer to vmhdlr_t
+  * @param va Virtual address
+  */
+void vh_inject_trap(vmhdlr_t *handler, addr_t va);
+
+/**
+  * @brief Remove a trap from machine memory
+  */
+void vh_delete_trap(vmhdlr_t *handler);
 #endif
