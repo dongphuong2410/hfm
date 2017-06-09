@@ -33,7 +33,6 @@ static bool _remove_trap(vmhdlr_t *handler, trap_t *trap);
 
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static void _close_vmi(vmhdlr_t *handler);
-static hfm_status_t _register_events(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
 static void _reset_altp2m(vmhdlr_t *handler);
 
@@ -53,10 +52,6 @@ hfm_status_t vh_init(vmhdlr_t *handler)
     }
     /* Create altp2m view */
     if (SUCCESS != _setup_altp2m(handler)) {
-        goto error;
-    }
-    /* Register events */
-    if (SUCCESS != _register_events(handler)) {
         goto error;
     }
 
@@ -164,18 +159,8 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     handler->pm = vmi_get_page_mode(handler->vmi, 0);
     handler->vcpus = vmi_get_num_vcpus(handler->vmi);
     handler->memsize = handler->init_memsize = vmi_get_memsize(handler->vmi);
-    return SUCCESS;
-error:
-    return FAIL;
-}
 
-static void _close_vmi(vmhdlr_t *handler)
-{
-    vmi_destroy(handler->vmi);
-}
-
-static hfm_status_t _register_events(vmhdlr_t *handler)
-{
+    /* Register events */
     int i;
     for (i = 0; i < handler->vcpus && i < 16; i++) {
         handler->step_event[i] = g_malloc0(sizeof(vmi_event_t));
@@ -200,6 +185,11 @@ static hfm_status_t _register_events(vmhdlr_t *handler)
     return SUCCESS;
 error:
     return FAIL;
+}
+
+static void _close_vmi(vmhdlr_t *handler)
+{
+    vmi_destroy(handler->vmi);
 }
 
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler) {

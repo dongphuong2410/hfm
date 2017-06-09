@@ -2,7 +2,7 @@
 #include <libvmi/events.h>
 #include <libvmi/slat.h>
 
-#include "strace.h"
+#include "traps.h"
 #include "log.h"
 #include "xen_helper.h"
 
@@ -10,7 +10,7 @@ static void _setup_mem_trap(vmhdlr_t *handler, addr_t va);
 
 uint8_t trap = 0xCC;
 
-hfm_status_t strace_register(vmhdlr_t *handler, const char *func_name)
+hfm_status_t traps_register(vmhdlr_t *handler, const char *func_name)
 {
     hfm_status_t ret = SUCCESS;
     addr_t func_addr;
@@ -86,7 +86,7 @@ done:
     vmi_resume_vm(handler->vmi);
 }
 
-void strace_destroy(vmhdlr_t *handler)
+void traps_destroy(vmhdlr_t *handler)
 {
     xen_free_shadow_frame(handler->xen, &handler->remapped);
 }
