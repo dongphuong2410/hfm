@@ -6,7 +6,7 @@
 #include "private.h"
 #include "log.h"
 #include "vmi_helper.h"
-#include "strace.h"     //TODO : Temporary here
+#include "traps.h"     //TODO : Temporary here
 
 extern int interrupted;
 
@@ -29,7 +29,7 @@ done:
 
 hfm_status_t hfm_set_policies(vmhdlr_t *vm, GSList *policies)
 {
-    strace_register(vm, "NtCreateFile");
+    traps_register(vm, "NtCreateFile");
     return SUCCESS;
 }
 
@@ -44,7 +44,7 @@ hfm_status_t hfm_run(vmhdlr_t *vm)
 
 void hfm_close(vmhdlr_t *vm)
 {
-    strace_destroy(vm);
+    traps_destroy(vm);
     vh_close(vm);
     free(vm);
 }
