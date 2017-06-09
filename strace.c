@@ -31,7 +31,6 @@ done:
 
 static void _setup_mem_trap(vmhdlr_t *handler, addr_t va)
 {
-    printf("Setup memtrap\n");
     status_t status;
     vmi_pause_vm(handler->vmi);
     addr_t pa = vmi_translate_kv2p(handler->vmi, va);
@@ -75,6 +74,7 @@ static void _setup_mem_trap(vmhdlr_t *handler, addr_t va)
     /* Establish callback on a R/W of this page */
     //vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
+    handler->remapped = frame;
     addr_t rpa = (handler->remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
     status = vmi_write_8_pa(handler->vmi, rpa, &trap);
     if (VMI_SUCCESS != status) {
@@ -84,4 +84,10 @@ static void _setup_mem_trap(vmhdlr_t *handler, addr_t va)
 
 done:
     vmi_resume_vm(handler->vmi);
+}
+
+void strace_destroy(vmhdlr_t *handler)
+{
+    vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, handler->remapped, ~0);
+    xen_release_frame(handler->xen, &handler->remapped);
 }
