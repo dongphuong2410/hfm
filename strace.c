@@ -8,6 +8,8 @@
 
 static void _setup_mem_trap(vmhdlr_t *handler, addr_t va);
 
+uint8_t trap = 0xCC;
+
 hfm_status_t strace_register(vmhdlr_t *handler, const char *func_name)
 {
     hfm_status_t ret = SUCCESS;
@@ -71,7 +73,14 @@ static void _setup_mem_trap(vmhdlr_t *handler, addr_t va)
     }
 
     /* Establish callback on a R/W of this page */
-    vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
+    //vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
+
+    addr_t rpa = (handler->remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
+    status = vmi_write_8_pa(handler->vmi, rpa, &trap);
+    if (VMI_SUCCESS != status) {
+        writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
+        goto done;
+    }
 
 done:
     vmi_resume_vm(handler->vmi);

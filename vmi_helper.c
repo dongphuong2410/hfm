@@ -11,7 +11,7 @@
 * hfm maintains two page tables (two views), first page table (ORIGINAL_IDX) maps the kernel
 * with no modification. The second (altp2m_idx, shadow table) adds breakpoints to the kernel
 *
-* ORIGIN_IDX is activated : 
+* ORIGIN_IDX is activated :
 * (1) For a single instruction after trapping a read (such a read is likely the result of Kernel
 *  Patch Protection. This allows to hide the present of hfm from other checking software
 * (2) For a single instruction after trapping a guest trace-emplaced breakpoint. This allows
@@ -79,6 +79,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     vmhdlr_t *handler = event->data;
     printf("Breakpoint triggered\n");
     event->slat_id = ORIGIN_IDX;
+    event->interrupt_event.reinject = 0;
     handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
     handler->step_event[event->vcpu_id]->data = handler;
     return rsp |
