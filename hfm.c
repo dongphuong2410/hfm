@@ -6,7 +6,8 @@
 #include "private.h"
 #include "log.h"
 #include "vmi_helper.h"
-#include "traps.h"     //TODO : Temporary here
+#include "libmon.h"
+#include "traps.h"
 
 extern int interrupted;
 
@@ -29,7 +30,7 @@ done:
 
 hfm_status_t hfm_set_policies(vmhdlr_t *vm, GSList *policies)
 {
-    traps_register(vm, "NtCreateFile");
+    mon_add_policy(vm, NULL);
     return SUCCESS;
 }
 
