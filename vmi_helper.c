@@ -37,6 +37,7 @@ static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
 static void _reset_altp2m(vmhdlr_t *handler);
 
 extern config_t *config;
+uint8_t trap = 0xCC;
 
 hfm_status_t vh_init(vmhdlr_t *handler)
 {
@@ -121,6 +122,68 @@ static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event)
     event->slat_id = handler->altp2m_idx;
     return VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP |
             VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
+}
+
+void vh_inject_trap(vmhdlr_t *handler, addr_t va)
+{
+    printf("Setup memtrap\n");
+    status_t status;
+    vmi_pause_vm(handler->vmi);
+    addr_t pa = vmi_translate_kv2p(handler->vmi, va);
+    if (0 == pa) {
+        writelog(LV_DEBUG, "Virtual addr translation failed: %lx", va);
+        goto done;
+    }
+    addr_t frame = pa >> PAGE_OFFSET_BITS;
+    addr_t shadow_offset = pa % PAGE_SIZE;
+
+    /* Setup and activate shadow view */
+    uint64_t proposed_memsize = handler->memsize + PAGE_SIZE;
+    handler->remapped = xen_alloc_shadow_frame(handler->xen, proposed_memsize);
+    if (handler->remapped == 0) {
+        writelog(LV_DEBUG, "Extend memory failed for shadow page");
+        goto done;
+    }
+    handler->memsize = proposed_memsize;    //Update current memsize after extend
+
+    /* Change altp2m_idx view to map to new remapped address */
+    status = vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, frame, handler->remapped);
+    if (VMI_SUCCESS != status) {
+        writelog(LV_DEBUG, "Failed to update altp2m_idx view to new remapped address");
+        goto done;
+    }
+
+    /* Copy original page to remapped page */
+    uint8_t buff[PAGE_SIZE] = {0};
+    size_t ret = vmi_read_pa(handler->vmi, frame << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
+    if (PAGE_SIZE != ret) {
+        writelog(LV_DEBUG, "Failed to read in syscall page");
+        goto done;
+    }
+
+    ret = vmi_write_pa(handler->vmi, handler->remapped << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
+    if (PAGE_SIZE != ret) {
+        writelog(LV_DEBUG, "Failed to write to remapped page");
+        goto done;
+    }
+
+    /* Establish callback on a R/W of this page */
+    //vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
+
+    addr_t rpa = (handler->remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
+    status = vmi_write_8_pa(handler->vmi, rpa, &trap);
+    if (VMI_SUCCESS != status) {
+        writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
+        goto done;
+    }
+
+done:
+    vmi_resume_vm(handler->vmi);
+}
+
+void vh_delete_trap(vmhdlr_t *handler)
+{
+    xen_free_shadow_frame(handler->xen, &handler->remapped);
 }
 
 static bool _add_trap(vmhdlr_t *handler, trap_t *trap)
