@@ -44,7 +44,7 @@ void xen_free_interface(xen_interface_t *xen)
     }
 }
 
-addr_t xen_extend_extra_frame(xen_interface_t *xen, uint64_t proposed_memsize)
+addr_t xen_alloc_shadow_frame(xen_interface_t *xen, uint64_t proposed_memsize)
 {
     int rc;
     xen_pfn_t gfn = 0;
@@ -66,4 +66,9 @@ addr_t xen_extend_extra_frame(xen_interface_t *xen, uint64_t proposed_memsize)
     }
 done:
     return gfn;
+}
+
+void xen_free_shadow_frame(xen_interface_t *xen, uint64_t *frame)
+{
+    xc_domain_decrease_reservation_exact(xen->xc, xen->domID, 1, 0, frame);
 }

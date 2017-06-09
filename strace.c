@@ -44,7 +44,7 @@ static void _setup_mem_trap(vmhdlr_t *handler, addr_t va)
 
     /* Setup and activate shadow view */
     uint64_t proposed_memsize = handler->memsize + PAGE_SIZE;
-    handler->remapped = xen_extend_extra_frame(handler->xen, proposed_memsize);
+    handler->remapped = xen_alloc_shadow_frame(handler->xen, proposed_memsize);
     if (handler->remapped == 0) {
         writelog(LV_DEBUG, "Extend memory failed for shadow page");
         goto done;
@@ -84,4 +84,9 @@ static void _setup_mem_trap(vmhdlr_t *handler, addr_t va)
 
 done:
     vmi_resume_vm(handler->vmi);
+}
+
+void strace_destroy(vmhdlr_t *handler)
+{
+    xen_free_shadow_frame(handler->xen, &handler->remapped);
 }

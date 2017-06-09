@@ -19,6 +19,13 @@ void xen_free_interface(xen_interface_t *xen);
   * @param proposed_memsize Size of memory that want to extend to
   * @return Address of the memory frame that has been added
   */
-addr_t xen_extend_extra_frame(xen_interface_t *xen, uint64_t proposed_memsize);
+addr_t xen_alloc_shadow_frame(xen_interface_t *xen, uint64_t proposed_memsize);
+
+/**
+  * @brief Free the allocated frame
+  * @param xen Pointer to xen_interface_t
+  * @param frame Address of allocated frame
+  */
+void xen_free_shadow_frame(xen_interface_t *xen, uint64_t *frame);
 
 #endif

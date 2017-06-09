@@ -44,6 +44,7 @@ hfm_status_t hfm_run(vmhdlr_t *vm)
 
 void hfm_close(vmhdlr_t *vm)
 {
+    strace_destroy(vm);
     vh_close(vm);
     free(vm);
 }

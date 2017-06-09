@@ -63,16 +63,6 @@ error:
     return FAIL;
 }
 
-void vh_listen(vmhdlr_t *handler)
-{
-    vmi_events_listen(handler->vmi, 500);
-}
-
-hfm_status_t vh_monitor_syscall(vmhdlr_t *handler, const char *name, void *pre_cb, void *post_cb)
-{
-    return FAIL;
-}
-
 void vh_close(vmhdlr_t *handler)
 {
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
@@ -86,6 +76,17 @@ void vh_close(vmhdlr_t *handler)
 
     vmi_destroy(handler->vmi);
 }
+
+void vh_listen(vmhdlr_t *handler)
+{
+    vmi_events_listen(handler->vmi, 500);
+}
+
+hfm_status_t vh_monitor_syscall(vmhdlr_t *handler, const char *name, void *pre_cb, void *post_cb)
+{
+    return FAIL;
+}
+
 
 static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
