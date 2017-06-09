@@ -1,6 +1,5 @@
 #include <libvmi/libvmi.h>
 #include <libvmi/events.h>
-#include <libvmi/slat.h>
 #include <glib.h>
 
 #include "vmi_helper.h"
@@ -70,14 +69,8 @@ hfm_status_t vh_monitor_syscall(vmhdlr_t *handler, const char *name, void *pre_c
 void vh_close(vmhdlr_t *handler)
 {
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
-    vmi_pause_vm(handler->vmi);
-
-    vmi_slat_switch(handler->vmi, ORIGIN_IDX);
-    vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
-    vmi_slat_set_domain_state(handler->vmi, 0);
-
-    vmi_resume_vm(handler->vmi);
-    vmi_destroy(handler->vmi);
+    if (handler->vmi)
+        vmi_destroy(handler->vmi);
 }
 
 static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
@@ -185,20 +178,20 @@ error:
 }
 
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler) {
-    status_t status = vmi_slat_set_domain_state(handler->vmi, 1);
-    if (status != VMI_SUCCESS) {
+    int rc = xen_enable_altp2m(handler->xen);
+    if (rc < 0) {
         writelog(LV_ERROR, "Failed to enable altp2m on domain %s", handler->name);
         goto error;
     }
 
-    status = vmi_slat_create(handler->vmi, &handler->altp2m_idx);
-    if (status != VMI_SUCCESS) {
+    rc = xen_create_view(handler->xen, &handler->altp2m_idx);
+    if (rc < 0) {
         writelog(LV_ERROR, "Failed to create altp2m view idx on domain %s", handler->name);
         goto error;
     }
 
-    status = vmi_slat_switch(handler->vmi, handler->altp2m_idx);
-    if (status != VMI_SUCCESS) {
+    rc = xen_switch_view(handler->xen, handler->altp2m_idx);
+    if (rc < 0) {
         writelog(LV_ERROR, "Failed to switch to altp2m idx view on domain %s", handler->name);
         goto error;
     }

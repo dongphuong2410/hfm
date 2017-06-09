@@ -26,7 +26,7 @@ xen_interface_t *xen_init_interface(const char *name)
     goto done;
 error:
     if (xen) {
-        //xen_free_interface(xen);
+        xen_free_interface(xen);
         xen = NULL;
     }
 done:
@@ -42,6 +42,21 @@ void xen_free_interface(xen_interface_t *xen)
             xc_interface_close(xen->xc);
         free(xen);
     }
+}
+
+int xen_enable_altp2m(xen_interface_t *xen)
+{
+    return xc_altp2m_set_domain_state(xen->xc, xen->domID, 1);
+}
+
+int xen_create_view(xen_interface_t *xen, uint16_t *idx)
+{
+    return xc_altp2m_create_view(xen->xc, xen->domID, 0, idx);
+}
+
+int xen_switch_view(xen_interface_t *xen, uint16_t idx)
+{
+    return xc_altp2m_switch_to_view(xen->xc, xen->domID, idx);
 }
 
 addr_t xen_extend_extra_frame(xen_interface_t *xen, uint64_t proposed_memsize)
@@ -66,14 +81,4 @@ addr_t xen_extend_extra_frame(xen_interface_t *xen, uint64_t proposed_memsize)
     }
 done:
     return gfn;
-}
-
-void xen_release_frame(xen_interface_t *xen, uint64_t *frame)
-{
-    xc_domain_decrease_reservation_exact(xen->xc, xen->domID, 1, 0, frame);
-}
-
-void xen_set_maxmem(xen_interface_t *xen, uint32_t memsize)
-{
-    xc_domain_setmaxmem(xen->xc, xen->domID, memsize);
 }
