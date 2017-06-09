@@ -1,5 +1,5 @@
 #include "libmon.h"
-#include "traps.h"
+#include "libhfm.h"
 
 
 void mon_init(monitor_t type)
@@ -8,6 +8,6 @@ void mon_init(monitor_t type)
 
 hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
-    traps_register(hdlr, "NtCreateFile");
+    hfm_register_trap(hdlr, "NtCreateFile");
     return SUCCESS;
 }

@@ -3,7 +3,7 @@
 #include <libvmi/slat.h>
 #include <glib.h>
 
-#include "vmi_helper.h"
+#include "libhfm.h"
 #include "xen_helper.h"
 #include "config.h"
 #include "log.h"
@@ -39,7 +39,7 @@ static void _reset_altp2m(vmhdlr_t *handler);
 extern config_t *config;
 uint8_t trap = 0xCC;
 
-hfm_status_t vh_init(vmhdlr_t *handler)
+hfm_status_t hfm_init(vmhdlr_t *handler)
 {
     /* Init LibVMI */
     if (SUCCESS != _init_vmi(handler)) {
@@ -61,7 +61,7 @@ error:
     return FAIL;
 }
 
-void vh_close(vmhdlr_t *handler)
+void hfm_close(vmhdlr_t *handler)
 {
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
     vmi_pause_vm(handler->vmi);
@@ -78,16 +78,10 @@ void vh_close(vmhdlr_t *handler)
     _close_vmi(handler);
 }
 
-void vh_listen(vmhdlr_t *handler)
+void hfm_listen(vmhdlr_t *handler)
 {
     vmi_events_listen(handler->vmi, 500);
 }
-
-hfm_status_t vh_monitor_syscall(vmhdlr_t *handler, const char *name, void *pre_cb, void *post_cb)
-{
-    return FAIL;
-}
-
 
 static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
@@ -124,7 +118,7 @@ static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event)
             VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
-void vh_inject_trap(vmhdlr_t *handler, addr_t va)
+void hfm_inject_trap(vmhdlr_t *handler, addr_t va)
 {
     printf("Setup memtrap\n");
     status_t status;
@@ -181,7 +175,7 @@ done:
     vmi_resume_vm(handler->vmi);
 }
 
-void vh_delete_trap(vmhdlr_t *handler)
+void hfm_delete_trap(vmhdlr_t *handler)
 {
     xen_free_shadow_frame(handler->xen, &handler->remapped);
 }
