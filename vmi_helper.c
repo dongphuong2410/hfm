@@ -39,6 +39,12 @@ extern config_t *config;
 
 hfm_status_t vh_init(vmhdlr_t *handler)
 {
+    /* Init xen interface*/
+    if ((handler->xen = xen_init_interface(handler->name)) == NULL) {
+        writelog(LV_ERROR, "Failed to init XEN on domain %s", handler->name);
+        xen_free_interface(handler->xen);
+        goto error;
+    }
     /* Init LibVMI */
     if (SUCCESS != _init_vmi(handler)) {
         goto error;
