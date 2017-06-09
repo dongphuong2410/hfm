@@ -3,13 +3,12 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "vmi_helper.h"
+#include "libhfm.h"
 #include "log.h"
 #include "config.h"
 #include "private.h"
 #include "policy.h"
 #include "libmon.h"
-#include "traps.h"
 
 /**
   * Read configuration from command line
@@ -150,7 +149,7 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
         }
         vmhdlr_t *vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
         strncpy(vmhdlr->name, token, STR_BUFF);
-        if (FAIL == vh_init(vmhdlr)) {
+        if (FAIL == hfm_init(vmhdlr)) {
             writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
             free(vmhdlr);
         }
@@ -170,10 +169,10 @@ static void _set_policies(vmhdlr_t *handler, GSList *policies)
 static void _monitor_vm(vmhdlr_t *vm)
 {
     while (!interrupted) {
-        vh_listen(vm);
+        hfm_listen(vm);
     }
     /* release resources */
-    traps_destroy(vm);
-    vh_close(vm);
+    hfm_destroy_traps(vm);
+    hfm_close(vm);
     free(vm);
 }

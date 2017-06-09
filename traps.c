@@ -2,12 +2,11 @@
 #include <libvmi/events.h>
 #include <libvmi/slat.h>
 
-#include "traps.h"
 #include "log.h"
-#include "vmi_helper.h"
+#include "libhfm.h"
 
 
-hfm_status_t traps_register(vmhdlr_t *handler, const char *func_name)
+hfm_status_t hfm_register_trap(vmhdlr_t *handler, const char *func_name)
 {
     hfm_status_t ret = SUCCESS;
     addr_t func_addr;
@@ -20,13 +19,13 @@ hfm_status_t traps_register(vmhdlr_t *handler, const char *func_name)
         goto done;
     }
 
-    vh_inject_trap(handler, func_addr);
+    hfm_inject_trap(handler, func_addr);
 done:
     vmi_resume_vm(handler->vmi);
     return ret;
 }
 
-void traps_destroy(vmhdlr_t *handler)
+void hfm_destroy_traps(vmhdlr_t *handler)
 {
-    vh_delete_trap(handler);
+    hfm_delete_trap(handler);
 }
