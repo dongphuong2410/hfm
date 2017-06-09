@@ -3,11 +3,13 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "vmi_helper.h"
 #include "log.h"
 #include "config.h"
 #include "private.h"
 #include "policy.h"
-#include "hfm.h"
+#include "libmon.h"
+#include "traps.h"
 
 /**
   * Read configuration from command line
@@ -19,6 +21,9 @@ static config_t *_read_config(int argc, char **argv);
   * Parse vmlist string and init the VM handlers (hfm)
   */
 static int _init_vms(const char *str_vmlist, vmhdlr_t **);
+
+static void _set_policies(vmhdlr_t *handler, GSList *policies);
+static void _monitor_vm(vmhdlr_t *vm);
 
 config_t *config;           /* config handler */
 
@@ -76,12 +81,12 @@ int main(int argc, char **argv)
     int i;
     //Set policies
     for (i = 0; i < vmnum; i++) {
-        hfm_set_policies(vms[i], policies);
+        _set_policies(vms[i], policies);
     }
 
     //Start monitoring threads for each vm
     for (i = 0; i < vmnum; i++) {
-        threads[i] = g_thread_new(vms[i]->name, (GThreadFunc)hfm_run, vms[i]);
+        threads[i] = g_thread_new(vms[i]->name, (GThreadFunc)_monitor_vm, vms[i]);
     }
 
     for (i = 0; i < vmnum; i++) {
@@ -143,12 +148,32 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
             writelog(LV_WARN, "Number of VMs exceed the quota (%d). Ignore the others", VM_MAX);
             break;
         }
-        vmhdlr_t *hdlr = hfm_init(token);
-        if (hdlr) {
-            vms[cnt++] = hdlr;
+        vmhdlr_t *vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
+        strncpy(vmhdlr->name, token, STR_BUFF);
+        if (FAIL == vh_init(vmhdlr)) {
+            writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+            free(vmhdlr);
+        }
+        else {
+            vms[cnt++] = vmhdlr;
         }
         token = strtok(NULL, ",");
     }
     return cnt;
 }
 
+static void _set_policies(vmhdlr_t *handler, GSList *policies)
+{
+    mon_add_policy(handler, NULL);
+}
+
+static void _monitor_vm(vmhdlr_t *vm)
+{
+    while (!interrupted) {
+        vh_listen(vm);
+    }
+    /* release resources */
+    traps_destroy(vm);
+    vh_close(vm);
+    free(vm);
+}
