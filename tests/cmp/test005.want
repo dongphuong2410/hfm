@@ -1,3 +1,4 @@
   WARN No policy file specified
-  ERROR Failed to get domID from domain name fakewin
-  ERROR Failed to init XEN on domain fakewin
+  INFO Init VMI on domain fakewin
+  ERROR Failed to init LibVMI on domain fakewin
+  ERROR Failed to init domain fakewin

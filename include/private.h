@@ -66,6 +66,8 @@ typedef enum {
     TRAP_MEM
 } trap_type_t;
 
+typedef struct _trapmngr_t trapmngr_t;
+
 /**
   * @brief Address type
   */
@@ -73,26 +75,6 @@ typedef enum {
     ADDR_VA,    /** < Virtual Address */
     ADDR_RVA    /** < Relative virtual address */
 } addr_type_t;
-
-
-/**
-  * @brief This struct will be used to transfer neccessary information to callbacks in plugins
-  *
-  * @see drakvuf/src/libdrakvuf/libdrakvuf.h, line 201
-  */
-typedef struct _trap_data {
-} trap_data_t;
-
-/**
-  * @brief Save all data relating to a trap
-  */
-typedef struct _trap {
-    unsigned int vcpu;
-    uint16_t altp2m_idx;
-    trap_type_t type;
-    char name[STR_BUFF];
-    addr_t vaddr;
-} trap_t;
 
 typedef struct _policy {
     int id;
@@ -117,6 +99,7 @@ typedef struct _vmhdlr {
     uint32_t memsize;
     uint32_t init_memsize;
     uint16_t altp2m_idx;
+    trapmngr_t *traps;
     addr_t remapped;
 
     vmi_event_t interrupt_event;

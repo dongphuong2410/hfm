@@ -1,31 +1,22 @@
-#include <libvmi/libvmi.h>
-#include <libvmi/events.h>
-#include <libvmi/slat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <glib.h>
 
 #include "log.h"
-#include "libhfm.h"
+#include "traps.h"
 
+struct _trapmngr_t {
+    GHashTable *remapped_tbl;
+};
 
-hfm_status_t hfm_register_trap(vmhdlr_t *handler, const char *func_name)
+trapmngr_t *traps_init()
 {
-    hfm_status_t ret = SUCCESS;
-    addr_t func_addr;
-    vmi_pause_vm(handler->vmi);
-
-    /* Find vaddr of syscall */
-    func_addr = vmi_translate_ksym2v(handler->vmi, func_name);
-    if (0 == func_addr) {
-        writelog(LV_WARN, "Counldn't locate the address of kernel symbol '%s'", func_name);
-        goto done;
-    }
-
-    hfm_inject_trap(handler, func_addr);
-done:
-    vmi_resume_vm(handler->vmi);
-    return ret;
+    trapmngr_t *traps = (trapmngr_t *)calloc(1, sizeof(trapmngr_t));
+    traps->remapped_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, NULL, free);
 }
 
-void hfm_destroy_traps(vmhdlr_t *handler)
+void traps_destroy(trapmngr_t *traps)
 {
-    hfm_delete_trap(handler);
+    g_hash_table_destroy(traps->remapped_tbl);
+    free(traps);
 }
