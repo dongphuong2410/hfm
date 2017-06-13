@@ -1,0 +1,3 @@
+#!/bin/bash
+#A Shdow page will be created when we set a breakpoint to one syscall
+sudo ./test106 | grep "Shadow page created" | wc -l

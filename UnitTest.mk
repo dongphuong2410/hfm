@@ -1,4 +1,4 @@
-TEST_FILE_LIST=$(shell cd $(TESTDIR); ls | egrep '^test[0-9]+$$' | sort -n)
+TEST_FILE_LIST=$(shell cd $(TESTDIR); ls | egrep '^test0[0-9]+$$' | sort -n)
 CMP=$(TESTDIR)/cmp
 TMP=$(TESTDIR)/tmp
 

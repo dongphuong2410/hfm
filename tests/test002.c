@@ -4,8 +4,11 @@
 #include "policy.h"
 #include "private.h"
 #include "log.h"
+#include "config.h"
 
 void _print_policy(policy_t *policy);
+
+config_t *config;
 
 int main(int argc, char *argv)
 {

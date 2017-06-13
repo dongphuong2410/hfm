@@ -4,6 +4,9 @@
 #include "private.h"
 #include "log.h"
 #include "file_filter.h"
+#include "config.h"
+
+config_t *config;
 
 int main(int argc, char *argv)
 {
