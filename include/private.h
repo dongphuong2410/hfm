@@ -13,6 +13,11 @@
 #include <xenctrl.h>
 #include <libxl_utils.h>
 
+#define ghashtable_foreach(table, i, key, val) \
+          g_hash_table_iter_init(&i, table); \
+      while(g_hash_table_iter_next(&i,(void**)&key,(void**)&val))
+
+
 #define VM_MAX 10
 #define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
 #define STR_BUFF 1024
@@ -100,7 +105,6 @@ typedef struct _vmhdlr {
     uint32_t init_memsize;
     uint16_t altp2m_idx;
     trapmngr_t *traps;
-    addr_t remapped;
 
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
