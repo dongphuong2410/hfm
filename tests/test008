@@ -1,0 +1,4 @@
+#!/bin/bash
+# When two syscalls in two page is set trapped on, two shadow page will be created
+# Expect two line return
+sudo ./test108 | grep "Shadow page created" | wc -l

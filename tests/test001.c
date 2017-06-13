@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include "config.h"
 
+config_t *config;
+
 int main(int argc, char **argv)
 {
     char *cwd;
