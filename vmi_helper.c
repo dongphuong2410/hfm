@@ -35,6 +35,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static void _close_vmi(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
 static void _reset_altp2m(vmhdlr_t *handler);
+static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t original_gfn);
 
 extern config_t *config;
 uint8_t INT3_CHAR = 0xCC;
@@ -137,38 +138,11 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa)
 {
     hfm_status_t status = FAIL;
     addr_t frame = pa >> PAGE_OFFSET_BITS;
-    addr_t shadow_offset = pa % PAGE_SIZE;
 
-    /* Setup and activate shadow view */
-    uint64_t proposed_memsize = handler->memsize + PAGE_SIZE;
-    uint64_t remapped = xen_alloc_shadow_frame(handler->xen, proposed_memsize);
-    if (remapped == 0) {
-        writelog(LV_DEBUG, "Extend memory failed for shadow page");
-        goto done;
+    uint64_t remapped = traps_find_remapped(handler->traps, frame);
+    if (!remapped) {
+        remapped = _create_shadow_page(handler, frame);
     }
-    handler->memsize = proposed_memsize;    //Update current memsize after extend
-
-    /* Change altp2m_idx view to map to new remapped address */
-    if (VMI_SUCCESS != vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, frame, remapped)) {
-        writelog(LV_DEBUG, "Failed to update altp2m_idx view to new remapped address");
-        goto done;
-    }
-
-    /* Copy original page to remapped page */
-    uint8_t buff[PAGE_SIZE] = {0};
-    size_t ret = vmi_read_pa(handler->vmi, frame << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
-    if (PAGE_SIZE != ret) {
-        writelog(LV_DEBUG, "Failed to read in syscall page");
-        goto done;
-    }
-
-    ret = vmi_write_pa(handler->vmi, remapped << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
-    if (PAGE_SIZE != ret) {
-        writelog(LV_DEBUG, "Failed to write to remapped page");
-        goto done;
-    }
-
-    traps_add_remapped(handler->traps, frame, remapped);
 
     /* Establish callback on a R/W of this page */
     //vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
@@ -296,4 +270,42 @@ error:
 static void _reset_altp2m(vmhdlr_t *handler) {
     vmi_slat_switch(handler->vmi, ORIGIN_IDX);
     vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
+}
+
+static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t frame)
+{
+    /* Setup and activate shadow view */
+    uint64_t proposed_memsize = handler->memsize + PAGE_SIZE;
+    uint64_t remapped = xen_alloc_shadow_frame(handler->xen, proposed_memsize);
+    if (remapped == 0) {
+        writelog(LV_DEBUG, "Extend memory failed for shadow page");
+        goto error;
+    }
+    writelog(LV_DEBUG, "Shadow page created at remapped frame %lx", remapped);
+    handler->memsize = proposed_memsize;    //Update current memsize after extend
+
+    /* Change altp2m_idx view to map to new remapped address */
+    if (VMI_SUCCESS != vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, frame, remapped)) {
+        writelog(LV_DEBUG, "Failed to update altp2m_idx view to new remapped address");
+        goto error;
+    }
+
+    /* Copy original page to remapped page */
+    uint8_t buff[PAGE_SIZE] = {0};
+    size_t ret = vmi_read_pa(handler->vmi, frame << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
+    if (PAGE_SIZE != ret) {
+        writelog(LV_DEBUG, "Failed to read in syscall page");
+        goto error;
+    }
+
+    ret = vmi_write_pa(handler->vmi, remapped << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
+    if (PAGE_SIZE != ret) {
+        writelog(LV_DEBUG, "Failed to write to remapped page");
+        goto error;
+    }
+
+    traps_add_remapped(handler->traps, frame, remapped);
+    return remapped;
+error:
+    return 0;
 }
