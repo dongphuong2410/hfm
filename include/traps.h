@@ -30,4 +30,11 @@ void traps_destroy(trapmngr_t *traps);
   */
 void traps_add_remapped(trapmngr_t *traps, uint64_t original, uint64_t remapped);
 
+/**
+  * @brief Find a remapped page of a frame
+  * @param traps Pointer to trapmngr
+  * @param origin Original frame number
+  * @return Return address of remap of this frame, or return 0 if not exist
+  */
+uint64_t traps_find_remapped(trapmngr_t *traps, uint64_t original);
 #endif

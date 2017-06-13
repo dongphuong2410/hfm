@@ -35,6 +35,14 @@ void traps_add_remapped(trapmngr_t *traps, uint64_t original, uint64_t remapped)
     g_hash_table_insert(traps->remapped_tbl, &original, r);
 }
 
+uint64_t traps_find_remapped(trapmngr_t *traps, uint64_t original)
+{
+    remapped_t *r = g_hash_table_lookup(traps->remapped_tbl, &original);
+    if (r)
+        return r->r;
+    return 0;
+}
+
 void traps_destroy(trapmngr_t *traps)
 {
     if (traps->remapped_tbl) {
@@ -44,7 +52,6 @@ void traps_destroy(trapmngr_t *traps)
         ghashtable_foreach(traps->remapped_tbl, i, key, remapped) {
             vmi_slat_change_gfn(traps->handler->vmi, traps->handler->altp2m_idx, remapped->o, ~0);
             xen_free_shadow_frame(traps->handler->xen, &remapped->r);
-            //free(remapped);
         }
         g_hash_table_destroy(traps->remapped_tbl);
     }
