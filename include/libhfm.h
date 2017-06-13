@@ -31,21 +31,9 @@ void hfm_listen(vmhdlr_t *handler);
 void hfm_close(vmhdlr_t *handler);
 
 /**
-  * @brief Inject a trap to the machine
-  * @param handler Pointer to vmhdlr_t
-  * @param va Virtual address
+  * @brief Register a trap for syscall
   */
-void hfm_inject_trap(vmhdlr_t *handler, addr_t va);
-
-/**
-  * @brief Remove a trap from machine memory
-  */
-void hfm_delete_trap(vmhdlr_t *handler);
-
-/**
-  * @brief Register a trap
-  */
-hfm_status_t hfm_register_trap(vmhdlr_t *handler, const char *func_name);
+hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name);
 
 /**
   * @brief Clean all the trap

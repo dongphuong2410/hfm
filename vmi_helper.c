@@ -7,6 +7,7 @@
 #include "xen_helper.h"
 #include "config.h"
 #include "log.h"
+#include "traps.h"
 
 /**
 * hfm maintains two page tables (two views), first page table (ORIGINAL_IDX) maps the kernel
@@ -28,36 +29,48 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event);
-static bool _add_trap(vmhdlr_t *handler, trap_t *trap);
-static bool _remove_trap(vmhdlr_t *handler, trap_t *trap);
 
+static hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa);
+static void _delete_trap(vmhdlr_t *handler);
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static void _close_vmi(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
 static void _reset_altp2m(vmhdlr_t *handler);
 
 extern config_t *config;
-uint8_t trap = 0xCC;
+uint8_t INT3_CHAR = 0xCC;
 
 hfm_status_t hfm_init(vmhdlr_t *handler)
 {
     /* Init LibVMI */
     if (SUCCESS != _init_vmi(handler)) {
-        goto error;
+        goto error1;
     }
     /* Init xen interface*/
     if ((handler->xen = xen_init_interface(handler->name)) == NULL) {
         writelog(LV_ERROR, "Failed to init XEN on domain %s", handler->name);
         xen_free_interface(handler->xen);
-        goto error;
+        goto error2;
     }
     /* Create altp2m view */
     if (SUCCESS != _setup_altp2m(handler)) {
-        goto error;
+        goto error3;
+    }
+    /* Init trap manager */
+    handler->traps = traps_init();
+    if (handler->traps == NULL) {
+        writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
+        goto error4;
     }
 
     return SUCCESS;
-error:
+error4:
+    _reset_altp2m(handler);
+error3:
+    xen_free_interface(handler->xen);
+error2:
+    _close_vmi(handler);
+error1:
     return FAIL;
 }
 
@@ -118,16 +131,9 @@ static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event)
             VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
-void hfm_inject_trap(vmhdlr_t *handler, addr_t va)
+hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa)
 {
-    printf("Setup memtrap\n");
-    status_t status;
-    vmi_pause_vm(handler->vmi);
-    addr_t pa = vmi_translate_kv2p(handler->vmi, va);
-    if (0 == pa) {
-        writelog(LV_DEBUG, "Virtual addr translation failed: %lx", va);
-        goto done;
-    }
+    hfm_status_t status = FAIL;
     addr_t frame = pa >> PAGE_OFFSET_BITS;
     addr_t shadow_offset = pa % PAGE_SIZE;
 
@@ -141,8 +147,7 @@ void hfm_inject_trap(vmhdlr_t *handler, addr_t va)
     handler->memsize = proposed_memsize;    //Update current memsize after extend
 
     /* Change altp2m_idx view to map to new remapped address */
-    status = vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, frame, handler->remapped);
-    if (VMI_SUCCESS != status) {
+    if (VMI_SUCCESS != vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, frame, handler->remapped)) {
         writelog(LV_DEBUG, "Failed to update altp2m_idx view to new remapped address");
         goto done;
     }
@@ -165,29 +170,47 @@ void hfm_inject_trap(vmhdlr_t *handler, addr_t va)
     //vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
     addr_t rpa = (handler->remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
-    status = vmi_write_8_pa(handler->vmi, rpa, &trap);
-    if (VMI_SUCCESS != status) {
+    if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
         writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
         goto done;
     }
-
+    status = SUCCESS;
 done:
-    vmi_resume_vm(handler->vmi);
+    return status;
 }
 
-void hfm_delete_trap(vmhdlr_t *handler)
+void _delete_trap(vmhdlr_t *handler)
 {
     xen_free_shadow_frame(handler->xen, &handler->remapped);
 }
 
-static bool _add_trap(vmhdlr_t *handler, trap_t *trap)
+hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name)
 {
-    return 0;
+    hfm_status_t ret = SUCCESS;
+    addr_t func_addr;
+    vmi_pause_vm(handler->vmi);
+
+    /* Find vaddr of syscall */
+    func_addr = vmi_translate_ksym2v(handler->vmi, func_name);
+    if (0 == func_addr) {
+        writelog(LV_WARN, "Counldn't locate the address of kernel symbol '%s'", func_name);
+        goto done;
+    }
+
+    addr_t pa = vmi_translate_kv2p(handler->vmi, func_addr);
+    if (0 == pa) {
+        writelog(LV_DEBUG, "Virtual addr translation failed: %lx", func_addr);
+        goto done;
+    }
+    _inject_trap(handler, pa);
+done:
+    vmi_resume_vm(handler->vmi);
+    return ret;
 }
 
-static bool _remove_trap(vmhdlr_t *handler, trap_t *trap)
+void hfm_destroy_traps(vmhdlr_t *handler)
 {
-    return 0;
+    _delete_trap(handler);
 }
 
 static hfm_status_t _init_vmi(vmhdlr_t *handler)
