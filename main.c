@@ -172,7 +172,6 @@ static void _monitor_vm(vmhdlr_t *vm)
         hfm_listen(vm);
     }
     /* release resources */
-    hfm_destroy_traps(vm);
     hfm_close(vm);
     free(vm);
 }

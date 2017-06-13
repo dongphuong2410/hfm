@@ -31,7 +31,6 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event);
 
 static hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa);
-static void _delete_trap(vmhdlr_t *handler);
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static void _close_vmi(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
@@ -57,7 +56,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         goto error3;
     }
     /* Init trap manager */
-    handler->traps = traps_init();
+    handler->traps = traps_init(handler);
     if (handler->traps == NULL) {
         writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
         goto error4;
@@ -78,6 +77,9 @@ void hfm_close(vmhdlr_t *handler)
 {
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
     vmi_pause_vm(handler->vmi);
+
+    /* Destroy all traps */
+    traps_destroy(handler->traps);
 
     /* Reset altp2m view */
     _reset_altp2m(handler);
@@ -139,15 +141,15 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa)
 
     /* Setup and activate shadow view */
     uint64_t proposed_memsize = handler->memsize + PAGE_SIZE;
-    handler->remapped = xen_alloc_shadow_frame(handler->xen, proposed_memsize);
-    if (handler->remapped == 0) {
+    uint64_t remapped = xen_alloc_shadow_frame(handler->xen, proposed_memsize);
+    if (remapped == 0) {
         writelog(LV_DEBUG, "Extend memory failed for shadow page");
         goto done;
     }
     handler->memsize = proposed_memsize;    //Update current memsize after extend
 
     /* Change altp2m_idx view to map to new remapped address */
-    if (VMI_SUCCESS != vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, frame, handler->remapped)) {
+    if (VMI_SUCCESS != vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, frame, remapped)) {
         writelog(LV_DEBUG, "Failed to update altp2m_idx view to new remapped address");
         goto done;
     }
@@ -160,16 +162,18 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa)
         goto done;
     }
 
-    ret = vmi_write_pa(handler->vmi, handler->remapped << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
+    ret = vmi_write_pa(handler->vmi, remapped << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
     if (PAGE_SIZE != ret) {
         writelog(LV_DEBUG, "Failed to write to remapped page");
         goto done;
     }
 
+    traps_add_remapped(handler->traps, frame, remapped);
+
     /* Establish callback on a R/W of this page */
     //vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
-    addr_t rpa = (handler->remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
+    addr_t rpa = (remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
     if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
         writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
         goto done;
@@ -177,11 +181,6 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa)
     status = SUCCESS;
 done:
     return status;
-}
-
-void _delete_trap(vmhdlr_t *handler)
-{
-    xen_free_shadow_frame(handler->xen, &handler->remapped);
 }
 
 hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name)
@@ -210,7 +209,6 @@ done:
 
 void hfm_destroy_traps(vmhdlr_t *handler)
 {
-    _delete_trap(handler);
 }
 
 static hfm_status_t _init_vmi(vmhdlr_t *handler)
