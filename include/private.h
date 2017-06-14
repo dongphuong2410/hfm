@@ -104,7 +104,7 @@ typedef struct _vmhdlr {
     uint32_t memsize;
     uint32_t init_memsize;
     uint16_t altp2m_idx;
-    trapmngr_t *traps;
+    trapmngr_t *trap_manager;
 
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
