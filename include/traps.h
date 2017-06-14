@@ -10,6 +10,13 @@
 #include "private.h"
 
 /**
+  * @brief Contain list of int3 breakpoints set at same position
+  */
+typedef struct int3break_t {
+    GSList *traplist;
+} int3break_t;
+
+/**
   * @brief Init trap manager
   * @param vm Pointer to vmhdlr_t struct
   * @return Return pointer to trapmngr_t if init success, or else return NULL
@@ -37,4 +44,8 @@ void traps_add_remapped(trapmngr_t *traps, uint64_t original, uint64_t remapped)
   * @return Return address of remap of this frame, or return 0 if not exist
   */
 uint64_t traps_find_remapped(trapmngr_t *traps, uint64_t original);
+
+int3break_t *traps_find_breakpoint(trapmngr_t *traps, uint64_t pa);
+
+void traps_add_breakpoint(trapmngr_t *traps, uint64_t *pa, int3break_t *wrapper);
 #endif
