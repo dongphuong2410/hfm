@@ -9,7 +9,7 @@
 #include "xen_helper.h"
 #include "config.h"
 #include "log.h"
-#include "traps.h"
+#include "trapmngr.h"
 
 /**
 * hfm maintains two page tables (two views), first page table (ORIGINAL_IDX) maps the kernel
@@ -32,7 +32,7 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event);
 
-static hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa);
+static hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap);
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static void _close_vmi(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
@@ -59,7 +59,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         goto error3;
     }
     /* Init trap manager */
-    handler->trap_manager = traps_init(handler);
+    handler->trap_manager = trapmngr_init(handler);
     if (handler->trap_manager == NULL) {
         writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
         goto error4;
@@ -82,7 +82,7 @@ void hfm_close(vmhdlr_t *handler)
     vmi_pause_vm(handler->vmi);
 
     /* Destroy all traps */
-    traps_destroy(handler->trap_manager);
+    trapmngr_destroy(handler->trap_manager);
 
     /* Reset altp2m view */
     _reset_altp2m(handler);
@@ -107,7 +107,7 @@ hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name)
     addr_t func_addr;
     vmi_pause_vm(handler->vmi);
 
-    /* Find vaddr of syscall */
+    /* Translate syscall name into physical address */
     func_addr = vmi_translate_ksym2v(handler->vmi, func_name);
     if (0 == func_addr) {
         writelog(LV_WARN, "Counldn't locate the address of kernel symbol '%s'", func_name);
@@ -119,7 +119,12 @@ hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name)
         writelog(LV_DEBUG, "Virtual addr translation failed: %lx", func_addr);
         goto done;
     }
-    _inject_trap(handler, pa);
+    //Create a trap
+    trap_t *trap = (trap_t *)calloc(1, sizeof(trap_t));
+    strncpy(trap->name, func_name, STR_BUFF);
+
+    //Inject trap at physical address
+    _inject_trap(handler, pa, trap);
 done:
     vmi_resume_vm(handler->vmi);
     return ret;
@@ -160,26 +165,27 @@ static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event)
             VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
-hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa)
+hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
 {
     hfm_status_t status = FAIL;
     addr_t frame = pa >> PAGE_OFFSET_BITS;
 
     //Check if there is breakpoint inserted at this position or not
-    int3break_t *w = traps_find_breakpoint(handler->trap_manager, pa);
+    int3_wrapper_t *w = trapmngr_find_breakpoint(handler->trap_manager, pa);
     if (w) {
         w->traplist = g_slist_append(w->traplist, "Breakpoint");
         return SUCCESS;
     }
-    w = (int3break_t *)calloc(1, sizeof(int3break_t));
+    w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
     w->traplist = g_slist_append(w->traplist, "Breakpoint");
 
     //Check if there is a shadow page created at this gfn or not
-    uint64_t remapped = traps_find_remapped(handler->trap_manager, frame);
+    //If not, create the shadow page
+    uint64_t remapped = trapmngr_find_remapped(handler->trap_manager, frame);
     if (!remapped) {
         remapped = _create_shadow_page(handler, frame);
         if (remapped)
-            traps_add_remapped(handler->trap_manager, frame, remapped);
+            trapmngr_add_remapped(handler->trap_manager, frame, remapped);
     }
 
     /* Establish callback on a R/W of this page */
@@ -190,7 +196,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa)
         writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
         goto done;
     }
-    traps_add_breakpoint(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), w);
+    trapmngr_add_breakpoint(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), w);
     status = SUCCESS;
 done:
     return status;
