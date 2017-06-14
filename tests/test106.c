@@ -19,7 +19,7 @@ int main(int argc, char **argv)
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
         free(vmhdlr);
     }
-    hfm_monitor_syscall(vmhdlr, "NtCreateFile");
+    hfm_monitor_syscall(vmhdlr, "NtCreateFile", NULL);
     hfm_close(vmhdlr);
     free(vmhdlr);
 }

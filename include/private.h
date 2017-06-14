@@ -99,6 +99,7 @@ typedef struct _vmhdlr {
     xen_interface_t *xen;
     char name[STR_BUFF];
     vmi_instance_t vmi;
+    x86_registers_t *regs[16];          //vCPU specific registers recorded during the last events
     page_mode_t pm;
     uint32_t vcpus;
     uint32_t memsize;
@@ -111,5 +112,20 @@ typedef struct _vmhdlr {
     vmi_event_t *step_event[16];
 
 } vmhdlr_t;
+
+/**
+  * @brief Trap info to transfer to callback
+  */
+typedef struct trap_data_t {
+
+} trap_data_t;
+
+/**
+  * @brief A trap to be injected to the VM
+  */
+typedef struct trap_t {
+    char name[STR_BUFF];
+    event_response_t (*cb)(vmhdlr_t *, trap_data_t *);
+} trap_t;
 
 #endif  /* __HFM_PRIVATE_H__ */
