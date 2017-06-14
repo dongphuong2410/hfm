@@ -13,7 +13,7 @@
   * @brief Contain list of int3 breakpoints set at same position
   */
 typedef struct int3_wrapper_t {
-    GSList *traplist;
+    GSList *traps;
 } int3_wrapper_t;
 
 /**
@@ -23,13 +23,6 @@ typedef struct _remapped_t {
     uint64_t o;     //Original address
     uint64_t r;     //Remapped address
 } remapped_t;
-
-/**
-  * @brief A trap to be injected to the VM
-  */
-typedef struct trap_t {
-    char name[STR_BUFF];
-} trap_t;
 
 /**
   * @brief Init trap manager

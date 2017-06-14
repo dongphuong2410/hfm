@@ -101,7 +101,7 @@ void hfm_listen(vmhdlr_t *handler)
     vmi_events_listen(handler->vmi, 500);
 }
 
-hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name)
+hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, event_response_t (*cb)(vmhdlr_t *, trap_data_t *))
 {
     hfm_status_t ret = SUCCESS;
     addr_t func_addr;
@@ -122,6 +122,7 @@ hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name)
     //Create a trap
     trap_t *trap = (trap_t *)calloc(1, sizeof(trap_t));
     strncpy(trap->name, func_name, STR_BUFF);
+    trap->cb = cb;
 
     //Inject trap at physical address
     _inject_trap(handler, pa, trap);
@@ -134,7 +135,25 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
     event_response_t rsp = 0;
     vmhdlr_t *handler = event->data;
-    printf("Breakpoint triggered\n");
+    handler->regs[event->vcpu_id] = event->x86_regs;
+
+    /* Calculate pa of interrupt event */
+    addr_t pa = (event->interrupt_event.gfn << 12)
+                    + event->interrupt_event.offset + event->interrupt_event.insn_length - 1;
+    writelog(LV_DEBUG, "INT3 event vCPU %u pa %lx", event->vcpu_id, pa);
+
+    /* Looking for traps registered at this pa */
+    int3_wrapper_t *w = trapmngr_find_breakpoint(handler->trap_manager, pa);
+    if (w) {
+        GSList *loop = w->traps;
+        while (loop) {
+            trap_t *trap = loop->data;
+            if (trap->cb)
+                rsp |= trap->cb(handler, NULL);
+            loop = loop->next;
+        }
+    }
+
     event->slat_id = ORIGIN_IDX;
     event->interrupt_event.reinject = 0;
     handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
@@ -173,11 +192,11 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     //Check if there is breakpoint inserted at this position or not
     int3_wrapper_t *w = trapmngr_find_breakpoint(handler->trap_manager, pa);
     if (w) {
-        w->traplist = g_slist_append(w->traplist, "Breakpoint");
+        w->traps = g_slist_append(w->traps, trap);
         return SUCCESS;
     }
     w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
-    w->traplist = g_slist_append(w->traplist, "Breakpoint");
+    w->traps = g_slist_append(w->traps, trap);
 
     //Check if there is a shadow page created at this gfn or not
     //If not, create the shadow page
