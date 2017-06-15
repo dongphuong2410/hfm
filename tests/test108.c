@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "libhfm.h"
+#include "hfm.h"
 #include "config.h"
 #include "private.h"
 #include "log.h"

@@ -5,7 +5,7 @@
 #include <libvmi/slat.h>
 #include <glib.h>
 
-#include "libhfm.h"
+#include "hfm.h"
 #include "xen_helper.h"
 #include "config.h"
 #include "log.h"
