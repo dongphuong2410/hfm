@@ -199,15 +199,15 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     addr_t frame = pa >> PAGE_OFFSET_BITS;
 
     //Check if there is breakpoint inserted at this position or not
-    int3_wrapper_t *w = trapmngr_find_breakpoint(handler->trap_manager, pa);
-    if (w) {
-        w->traps = g_slist_append(w->traps, trap);
+    int3_wrapper_t *int3w = trapmngr_find_breakpoint(handler->trap_manager, pa);
+    if (int3w) {
+        int3w->traps = g_slist_append(int3w->traps, trap);
         return SUCCESS;
     }
 
     //Create new wrapper for breakpoints at this address
-    w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
-    w->traps = g_slist_append(w->traps, trap);
+    int3w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
+    int3w->traps = g_slist_append(int3w->traps, trap);
 
     //Check if there is a shadow page created at this gfn or not
     //If not, create the shadow page
@@ -219,6 +219,12 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     }
 
     //Callback invoked on a R/W of a monitored page (likely Windows kernel patch protection). Switch the VCPU's SLAT to its original, step once, switch SLAT back
+    mem_wrapper_t *memw = trapmngr_find_memtrap(handler->trap_manager, frame);
+    if (!memw) {
+        //Create new wrapper for memaccess at this page
+        memw = (mem_wrapper_t *)calloc(1, sizeof(mem_wrapper_t));
+        trapmngr_add_memtrap(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), memw);
+    }
     vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
     addr_t rpa = (remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
@@ -226,7 +232,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
         writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
         goto done;
     }
-    trapmngr_add_breakpoint(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), w);
+    trapmngr_add_breakpoint(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), int3w);
     status = SUCCESS;
 done:
     return status;
