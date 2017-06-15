@@ -9,7 +9,7 @@ TESTS=$(shell ls | egrep '^test[0-9]+.c$$' | awk '{split($$0,a,"."); print a[1] 
 
 all: $(TESTS)
 
-SRCS=$(ROOTDIR)/vmi_helper.c $(ROOTDIR)/xen_helper.c $(ROOTDIR)/config.c $(ROOTDIR)/policy.c $(ROOTDIR)/log.c $(ROOTDIR)/file_filter.c $(ROOTDIR)/fnmatch.c  $(ROOTDIR)/trapmngr.c $(ROOTDIR)/outputs/libout.a
+SRCS=$(ROOTDIR)/hfm.c $(ROOTDIR)/xen_helper.c $(ROOTDIR)/config.c $(ROOTDIR)/policy.c $(ROOTDIR)/log.c $(ROOTDIR)/file_filter.c $(ROOTDIR)/fnmatch.c  $(ROOTDIR)/trapmngr.c $(ROOTDIR)/outputs/libout.a
 
 %:%.c $(SRCS)
 	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)

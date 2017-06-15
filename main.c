@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "libhfm.h"
+#include "hfm.h"
 #include "log.h"
 #include "config.h"
 #include "private.h"
