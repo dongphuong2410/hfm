@@ -165,15 +165,24 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
 
 static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
-    printf("Mem_cb called\n");
+    printf("pre_mem_cb called\n");
+    vmhdlr_t *handler = event->data;
     event->slat_id = ORIGIN_IDX;
+    handler->step_event[event->vcpu_id]->callback = _post_mem_cb;
+    handler->step_event[event->vcpu_id]->data = handler;//TODO
     return VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP
             | VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
 static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
-    return 0;
+    printf("post_mem_cb called\n");
+    vmhdlr_t *handler = event->data;
+    event->slat_id = handler->altp2m_idx;
+    handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
+    handler->step_event[event->vcpu_id]->data = handler;
+    return VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP |
+            VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
 static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event)
@@ -210,7 +219,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     }
 
     //Callback invoked on a R/W of a monitored page (likely Windows kernel patch protection). Switch the VCPU's SLAT to its original, step once, switch SLAT back
-    //vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
+    vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
     addr_t rpa = (remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
     if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
