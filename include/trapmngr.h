@@ -17,6 +17,12 @@ typedef struct int3_wrapper_t {
 } int3_wrapper_t;
 
 /**
+  * @brief  Information about mem trap 
+  */
+typedef struct mem_wrapper_t {
+} mem_wrapper_t;
+
+/**
   * @brief Contain a mapping address pair
   */
 typedef struct _remapped_t {
@@ -53,7 +59,36 @@ void trapmngr_add_remapped(trapmngr_t *trapmngr, uint64_t original, uint64_t rem
   */
 uint64_t trapmngr_find_remapped(trapmngr_t *trapmngr, uint64_t original);
 
+/**
+  * @brief Find a breakpoint wrapper at physical address
+  * @param trapmngr Pointer to trapmngr_t
+  * @param pa Physical address
+  * @return Pointer to breakpoint wrapper
+  */
 int3_wrapper_t *trapmngr_find_breakpoint(trapmngr_t *trapmngr, uint64_t pa);
 
+/**
+  * @brief Add a breakpoint wrapper at physical address to hashtable
+  * @param trapmngr Pointer to trapmngr_t
+  * @param pa Physical address of breakpoints
+  * @param wrapper Pointer to a int3_wrapper_t
+  */
 void trapmngr_add_breakpoint(trapmngr_t *trapmngr, uint64_t *pa, int3_wrapper_t *wrapper);
+
+/**
+  * @brief Find a memaccess wrapper at frame number
+  * @param trapmngr Pointer to trapmngr_t
+  * @param gfn Frame number
+  * @return Pointer to memaccess wrapper
+  */
+mem_wrapper_t *trapmngr_find_memtrap(trapmngr_t *trapmngr, uint64_t gfn);
+
+/**
+  * @brief Add a memaccess wrapper at frame number
+  * @param trapmngr Pointer to trapmngr_t
+  * @gfn Frame number
+  * @param wrapper Pointer to memaccess wrapper to add
+  */
+void trapmngr_add_memtrap(trapmngr_t *trapmngr, uint64_t *gfn, mem_wrapper_t *wrapper);
+
 #endif
