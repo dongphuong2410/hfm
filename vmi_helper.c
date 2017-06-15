@@ -195,6 +195,8 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
         w->traps = g_slist_append(w->traps, trap);
         return SUCCESS;
     }
+
+    //Create new wrapper for breakpoints at this address
     w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
     w->traps = g_slist_append(w->traps, trap);
 
@@ -207,7 +209,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
             trapmngr_add_remapped(handler->trap_manager, frame, remapped);
     }
 
-    /* Establish callback on a R/W of this page */
+    //Callback invoked on a R/W of a monitored page (likely Windows kernel patch protection). Switch the VCPU's SLAT to its original, step once, switch SLAT back
     //vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
     addr_t rpa = (remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;

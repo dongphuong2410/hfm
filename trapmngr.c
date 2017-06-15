@@ -54,6 +54,10 @@ void trapmngr_destroy(trapmngr_t *trap_manager)
     g_hash_table_destroy(trap_manager->remapped_tbl);
 
     //Free breakpoint_tbl
+    int3_wrapper_t *int3w;
+    ghashtable_foreach(trap_manager->breakpoint_tbl, i, key, int3w) {
+        g_slist_free_full(int3w->traps, (GDestroyNotify)free);
+    }
     g_hash_table_destroy(trap_manager->breakpoint_tbl);
 
     free(trap_manager);

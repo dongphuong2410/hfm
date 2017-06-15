@@ -18,6 +18,7 @@ int main(int argc, char **argv)
     if (FAIL == hfm_init(vmhdlr)) {
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
         free(vmhdlr);
+        return -1;
     }
     hfm_monitor_syscall(vmhdlr, "NtCreateFile", NULL);
     hfm_monitor_syscall(vmhdlr, "NtOpenFile", NULL); //Only one remapped table created even if we set the traps at the same page

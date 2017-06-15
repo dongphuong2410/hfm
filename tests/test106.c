@@ -18,6 +18,7 @@ int main(int argc, char **argv)
     if (FAIL == hfm_init(vmhdlr)) {
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
         free(vmhdlr);
+        return -1;
     }
     hfm_monitor_syscall(vmhdlr, "NtCreateFile", NULL);
     hfm_close(vmhdlr);
