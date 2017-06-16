@@ -27,6 +27,13 @@
 
 #define ORIGIN_IDX 0
 
+typedef struct memcb_pass_t {
+    vmhdlr_t *handler;
+    remapped_t *remapped;
+    vmi_mem_access_t access;
+    GSList *traps;
+} memcb_pass_t;
+
 static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
@@ -169,6 +176,22 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
     vmhdlr_t *handler = event->data;
     handler->regs[event->vcpu_id] = event->x86_regs;
 
+    //Generate data to pass to the _post_mem_cb
+    mem_wrapper_t *memw = trapmngr_find_memtrap(handler->trap_manager, event->mem_event.gfn);
+    if (!memw) {
+        writelog(LV_DEBUG, "Event has been cleared for GFN 0x%lx but we are still in view %u\n",
+                        event->mem_event.gfn, event->slat_id);
+        return 0;
+    }
+    memcb_pass_t *pass = (memcb_pass_t *)calloc(1, sizeof(memcb_pass_t));
+    pass->handler = handler;
+    pass->access = event->mem_event.out_access;
+    if (event->mem_event.out_access & VMI_MEMACCESS_W) {
+        pass->traps = trapmngr_find_breakpoint_gfn(handler->trap_manager, event->mem_event.gfn);
+        if (pass->traps)
+            pass->remapped = trapmngr_find_remapped(handler->trap_manager,event->mem_event.gfn);
+    }
+
     event->slat_id = ORIGIN_IDX;
     handler->step_event[event->vcpu_id]->callback = _post_mem_cb;
     handler->step_event[event->vcpu_id]->data = handler;//TODO
@@ -206,20 +229,25 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     int3_wrapper_t *int3w = trapmngr_find_breakpoint(handler->trap_manager, pa);
     if (int3w) {
         int3w->traps = g_slist_append(int3w->traps, trap);
+        GSList *traps_in_gfn = trapmngr_find_breakpoint_gfn(handler->trap_manager, frame);
+        traps_in_gfn = g_slist_append(traps_in_gfn, &int3w->pa);
         return SUCCESS;
     }
 
     //Create new wrapper for breakpoints at this address
     int3w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
+    int3w->pa = pa;
     int3w->traps = g_slist_append(int3w->traps, trap);
 
     //Check if there is a shadow page created at this gfn or not
     //If not, create the shadow page
-    uint64_t remapped = trapmngr_find_remapped(handler->trap_manager, frame);
+    remapped_t *remapped = trapmngr_find_remapped(handler->trap_manager, frame);
     if (!remapped) {
-        remapped = _create_shadow_page(handler, frame);
-        if (remapped)
-            trapmngr_add_remapped(handler->trap_manager, frame, remapped);
+        remapped = (remapped_t *)calloc(1, sizeof(remapped_t));
+        remapped->o = frame;
+        remapped->r = _create_shadow_page(handler, frame);
+        if (remapped->r)
+            trapmngr_add_remapped(handler->trap_manager, remapped);
     }
 
     //Callback invoked on a R/W of a monitored page (likely Windows kernel patch protection). Switch the VCPU's SLAT to its original, step once, switch SLAT back
@@ -227,16 +255,21 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     if (!memw) {
         //Create new wrapper for memaccess at this page
         memw = (mem_wrapper_t *)calloc(1, sizeof(mem_wrapper_t));
-        trapmngr_add_memtrap(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), memw);
+        trapmngr_add_memtrap(handler->trap_manager, g_memdup(&frame, sizeof(uint64_t)), memw);
     }
     vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
-    addr_t rpa = (remapped << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
+    addr_t rpa = (remapped->r << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
     if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
         writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
         goto done;
     }
+    //List of traps on this page
+    GSList *traps_in_gfn  = trapmngr_find_breakpoint_gfn(handler->trap_manager, frame);
+    traps_in_gfn = g_slist_append(traps_in_gfn, &int3w->pa);
+
     trapmngr_add_breakpoint(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), int3w);
+    trapmngr_add_breakpoint_gfn(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), traps_in_gfn);
     status = SUCCESS;
 done:
     return status;

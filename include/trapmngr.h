@@ -13,6 +13,7 @@
   * @brief Contain list of int3 breakpoints set at same position
   */
 typedef struct int3_wrapper_t {
+    uint64_t pa;
     GSList *traps;
 } int3_wrapper_t;
 
@@ -46,10 +47,9 @@ void trapmngr_destroy(trapmngr_t *trapmngr);
 /**
   * @brief Add a remapped page to remapped hashtable
   * @param trapmngr Pointer to trapmng_t
-  * @param original Original gfn
-  * @param remapped Remapped gfn
+  * @param remapped_t
   */
-void trapmngr_add_remapped(trapmngr_t *trapmngr, uint64_t original, uint64_t remapped);
+void trapmngr_add_remapped(trapmngr_t *trapmngr, remapped_t *remapped);
 
 /**
   * @brief Find a remapped page of a frame
@@ -57,7 +57,7 @@ void trapmngr_add_remapped(trapmngr_t *trapmngr, uint64_t original, uint64_t rem
   * @param origin Original frame number
   * @return Return address of remap of this frame, or return 0 if not exist
   */
-uint64_t trapmngr_find_remapped(trapmngr_t *trapmngr, uint64_t original);
+remapped_t *trapmngr_find_remapped(trapmngr_t *trapmngr, uint64_t original);
 
 /**
   * @brief Find a breakpoint wrapper at physical address
@@ -74,6 +74,22 @@ int3_wrapper_t *trapmngr_find_breakpoint(trapmngr_t *trapmngr, uint64_t pa);
   * @param wrapper Pointer to a int3_wrapper_t
   */
 void trapmngr_add_breakpoint(trapmngr_t *trapmngr, uint64_t *pa, int3_wrapper_t *wrapper);
+
+/**
+  * @brief Find a breakpoint wrapper in a page
+  * @param trapmngr Pointer to trapmngr_t
+  * @param gfn GFN
+  * @return List of traps
+  */
+GSList *trapmngr_find_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t gfn);
+
+/**
+  * @brief Add a GList of traps  in a page to hashtable
+  * @param trapmngr Pointer to trapmngr_t
+  * @param gfn Frame number
+  * @param traps List of traps
+  */
+void trapmngr_add_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t *gfn, GSList *traps);
 
 /**
   * @brief Find a memaccess wrapper at frame number
