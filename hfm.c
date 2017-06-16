@@ -167,6 +167,8 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
     printf("pre_mem_cb called\n");
     vmhdlr_t *handler = event->data;
+    handler->regs[event->vcpu_id] = event->x86_regs;
+
     event->slat_id = ORIGIN_IDX;
     handler->step_event[event->vcpu_id]->callback = _post_mem_cb;
     handler->step_event[event->vcpu_id]->data = handler;//TODO
@@ -178,6 +180,8 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
     printf("post_mem_cb called\n");
     vmhdlr_t *handler = event->data;
+    handler->regs[event->vcpu_id] = event->x86_regs;
+
     event->slat_id = handler->altp2m_idx;
     handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
     handler->step_event[event->vcpu_id]->data = handler;
