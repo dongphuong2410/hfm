@@ -13,8 +13,9 @@
 struct _trapmngr_t {
     vmhdlr_t *handler;
     GHashTable *remapped_tbl;       /* Key : original frame no, Value : remapped_t */
-    GHashTable *breakpoint_tbl;     /* Key : original frame, Value : int3_wrapper_t */
-    GHashTable *memaccess_tbl;      /* Key : gfn, Value : mem_wrapper_t */
+    GHashTable *breakpoint_tbl;     /* Key : pa, Value : int3_wrapper_t */
+    GHashTable *breakpoint_gfn_tbl; /* Key : frame no, Value : GList of traps */
+    GHashTable *memaccess_tbl;      /* Key : frame no, Value : mem_wrapper_t */
 };
 
 trapmngr_t *trapmngr_init(vmhdlr_t *vm)
@@ -23,24 +24,22 @@ trapmngr_t *trapmngr_init(vmhdlr_t *vm)
     trapmngr->handler = vm;
     trapmngr->remapped_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, NULL, free);
     trapmngr->breakpoint_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, free);
+    trapmngr->breakpoint_gfn_tbl = g_hash_table_new(g_int64_hash, g_int64_equal);
     trapmngr->memaccess_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, free);
     return trapmngr;
 }
 
-void trapmngr_add_remapped(trapmngr_t *trap_manager, uint64_t original, uint64_t remapped)
+void trapmngr_add_remapped(trapmngr_t *trap_manager, remapped_t *r)
 {
-    remapped_t *r = (remapped_t *)calloc(1, sizeof(remapped_t));
-    r->o = original;
-    r->r = remapped;
-    g_hash_table_insert(trap_manager->remapped_tbl, &original, r);
+    g_hash_table_insert(trap_manager->remapped_tbl, &r->o, r);
 }
 
-uint64_t trapmngr_find_remapped(trapmngr_t *trap_manager, uint64_t original)
+remapped_t *trapmngr_find_remapped(trapmngr_t *trap_manager, uint64_t original)
 {
     remapped_t *r = g_hash_table_lookup(trap_manager->remapped_tbl, &original);
     if (r)
-        return r->r;
-    return 0;
+        return r;
+    return NULL;
 }
 
 void trapmngr_destroy(trapmngr_t *trap_manager)
@@ -61,6 +60,11 @@ void trapmngr_destroy(trapmngr_t *trap_manager)
         g_slist_free_full(int3w->traps, (GDestroyNotify)free);
     }
     g_hash_table_destroy(trap_manager->breakpoint_tbl);
+    GSList *traplist;
+    ghashtable_foreach(trap_manager->breakpoint_gfn_tbl, i, key, traplist) {
+        g_slist_free(traplist);
+    }
+    g_hash_table_destroy(trap_manager->breakpoint_gfn_tbl);
 
     //Free memaccess_tbl
     g_hash_table_destroy(trap_manager->memaccess_tbl);
@@ -76,6 +80,16 @@ int3_wrapper_t *trapmngr_find_breakpoint(trapmngr_t *trap_manager, uint64_t pa)
 void trapmngr_add_breakpoint(trapmngr_t *trap_manager, uint64_t *pa, int3_wrapper_t *wrapper)
 {
     g_hash_table_insert(trap_manager->breakpoint_tbl, pa, wrapper);
+}
+
+GSList *trapmngr_find_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t gfn)
+{
+    return g_hash_table_lookup(trapmngr->breakpoint_gfn_tbl, &gfn);
+}
+
+void trapmngr_add_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t *gfn, GSList *traps)
+{
+    g_hash_table_insert(trapmngr->breakpoint_gfn_tbl, gfn, traps);
 }
 
 mem_wrapper_t *trapmngr_find_memtrap(trapmngr_t *trapmngr, uint64_t gfn)
