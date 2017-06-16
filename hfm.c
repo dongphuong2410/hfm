@@ -47,6 +47,7 @@ static void _reset_altp2m(vmhdlr_t *handler);
 static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t original_gfn);
 
 extern config_t *config;
+extern int interrupted;
 uint8_t INT3_CHAR = 0xCC;
 
 hfm_status_t hfm_init(vmhdlr_t *handler)
@@ -194,7 +195,7 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 
     event->slat_id = ORIGIN_IDX;
     handler->step_event[event->vcpu_id]->callback = _post_mem_cb;
-    handler->step_event[event->vcpu_id]->data = handler;//TODO
+    handler->step_event[event->vcpu_id]->data = pass;
     return VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP
             | VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
@@ -202,9 +203,37 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 {
     printf("post_mem_cb called\n");
-    vmhdlr_t *handler = event->data;
+    memcb_pass_t *pass = event->data;
+    vmhdlr_t *handler = pass->handler;
     handler->regs[event->vcpu_id] = event->x86_regs;
 
+    //We need to copy the newly written page to the remapped gfn and reapply all traps
+    if (pass->traps) {
+        writelog(LV_DEBUG, "Re-copying remapped gfn");
+        uint8_t backup[VMI_PS_4KB] = {0};
+        if (VMI_FAILURE == vmi_read_pa(handler->vmi, pass->remapped->o<<12, &backup, VMI_PS_4KB)) {
+            writelog(LV_ERROR, "Critical error in re-copying remapped gfn\n");
+            interrupted = -1;
+            return 0;
+        }
+        if (VMI_FAILURE == vmi_write_pa(handler->vmi, pass->remapped->r<<12, &backup, VMI_PS_4KB)) {
+            writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
+            interrupted = -1;
+            return 0;
+        }
+        GSList *loop = pass->traps;
+        while (loop) {
+            uint64_t *pa = loop->data;
+            if (VMI_FAILURE == vmi_write_8_pa(handler->vmi, (pass->remapped->r<<12) + (*pa & VMI_BIT_MASK(0,11)), &INT3_CHAR)) {
+                writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
+                interrupted = -1;
+                return 0;
+            }
+            loop = loop->next;
+        }
+    }
+
+    free(pass);
     event->slat_id = handler->altp2m_idx;
     handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
     handler->step_event[event->vcpu_id]->data = handler;

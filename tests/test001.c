@@ -8,6 +8,7 @@
 #include "config.h"
 
 config_t *config;
+int interrupted;
 
 int main(int argc, char **argv)
 {
