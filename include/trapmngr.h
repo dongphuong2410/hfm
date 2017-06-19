@@ -13,7 +13,8 @@
   * @brief Contain list of int3 breakpoints set at same position
   */
 typedef struct int3_wrapper_t {
-    uint64_t pa;
+    uint64_t pa;                //Physical address of breakpoint
+    uint8_t doubletrap;         //Original instruction at this address is INT3 or not
     GSList *traps;
 } int3_wrapper_t;
 
