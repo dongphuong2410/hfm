@@ -224,10 +224,23 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
         GSList *loop = pass->traps;
         while (loop) {
             uint64_t *pa = loop->data;
-            if (VMI_FAILURE == vmi_write_8_pa(handler->vmi, (pass->remapped->r<<12) + (*pa & VMI_BIT_MASK(0,11)), &INT3_CHAR)) {
+            uint8_t test = 0;
+            int3_wrapper_t *int3w = trapmngr_find_breakpoint(handler->trap_manager, *pa);
+            if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, *pa, &test)) {
                 writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
                 interrupted = -1;
                 return 0;
+            }
+            if (test == INT3_CHAR) {
+                int3w->doubletrap = 1;
+            }
+            else {
+                int3w->doubletrap = 0;
+                if (VMI_FAILURE == vmi_write_8_pa(handler->vmi, (pass->remapped->r<<12) + (*pa & VMI_BIT_MASK(0,11)), &INT3_CHAR)) {
+                    writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
+                    interrupted = -1;
+                    return 0;
+                }
             }
             loop = loop->next;
         }
@@ -289,9 +302,20 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
     addr_t rpa = (remapped->r << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
-    if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
-        writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
+    uint8_t test;
+    if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
+        writelog(LV_ERROR, "Failed to read 0%lx", int3w->pa);
         goto done;
+    }
+    if (test == INT3_CHAR) {
+        int3w->doubletrap = 1;
+    }
+    else {
+        int3w->doubletrap = 0;
+        if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
+            writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
+            goto done;
+        }
     }
     //List of traps on this page
     GSList *traps_in_gfn  = trapmngr_find_breakpoint_gfn(handler->trap_manager, frame);
