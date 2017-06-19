@@ -151,8 +151,8 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     writelog(LV_DEBUG, "INT3 event vCPU %u pa %lx", event->vcpu_id, pa);
 
     /* Looking for traps registered at this pa */
-    int3_wrapper_t *w = tm_find_breakpoint(handler->trap_manager, pa);
-    if (!w) {
+    GSList *int3traps = tm_int3traps_at_pa(handler->trap_manager, pa);
+    if (!int3traps) {
         /* No trap is currently registered for this location
            but this event may have been triggered by one we just removed */
         uint8_t test = 0;
@@ -169,11 +169,12 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
         }
         return 0;
     }
-    if (w->doubletrap)
+    int8_t doubletrap = tm_check_doubletrap(handler->trap_manager, pa);
+    if (doubletrap)
         event->interrupt_event.reinject = 1;
     else
         event->interrupt_event.reinject = 0;
-    GSList *loop = w->traps;
+    GSList *loop = int3traps;
     while (loop) {
         trap_t *trap = loop->data;
         if (trap->cb)
@@ -243,17 +244,16 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
         while (loop) {
             uint64_t *pa = loop->data;
             uint8_t test = 0;
-            int3_wrapper_t *int3w = tm_find_breakpoint(handler->trap_manager, *pa);
             if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, *pa, &test)) {
                 writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
                 interrupted = -1;
                 return 0;
             }
             if (test == INT3_CHAR) {
-                int3w->doubletrap = 1;
+                tm_set_doubletrap(handler->trap_manager, *pa, 1);
             }
             else {
-                int3w->doubletrap = 0;
+                tm_set_doubletrap(handler->trap_manager, *pa, 0);
                 if (VMI_FAILURE == vmi_write_8_pa(handler->vmi, (pass->remapped->r<<12) + (*pa & VMI_BIT_MASK(0,11)), &INT3_CHAR)) {
                     writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
                     interrupted = -1;
@@ -286,16 +286,16 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     addr_t frame = pa >> PAGE_OFFSET_BITS;
 
     //Check if there is breakpoint inserted at this position or not
-    int3_wrapper_t *int3w = tm_find_breakpoint(handler->trap_manager, pa);
-    if (int3w) {
-        int3w->traps = g_slist_append(int3w->traps, trap);
+    GSList *int3traps = tm_int3traps_at_pa(handler->trap_manager, pa);
+    if (int3traps) {
+        int3traps = g_slist_append(int3traps, trap);
         GSList *traps_in_gfn = tm_find_breakpoint_gfn(handler->trap_manager, frame);
-        traps_in_gfn = g_slist_append(traps_in_gfn, &int3w->pa);
+        traps_in_gfn = g_slist_append(traps_in_gfn, &pa);
         return SUCCESS;
     }
 
     //Create new wrapper for breakpoints at this address
-    int3w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
+    int3_wrapper_t *int3w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
     int3w->pa = pa;
     int3w->traps = g_slist_append(int3w->traps, trap);
 

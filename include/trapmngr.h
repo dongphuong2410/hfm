@@ -61,12 +61,12 @@ void tm_add_remapped(trapmngr_t *trapmngr, remapped_t *remapped);
 remapped_t *tm_find_remapped(trapmngr_t *trapmngr, uint64_t original);
 
 /**
-  * @brief Find a breakpoint wrapper at physical address
+  * @brief Find all breakpoints at a physical address
   * @param trapmngr Pointer to trapmngr_t
   * @param pa Physical address
-  * @return Pointer to breakpoint wrapper
+  * @return GSList of breakpoints at a physical address
   */
-int3_wrapper_t *tm_find_breakpoint(trapmngr_t *trapmngr, uint64_t pa);
+GSList *tm_int3traps_at_pa(trapmngr_t *trapmngr, uint64_t pa);
 
 /**
   * @brief Add a breakpoint wrapper at physical address to hashtable
@@ -107,5 +107,21 @@ mem_wrapper_t *tm_find_memtrap(trapmngr_t *trapmngr, uint64_t gfn);
   * @param wrapper Pointer to memaccess wrapper to add
   */
 void tm_add_memtrap(trapmngr_t *trapmngr, uint64_t *gfn, mem_wrapper_t *wrapper);
+
+/**
+  * @brief Check if the instruction at address is doubletrap or not
+  * @param trapmngr Pointer to trapmngr_t
+  * @param pa Physical address
+  * @return 1 if doubletrap, 0 if not
+  */
+uint8_t tm_check_doubletrap(trapmngr_t *trapmngr, uint64_t pa);
+
+/**
+  * @brief Set/unset doubletrap
+  * @param trapmngr Pointer to trapmngr_t
+  * @param pa Physical address
+  * @param doubletrap Is doubletrap or not ? 
+  */
+void tm_set_doubletrap(trapmngr_t *trapmngr, uint64_t pa, uint8_t doubletrap);
 
 #endif

@@ -72,9 +72,24 @@ void tm_destroy(trapmngr_t *trap_manager)
     free(trap_manager);
 }
 
-int3_wrapper_t *tm_find_breakpoint(trapmngr_t *trap_manager, uint64_t pa)
+GSList *tm_int3traps_at_pa(trapmngr_t *trap_manager, uint64_t pa)
 {
-    return g_hash_table_lookup(trap_manager->breakpoint_tbl, &pa);
+    int3_wrapper_t *w = g_hash_table_lookup(trap_manager->breakpoint_tbl, &pa);
+    return (w == NULL ? NULL : w->traps);
+}
+
+uint8_t tm_check_doubletrap(trapmngr_t *trapmngr, uint64_t pa)
+{
+    //TODO: because this function is often called after the tm_int3traps_at_pa, we should cache a wrapper, so that don't have to
+    //lookup the hashtable again
+    int3_wrapper_t *w = g_hash_table_lookup(trapmngr->breakpoint_tbl, &pa);
+    return w->doubletrap;
+}
+
+void tm_set_doubletrap(trapmngr_t *trapmngr, uint64_t pa, uint8_t doubletrap)
+{
+    int3_wrapper_t *w = g_hash_table_lookup(trapmngr->breakpoint_tbl, &pa);
+    w->doubletrap = doubletrap;
 }
 
 void tm_add_breakpoint(trapmngr_t *trap_manager, uint64_t *pa, int3_wrapper_t *wrapper)
