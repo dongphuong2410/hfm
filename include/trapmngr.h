@@ -69,12 +69,12 @@ remapped_t *tm_find_remapped(trapmngr_t *trapmngr, uint64_t original);
 GSList *tm_int3traps_at_pa(trapmngr_t *trapmngr, uint64_t pa);
 
 /**
-  * @brief Add a breakpoint wrapper at physical address to hashtable
+  * @brief Add a breakpoint trap  at physical address
   * @param trapmngr Pointer to trapmngr_t
   * @param pa Physical address of breakpoints
-  * @param wrapper Pointer to a int3_wrapper_t
+  * @param trap Pointer to a breakpoint trap
   */
-void tm_add_breakpoint(trapmngr_t *trapmngr, uint64_t *pa, int3_wrapper_t *wrapper);
+void tm_add_int3trap(trapmngr_t *trapmngr, uint64_t pa, trap_t *trap);
 
 /**
   * @brief Find a breakpoint wrapper in a page
@@ -83,14 +83,6 @@ void tm_add_breakpoint(trapmngr_t *trapmngr, uint64_t *pa, int3_wrapper_t *wrapp
   * @return List of traps
   */
 GSList *tm_find_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t gfn);
-
-/**
-  * @brief Add a GList of traps  in a page to hashtable
-  * @param trapmngr Pointer to trapmngr_t
-  * @param gfn Frame number
-  * @param traps List of traps
-  */
-void tm_add_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t *gfn, GSList *traps);
 
 /**
   * @brief Find a memaccess wrapper at frame number
@@ -123,5 +115,13 @@ uint8_t tm_check_doubletrap(trapmngr_t *trapmngr, uint64_t pa);
   * @param doubletrap Is doubletrap or not ? 
   */
 void tm_set_doubletrap(trapmngr_t *trapmngr, uint64_t pa, uint8_t doubletrap);
+
+/**
+  * @brief Check if there is any trap existed at this pa before
+  * @param trapmngr Pointer to trapmngr_t
+  * @param pa Physical address
+  * @return trap exist or not
+  */
+int tm_trap_exist(trapmngr_t *trapmngr, uint64_t pa);
 
 #endif

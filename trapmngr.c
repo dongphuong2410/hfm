@@ -78,6 +78,21 @@ GSList *tm_int3traps_at_pa(trapmngr_t *trap_manager, uint64_t pa)
     return (w == NULL ? NULL : w->traps);
 }
 
+void tm_add_int3trap(trapmngr_t *trapmngr, uint64_t pa, trap_t *trap)
+{
+    uint64_t gfn = pa >> PAGE_OFFSET_BITS;
+    int3_wrapper_t *w = g_hash_table_lookup(trapmngr->breakpoint_tbl, &pa);
+    GSList *traps_at_gfn = g_hash_table_lookup(trapmngr->breakpoint_gfn_tbl, &gfn);
+    traps_at_gfn = g_slist_append(traps_at_gfn, trap);
+    if (!w) {
+        w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
+        w->pa = pa;
+        g_hash_table_insert(trapmngr->breakpoint_tbl, g_memdup(&pa, sizeof(uint64_t)), w);
+        g_hash_table_insert(trapmngr->breakpoint_gfn_tbl, g_memdup(&pa, sizeof(uint64_t)), traps_at_gfn);
+    }
+    w->traps = g_slist_append(w->traps, trap);
+}
+
 uint8_t tm_check_doubletrap(trapmngr_t *trapmngr, uint64_t pa)
 {
     //TODO: because this function is often called after the tm_int3traps_at_pa, we should cache a wrapper, so that don't have to
@@ -92,19 +107,9 @@ void tm_set_doubletrap(trapmngr_t *trapmngr, uint64_t pa, uint8_t doubletrap)
     w->doubletrap = doubletrap;
 }
 
-void tm_add_breakpoint(trapmngr_t *trap_manager, uint64_t *pa, int3_wrapper_t *wrapper)
-{
-    g_hash_table_insert(trap_manager->breakpoint_tbl, pa, wrapper);
-}
-
 GSList *tm_find_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t gfn)
 {
     return g_hash_table_lookup(trapmngr->breakpoint_gfn_tbl, &gfn);
-}
-
-void tm_add_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t *gfn, GSList *traps)
-{
-    g_hash_table_insert(trapmngr->breakpoint_gfn_tbl, gfn, traps);
 }
 
 mem_wrapper_t *tm_find_memtrap(trapmngr_t *trapmngr, uint64_t gfn)
@@ -117,3 +122,7 @@ void tm_add_memtrap(trapmngr_t *trapmngr, uint64_t *gfn, mem_wrapper_t *wrapper)
     g_hash_table_insert(trapmngr->memaccess_tbl, gfn, wrapper);
 }
 
+int tm_trap_exist(trapmngr_t *trapmngr, uint64_t pa)
+{
+    return (NULL != g_hash_table_lookup(trapmngr->breakpoint_tbl, &pa));
+}
