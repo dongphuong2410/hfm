@@ -37,20 +37,20 @@ typedef struct _remapped_t {
   * @param vm Pointer to vmhdlr_t struct
   * @return Return pointer to trapmngr_t if init success, or else return NULL
   */
-trapmngr_t *trapmngr_init(vmhdlr_t *vm);
+trapmngr_t *tm_init(vmhdlr_t *vm);
 
 /**
   * @brief Destroy trap manager, releases all resources
   * @param Pointer to trapmngr_t
   */
-void trapmngr_destroy(trapmngr_t *trapmngr);
+void tm_destroy(trapmngr_t *trapmngr);
 
 /**
   * @brief Add a remapped page to remapped hashtable
   * @param trapmngr Pointer to trapmng_t
   * @param remapped_t
   */
-void trapmngr_add_remapped(trapmngr_t *trapmngr, remapped_t *remapped);
+void tm_add_remapped(trapmngr_t *trapmngr, remapped_t *remapped);
 
 /**
   * @brief Find a remapped page of a frame
@@ -58,7 +58,7 @@ void trapmngr_add_remapped(trapmngr_t *trapmngr, remapped_t *remapped);
   * @param origin Original frame number
   * @return Return address of remap of this frame, or return 0 if not exist
   */
-remapped_t *trapmngr_find_remapped(trapmngr_t *trapmngr, uint64_t original);
+remapped_t *tm_find_remapped(trapmngr_t *trapmngr, uint64_t original);
 
 /**
   * @brief Find a breakpoint wrapper at physical address
@@ -66,7 +66,7 @@ remapped_t *trapmngr_find_remapped(trapmngr_t *trapmngr, uint64_t original);
   * @param pa Physical address
   * @return Pointer to breakpoint wrapper
   */
-int3_wrapper_t *trapmngr_find_breakpoint(trapmngr_t *trapmngr, uint64_t pa);
+int3_wrapper_t *tm_find_breakpoint(trapmngr_t *trapmngr, uint64_t pa);
 
 /**
   * @brief Add a breakpoint wrapper at physical address to hashtable
@@ -74,7 +74,7 @@ int3_wrapper_t *trapmngr_find_breakpoint(trapmngr_t *trapmngr, uint64_t pa);
   * @param pa Physical address of breakpoints
   * @param wrapper Pointer to a int3_wrapper_t
   */
-void trapmngr_add_breakpoint(trapmngr_t *trapmngr, uint64_t *pa, int3_wrapper_t *wrapper);
+void tm_add_breakpoint(trapmngr_t *trapmngr, uint64_t *pa, int3_wrapper_t *wrapper);
 
 /**
   * @brief Find a breakpoint wrapper in a page
@@ -82,7 +82,7 @@ void trapmngr_add_breakpoint(trapmngr_t *trapmngr, uint64_t *pa, int3_wrapper_t 
   * @param gfn GFN
   * @return List of traps
   */
-GSList *trapmngr_find_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t gfn);
+GSList *tm_find_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t gfn);
 
 /**
   * @brief Add a GList of traps  in a page to hashtable
@@ -90,7 +90,7 @@ GSList *trapmngr_find_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t gfn);
   * @param gfn Frame number
   * @param traps List of traps
   */
-void trapmngr_add_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t *gfn, GSList *traps);
+void tm_add_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t *gfn, GSList *traps);
 
 /**
   * @brief Find a memaccess wrapper at frame number
@@ -98,7 +98,7 @@ void trapmngr_add_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t *gfn, GSList *tr
   * @param gfn Frame number
   * @return Pointer to memaccess wrapper
   */
-mem_wrapper_t *trapmngr_find_memtrap(trapmngr_t *trapmngr, uint64_t gfn);
+mem_wrapper_t *tm_find_memtrap(trapmngr_t *trapmngr, uint64_t gfn);
 
 /**
   * @brief Add a memaccess wrapper at frame number
@@ -106,6 +106,6 @@ mem_wrapper_t *trapmngr_find_memtrap(trapmngr_t *trapmngr, uint64_t gfn);
   * @gfn Frame number
   * @param wrapper Pointer to memaccess wrapper to add
   */
-void trapmngr_add_memtrap(trapmngr_t *trapmngr, uint64_t *gfn, mem_wrapper_t *wrapper);
+void tm_add_memtrap(trapmngr_t *trapmngr, uint64_t *gfn, mem_wrapper_t *wrapper);
 
 #endif
