@@ -152,18 +152,36 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
 
     /* Looking for traps registered at this pa */
     int3_wrapper_t *w = trapmngr_find_breakpoint(handler->trap_manager, pa);
-    if (w) {
-        GSList *loop = w->traps;
-        while (loop) {
-            trap_t *trap = loop->data;
-            if (trap->cb)
-                rsp |= trap->cb(handler, NULL);
-            loop = loop->next;
+    if (!w) {
+        /* No trap is currently registered for this location
+           but this event may have been triggered by one we just removed */
+        uint8_t test = 0;
+        if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
+            writelog(LV_ERROR, "Critical error in int3 callback, can't read page");
+            interrupted = -1;
+            return 0;
         }
+        if (test == INT3_CHAR) {
+            event->interrupt_event.reinject = 1;
+        }
+        else {
+            event->interrupt_event.reinject = 0;
+        }
+        return 0;
+    }
+    if (w->doubletrap)
+        event->interrupt_event.reinject = 1;
+    else
+        event->interrupt_event.reinject = 0;
+    GSList *loop = w->traps;
+    while (loop) {
+        trap_t *trap = loop->data;
+        if (trap->cb)
+            rsp |= trap->cb(handler, NULL);
+        loop = loop->next;
     }
 
     event->slat_id = ORIGIN_IDX;
-    event->interrupt_event.reinject = 0;
     handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
     handler->step_event[event->vcpu_id]->data = handler;
     return rsp |
