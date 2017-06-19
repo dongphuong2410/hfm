@@ -284,63 +284,51 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
 {
     hfm_status_t status = FAIL;
     addr_t frame = pa >> PAGE_OFFSET_BITS;
+    int doubletrap = -1;
 
-    //Check if there is breakpoint inserted at this position or not
-    GSList *int3traps = tm_int3traps_at_pa(handler->trap_manager, pa);
-    if (int3traps) {
-        int3traps = g_slist_append(int3traps, trap);
-        GSList *traps_in_gfn = tm_find_breakpoint_gfn(handler->trap_manager, frame);
-        traps_in_gfn = g_slist_append(traps_in_gfn, &pa);
-        return SUCCESS;
-    }
+    int trap_exist = tm_trap_exist(handler->trap_manager, pa);
+    if (!trap_exist) {
+        //Check if there is a shadow page created at this gfn or not
+        //If not, create the shadow page
+        remapped_t *remapped = tm_find_remapped(handler->trap_manager, frame);
+        if (!remapped) {
+            remapped = (remapped_t *)calloc(1, sizeof(remapped_t));
+            remapped->o = frame;
+            remapped->r = _create_shadow_page(handler, frame);
+            if (remapped->r)
+                tm_add_remapped(handler->trap_manager, remapped);
+        }
 
-    //Create new wrapper for breakpoints at this address
-    int3_wrapper_t *int3w = (int3_wrapper_t *)calloc(1, sizeof(int3_wrapper_t));
-    int3w->pa = pa;
-    int3w->traps = g_slist_append(int3w->traps, trap);
+        //Callback invoked on a R/W of a monitored page (likely Windows kernel patch protection). Switch the VCPU's SLAT to its original, step once, switch SLAT back
+        mem_wrapper_t *memw = tm_find_memtrap(handler->trap_manager, frame);
+        if (!memw) {
+            //Create new wrapper for memaccess at this page
+            memw = (mem_wrapper_t *)calloc(1, sizeof(mem_wrapper_t));
+            tm_add_memtrap(handler->trap_manager, g_memdup(&frame, sizeof(uint64_t)), memw);
+        }
+        vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
-    //Check if there is a shadow page created at this gfn or not
-    //If not, create the shadow page
-    remapped_t *remapped = tm_find_remapped(handler->trap_manager, frame);
-    if (!remapped) {
-        remapped = (remapped_t *)calloc(1, sizeof(remapped_t));
-        remapped->o = frame;
-        remapped->r = _create_shadow_page(handler, frame);
-        if (remapped->r)
-            tm_add_remapped(handler->trap_manager, remapped);
-    }
-
-    //Callback invoked on a R/W of a monitored page (likely Windows kernel patch protection). Switch the VCPU's SLAT to its original, step once, switch SLAT back
-    mem_wrapper_t *memw = tm_find_memtrap(handler->trap_manager, frame);
-    if (!memw) {
-        //Create new wrapper for memaccess at this page
-        memw = (mem_wrapper_t *)calloc(1, sizeof(mem_wrapper_t));
-        tm_add_memtrap(handler->trap_manager, g_memdup(&frame, sizeof(uint64_t)), memw);
-    }
-    vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
-
-    addr_t rpa = (remapped->r << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
-    uint8_t test;
-    if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
-        writelog(LV_ERROR, "Failed to read 0%lx", int3w->pa);
-        goto done;
-    }
-    if (test == INT3_CHAR) {
-        int3w->doubletrap = 1;
-    }
-    else {
-        int3w->doubletrap = 0;
-        if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
-            writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
+        addr_t rpa = (remapped->r << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
+        uint8_t test;
+        if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
+            writelog(LV_ERROR, "Failed to read 0%lx", pa);
             goto done;
         }
+        if (test == INT3_CHAR) {
+            doubletrap = 1;
+        }
+        else {
+            doubletrap = 0;
+            if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
+                writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
+                goto done;
+            }
+        }
     }
-    //List of traps on this page
-    GSList *traps_in_gfn  = tm_find_breakpoint_gfn(handler->trap_manager, frame);
-    traps_in_gfn = g_slist_append(traps_in_gfn, &int3w->pa);
-
-    tm_add_breakpoint(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), int3w);
-    tm_add_breakpoint_gfn(handler->trap_manager, g_memdup(&pa, sizeof(uint64_t)), traps_in_gfn);
+    //Insert new trap to trap manager
+    tm_add_int3trap(handler->trap_manager, pa, trap);
+    if (doubletrap != -1)
+        tm_set_doubletrap(handler->trap_manager, pa, doubletrap);
     status = SUCCESS;
 done:
     return status;
