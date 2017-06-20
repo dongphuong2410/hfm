@@ -5,7 +5,6 @@
 #include "config.h"
 #include "log.h"
 
-int interrupted = 0;
 config_t *config;
 
 int main(int argc, char **argv)
