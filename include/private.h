@@ -128,4 +128,7 @@ typedef struct trap_t {
     event_response_t (*cb)(vmhdlr_t *, trap_data_t *);
 } trap_t;
 
+typedef struct memtrap_t {
+} memtrap_t;
+
 #endif  /* __HFM_PRIVATE_H__ */
