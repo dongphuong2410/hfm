@@ -208,7 +208,7 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
     pass->handler = handler;
     pass->access = event->mem_event.out_access;
     if (event->mem_event.out_access & VMI_MEMACCESS_W) {
-        pass->traps = tm_find_breakpoint_gfn(handler->trap_manager, event->mem_event.gfn);
+        pass->traps = tm_int3traps_at_gfn(handler->trap_manager, event->mem_event.gfn);
         if (pass->traps)
             pass->remapped = tm_find_remapped(handler->trap_manager,event->mem_event.gfn);
     }
