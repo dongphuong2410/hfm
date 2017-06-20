@@ -19,7 +19,7 @@ typedef struct int3_wrapper_t {
 } int3_wrapper_t;
 
 /**
-  * @brief  Information about mem trap 
+  * @brief  Information about mem trap
   */
 typedef struct mem_wrapper_t {
 } mem_wrapper_t;
@@ -34,10 +34,9 @@ typedef struct _remapped_t {
 
 /**
   * @brief Init trap manager
-  * @param vm Pointer to vmhdlr_t struct
   * @return Return pointer to trapmngr_t if init success, or else return NULL
   */
-trapmngr_t *tm_init(vmhdlr_t *vm);
+trapmngr_t *tm_init();
 
 /**
   * @brief Destroy trap manager, releases all resources
@@ -123,5 +122,12 @@ void tm_set_doubletrap(trapmngr_t *trapmngr, uint64_t pa, uint8_t doubletrap);
   * @return trap exist or not
   */
 int tm_trap_exist(trapmngr_t *trapmngr, uint64_t pa);
+
+/**
+  * @brief Return all remapped added to trap manager
+  * @param trapmngr Pointer to trapmngr_t
+  * @return List of remappeds
+  */
+GSList *tm_all_remappeds(trapmngr_t *trapmngr);
 
 #endif
