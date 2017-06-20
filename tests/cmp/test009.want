@@ -1,0 +1,9 @@
+Found remapped 12345 45678
+NULL
+We have 2 trap(s) at frame_one_pa_one
+we have 1 trap(s) at frame_one_pa_two
+we have 1 trap(s) at frame_two_pa_one
+we have 0 trap(s) at frame_three_pa_one
+we have 3 trap(s) at frame_one
+we have 1 trap(s) at frame_two
+we have 0 trap(s) at frame_three
