@@ -48,7 +48,6 @@ static void _destroy_traps(vmhdlr_t *handler);
 static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t original_gfn);
 
 extern config_t *config;
-extern int interrupted;
 uint8_t INT3_CHAR = 0xCC;
 
 hfm_status_t hfm_init(vmhdlr_t *handler)
@@ -159,7 +158,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
         uint8_t test = 0;
         if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
             writelog(LV_ERROR, "Critical error in int3 callback, can't read page");
-            interrupted = -1;
+            handler->interrupted = -1;
             return 0;
         }
         if (test == INT3_CHAR) {
@@ -233,12 +232,12 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
         uint8_t backup[VMI_PS_4KB] = {0};
         if (VMI_FAILURE == vmi_read_pa(handler->vmi, pass->remapped->o<<12, &backup, VMI_PS_4KB)) {
             writelog(LV_ERROR, "Critical error in re-copying remapped gfn\n");
-            interrupted = -1;
+            handler->interrupted = -1;
             return 0;
         }
         if (VMI_FAILURE == vmi_write_pa(handler->vmi, pass->remapped->r<<12, &backup, VMI_PS_4KB)) {
             writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
-            interrupted = -1;
+            handler->interrupted = -1;
             return 0;
         }
         GSList *loop = pass->traps;
@@ -247,7 +246,7 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
             uint8_t test = 0;
             if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, *pa, &test)) {
                 writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
-                interrupted = -1;
+                handler->interrupted = -1;
                 return 0;
             }
             if (test == INT3_CHAR) {
@@ -257,7 +256,7 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
                 tm_set_doubletrap(handler->trap_manager, *pa, 0);
                 if (VMI_FAILURE == vmi_write_8_pa(handler->vmi, (pass->remapped->r<<12) + (*pa & VMI_BIT_MASK(0,11)), &INT3_CHAR)) {
                     writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
-                    interrupted = -1;
+                    handler->interrupted = -1;
                     return 0;
                 }
             }

@@ -25,19 +25,21 @@ static void _set_policies(vmhdlr_t *handler, GSList *policies);
 static void _monitor_vm(vmhdlr_t *vm);
 
 config_t *config;           /* config handler */
+vmhdlr_t *vms[VM_MAX];                /* List of vm handler */
+int vmnum;
 
 static struct sigaction act;
-int interrupted = 0;
 static void close_handler(int sig) {
-    interrupted = sig;
+    int i = 0;
+    for (i = 0; i < vmnum; i++) {
+        vms[i]->interrupted = sig;
+    }
 }
 
 int main(int argc, char **argv)
 {
-    vmhdlr_t *vms[VM_MAX];                /* List of vm handler */
     GThread *threads[VM_MAX];
     GSList *policies;           /* List of policies */
-    int vmnum;
 
     //Signal handler
     act.sa_handler = close_handler;
@@ -168,7 +170,7 @@ static void _set_policies(vmhdlr_t *handler, GSList *policies)
 
 static void _monitor_vm(vmhdlr_t *vm)
 {
-    while (!interrupted) {
+    while (!vm->interrupted) {
         hfm_listen(vm);
     }
     /* release resources */
