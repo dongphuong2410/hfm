@@ -7,6 +7,7 @@
 #ifndef __TRAPS_H__
 #define __TRAPS_H__
 
+#include <glib.h>
 #include "private.h"
 
 /**
@@ -81,7 +82,7 @@ void tm_add_int3trap(trapmngr_t *trapmngr, uint64_t pa, trap_t *trap);
   * @param gfn GFN
   * @return List of traps
   */
-GSList *tm_find_breakpoint_gfn(trapmngr_t *trapmngr, uint64_t gfn);
+GSList *tm_int3traps_at_gfn(trapmngr_t *trapmngr, uint64_t gfn);
 
 /**
   * @brief Find a memaccess wrapper at frame number
