@@ -43,7 +43,7 @@ static hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap);
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static void _close_vmi(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
-static void _reset_altp2m(vmhdlr_t *handler);
+static void _reset_altp2m(vmhdlr_t *handler, GSList *remappeds);
 static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t original_gfn);
 
 extern config_t *config;
@@ -67,7 +67,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         goto error3;
     }
     /* Init trap manager */
-    handler->trap_manager = tm_init(handler);
+    handler->trap_manager = tm_init();
     if (handler->trap_manager == NULL) {
         writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
         goto error4;
@@ -75,7 +75,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
 
     return SUCCESS;
 error4:
-    _reset_altp2m(handler);
+    _reset_altp2m(handler, NULL);
 error3:
     xen_free_interface(handler->xen);
 error2:
@@ -89,14 +89,15 @@ void hfm_close(vmhdlr_t *handler)
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
     vmi_pause_vm(handler->vmi);
 
-    /* Destroy all traps */
-    tm_destroy(handler->trap_manager);
-
     /* Reset altp2m view */
-    _reset_altp2m(handler);
+    GSList *remappeds = tm_all_remappeds(handler->trap_manager);
+    _reset_altp2m(handler, remappeds);
 
     /* Close xen interface */
     xen_free_interface(handler->xen);
+
+    /* Destroy all traps */
+    tm_destroy(handler->trap_manager);
 
     vmi_resume_vm(handler->vmi);
 
@@ -287,9 +288,15 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
     int doubletrap = -1;
 
     int trap_exist = tm_trap_exist(handler->trap_manager, pa);
+    /*
+     * Check if there is a trap added to this pa before ?
+     * If not, this is the first trap added to this address, so we need to do three things :
+     * 1) Create the shadow page for this page (if it's not created yet)
+     * 2) Set the memtrap for protecting remapped page
+     * 3) Rewrite the instruction at pa with INT3
+     */
     if (!trap_exist) {
-        //Check if there is a shadow page created at this gfn or not
-        //If not, create the shadow page
+        //Create shadow page
         remapped_t *remapped = tm_find_remapped(handler->trap_manager, frame);
         if (!remapped) {
             remapped = (remapped_t *)calloc(1, sizeof(remapped_t));
@@ -308,6 +315,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
         }
         vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
+        //Set INT3
         addr_t rpa = (remapped->r << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
         uint8_t test;
         if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
@@ -416,7 +424,15 @@ error:
     return FAIL;
 }
 
-static void _reset_altp2m(vmhdlr_t *handler) {
+static void _reset_altp2m(vmhdlr_t *handler, GSList *remappeds)
+{
+    GSList *loop = remappeds;
+    while (loop) {
+        remapped_t *remapped = loop->data;
+        vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, remapped->o, ~0);
+        xen_free_shadow_frame(handler->xen, &remapped->r);
+        loop = loop->next;
+    }
     vmi_slat_switch(handler->vmi, ORIGIN_IDX);
     vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
 }
