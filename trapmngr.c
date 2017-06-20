@@ -6,11 +6,20 @@
 #include "log.h"
 #include "trapmngr.h"
 
+/**
+  * @brief Contain list of int3 breakpoints set at same position
+  */
+typedef struct int3_wrapper_t {
+    uint64_t pa;                //Physical address of breakpoint
+    uint8_t doubletrap;         //Original instruction at this address is INT3 or not
+    GSList *traps;
+} int3_wrapper_t;
+
 struct _trapmngr_t {
     GHashTable *remapped_tbl;       /* Key : original frame no, Value : remapped_t */
     GHashTable *breakpoint_tbl;     /* Key : pa, Value : int3_wrapper_t */
     GHashTable *breakpoint_gfn_tbl; /* Key : frame no, Value : GList of traps */
-    GHashTable *memaccess_tbl;      /* Key : frame no, Value : mem_wrapper_t */
+    GHashTable *memaccess_tbl;      /* Key : frame no, Value : memtrap_t */
 };
 
 trapmngr_t *tm_init()
@@ -106,12 +115,12 @@ GSList *tm_int3traps_at_gfn(trapmngr_t *tm, uint64_t gfn)
     return g_hash_table_lookup(tm->breakpoint_gfn_tbl, &gfn);
 }
 
-mem_wrapper_t *tm_find_memtrap(trapmngr_t *tm, uint64_t gfn)
+memtrap_t *tm_find_memtrap(trapmngr_t *tm, uint64_t gfn)
 {
     return g_hash_table_lookup(tm->memaccess_tbl, &gfn);
 }
 
-void tm_add_memtrap(trapmngr_t *tm, uint64_t *gfn, mem_wrapper_t *wrapper)
+void tm_add_memtrap(trapmngr_t *tm, uint64_t *gfn, memtrap_t *wrapper)
 {
     g_hash_table_insert(tm->memaccess_tbl, gfn, wrapper);
 }
@@ -130,4 +139,9 @@ GSList *tm_all_remappeds(trapmngr_t *tm) {
         res = g_slist_append(res, remapped);
     }
     return res;
+}
+
+GList *tm_all_memtraps(trapmngr_t *tm)
+{
+    return g_hash_table_get_keys(tm->memaccess_tbl);
 }

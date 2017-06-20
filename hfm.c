@@ -43,7 +43,8 @@ static hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap);
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static void _close_vmi(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
-static void _reset_altp2m(vmhdlr_t *handler, GSList *remappeds);
+static void _reset_altp2m(vmhdlr_t *handler);
+static void _destroy_traps(vmhdlr_t *handler);
 static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t original_gfn);
 
 extern config_t *config;
@@ -75,7 +76,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
 
     return SUCCESS;
 error4:
-    _reset_altp2m(handler, NULL);
+    _reset_altp2m(handler);
 error3:
     xen_free_interface(handler->xen);
 error2:
@@ -89,15 +90,14 @@ void hfm_close(vmhdlr_t *handler)
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
     vmi_pause_vm(handler->vmi);
 
+    /* Destroy all traps */
+    _destroy_traps(handler);
+
     /* Reset altp2m view */
-    GSList *remappeds = tm_all_remappeds(handler->trap_manager);
-    _reset_altp2m(handler, remappeds);
+    _reset_altp2m(handler);
 
     /* Close xen interface */
     xen_free_interface(handler->xen);
-
-    /* Destroy all traps */
-    tm_destroy(handler->trap_manager);
 
     vmi_resume_vm(handler->vmi);
 
@@ -198,7 +198,7 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
     handler->regs[event->vcpu_id] = event->x86_regs;
 
     //Generate data to pass to the _post_mem_cb
-    mem_wrapper_t *memw = tm_find_memtrap(handler->trap_manager, event->mem_event.gfn);
+    memtrap_t *memw = tm_find_memtrap(handler->trap_manager, event->mem_event.gfn);
     if (!memw) {
         writelog(LV_DEBUG, "Event has been cleared for GFN 0x%lx but we are still in view %u\n",
                         event->mem_event.gfn, event->slat_id);
@@ -307,10 +307,10 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
         }
 
         //Callback invoked on a R/W of a monitored page (likely Windows kernel patch protection). Switch the VCPU's SLAT to its original, step once, switch SLAT back
-        mem_wrapper_t *memw = tm_find_memtrap(handler->trap_manager, frame);
+        memtrap_t *memw = tm_find_memtrap(handler->trap_manager, frame);
         if (!memw) {
             //Create new wrapper for memaccess at this page
-            memw = (mem_wrapper_t *)calloc(1, sizeof(mem_wrapper_t));
+            memw = (memtrap_t *)calloc(1, sizeof(memtrap_t));
             tm_add_memtrap(handler->trap_manager, g_memdup(&frame, sizeof(uint64_t)), memw);
         }
         vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
@@ -424,8 +424,24 @@ error:
     return FAIL;
 }
 
-static void _reset_altp2m(vmhdlr_t *handler, GSList *remappeds)
+static void _reset_altp2m(vmhdlr_t *handler)
 {
+    vmi_slat_switch(handler->vmi, ORIGIN_IDX);
+    vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
+}
+
+static void _destroy_traps(vmhdlr_t *handler)
+{
+    //Reset the memaccess
+    GList *memtraps = tm_all_memtraps(handler->trap_manager);
+    while (memtraps) {
+        uint64_t *gfn = memtraps->data;
+        vmi_set_mem_event(handler->vmi, *gfn, VMI_MEMACCESS_N, handler->altp2m_idx);
+        memtraps = memtraps->next;
+    }
+
+    //Reset remapped frame
+    GSList *remappeds = tm_all_remappeds(handler->trap_manager);
     GSList *loop = remappeds;
     while (loop) {
         remapped_t *remapped = loop->data;
@@ -433,8 +449,9 @@ static void _reset_altp2m(vmhdlr_t *handler, GSList *remappeds)
         xen_free_shadow_frame(handler->xen, &remapped->r);
         loop = loop->next;
     }
-    vmi_slat_switch(handler->vmi, ORIGIN_IDX);
-    vmi_slat_destroy(handler->vmi, handler->altp2m_idx);
+
+    //Destroy trap manager
+    tm_destroy(handler->trap_manager);
 }
 
 static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t frame)

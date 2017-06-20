@@ -11,21 +11,6 @@
 #include "private.h"
 
 /**
-  * @brief Contain list of int3 breakpoints set at same position
-  */
-typedef struct int3_wrapper_t {
-    uint64_t pa;                //Physical address of breakpoint
-    uint8_t doubletrap;         //Original instruction at this address is INT3 or not
-    GSList *traps;
-} int3_wrapper_t;
-
-/**
-  * @brief  Information about mem trap
-  */
-typedef struct mem_wrapper_t {
-} mem_wrapper_t;
-
-/**
   * @brief Contain a mapping address pair
   */
 typedef struct _remapped_t {
@@ -90,7 +75,7 @@ GSList *tm_int3traps_at_gfn(trapmngr_t *tm, uint64_t gfn);
   * @param gfn Frame number
   * @return Pointer to memaccess wrapper
   */
-mem_wrapper_t *tm_find_memtrap(trapmngr_t *tm, uint64_t gfn);
+memtrap_t *tm_find_memtrap(trapmngr_t *tm, uint64_t gfn);
 
 /**
   * @brief Add a memaccess wrapper at frame number
@@ -98,7 +83,7 @@ mem_wrapper_t *tm_find_memtrap(trapmngr_t *tm, uint64_t gfn);
   * @gfn Frame number
   * @param wrapper Pointer to memaccess wrapper to add
   */
-void tm_add_memtrap(trapmngr_t *tm, uint64_t *gfn, mem_wrapper_t *wrapper);
+void tm_add_memtrap(trapmngr_t *tm, uint64_t *gfn, memtrap_t *wrapper);
 
 /**
   * @brief Check if the instruction at address is doubletrap or not
@@ -131,4 +116,10 @@ int tm_trap_exist(trapmngr_t *tm, uint64_t pa);
   */
 GSList *tm_all_remappeds(trapmngr_t *tm);
 
+/**
+  * @brief Return all memtraps to trap manager
+  * @param tm Pointer to trapmngr_t
+  * @return List of memtraps
+  */
+GList *tm_all_memtraps(trapmngr_t *tm);
 #endif
