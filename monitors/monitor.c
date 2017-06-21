@@ -12,8 +12,8 @@ event_response_t cb_open(vmhdlr_t *handler, trap_data_t *data);
 
 hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
-    hfm_monitor_syscall(hdlr, "NtCreateFile", cb_create);
-    hfm_monitor_syscall(hdlr, "NtOpenFile", cb_open);
+    hfm_monitor_syscall(hdlr, "NtCreateFile", cb_create, NULL);
+    hfm_monitor_syscall(hdlr, "NtOpenFile", cb_open, NULL);
     return SUCCESS;
 }
 

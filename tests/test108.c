@@ -20,8 +20,8 @@ int main(int argc, char **argv)
         free(vmhdlr);
         return -1;
     }
-    hfm_monitor_syscall(vmhdlr, "NtCreateFile", NULL);
-    hfm_monitor_syscall(vmhdlr, "NtOpenFile", NULL); //Only one remapped table created even if we set the traps at the same page
+    hfm_monitor_syscall(vmhdlr, "NtCreateFile", NULL, NULL);
+    hfm_monitor_syscall(vmhdlr, "NtOpenFile", NULL, NULL); //Only one remapped table created even if we set the traps at the same page
     hfm_close(vmhdlr);
     free(vmhdlr);
 }

@@ -33,7 +33,7 @@ void hfm_close(vmhdlr_t *handler);
 /**
   * @brief Register a trap for syscall
   */
-hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, event_response_t (*cb)(vmhdlr_t *, trap_data_t *));
+hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, cb_t sys_cb, cb_t ret_cb);
 
 /**
   * @brief Clean all the trap

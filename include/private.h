@@ -121,12 +121,15 @@ typedef struct trap_data_t {
 
 } trap_data_t;
 
+typedef event_response_t (*cb_t)(vmhdlr_t *, trap_data_t *);
+
 /**
   * @brief A trap to be injected to the VM
   */
 typedef struct trap_t {
     char name[STR_BUFF];
-    event_response_t (*cb)(vmhdlr_t *, trap_data_t *);
+    cb_t sys_cb;        //Callback when syscall is called
+    cb_t ret_cb;        //Callback when syscall returns
 } trap_t;
 
 typedef struct memtrap_t {

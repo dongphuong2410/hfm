@@ -109,7 +109,7 @@ void hfm_listen(vmhdlr_t *handler)
     vmi_events_listen(handler->vmi, 500);
 }
 
-hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, event_response_t (*cb)(vmhdlr_t *, trap_data_t *))
+hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, cb_t sys_cb, cb_t ret_cb)
 {
     hfm_status_t ret = SUCCESS;
     addr_t func_addr;
@@ -130,7 +130,8 @@ hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, event
     //Create a trap
     trap_t *trap = (trap_t *)calloc(1, sizeof(trap_t));
     strncpy(trap->name, func_name, STR_BUFF);
-    trap->cb = cb;
+    trap->sys_cb = sys_cb;
+    trap->ret_cb = ret_cb;
 
     //Inject trap at physical address
     _inject_trap(handler, pa, trap);
@@ -177,8 +178,8 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     GSList *loop = int3traps;
     while (loop) {
         trap_t *trap = loop->data;
-        if (trap->cb)
-            rsp |= trap->cb(handler, NULL);
+        if (trap->sys_cb)
+            rsp |= trap->sys_cb(handler, NULL);
         loop = loop->next;
     }
 
