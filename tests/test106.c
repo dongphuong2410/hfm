@@ -20,7 +20,7 @@ int main(int argc, char **argv)
         free(vmhdlr);
         return -1;
     }
-    hfm_monitor_syscall(vmhdlr, "NtCreateFile", NULL);
+    hfm_monitor_syscall(vmhdlr, "NtCreateFile", NULL, NULL);
     hfm_close(vmhdlr);
     free(vmhdlr);
 }
