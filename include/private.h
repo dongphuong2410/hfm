@@ -31,6 +31,8 @@
 #define PAGE_OFFSET_BITS 12
 #define PAGE_SIZE (1 << PAGE_OFFSET_BITS)
 
+#define BREAKPOINT_INST 0xCC
+
 /**
   * @brief Return status code
   */
@@ -104,9 +106,11 @@ typedef struct _vmhdlr {
     uint32_t vcpus;
     uint32_t memsize;
     uint32_t init_memsize;
+    uint64_t return_addr_width;
     uint16_t altp2m_idx;
     trapmngr_t *trap_manager;
     int interrupted;
+    uint64_t trampoline_addr;
 
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
