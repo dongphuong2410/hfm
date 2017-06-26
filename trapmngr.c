@@ -111,35 +111,6 @@ GSList *tm_int3traps_at_gfn(trapmngr_t *tm, uint64_t gfn)
     return g_hash_table_lookup(tm->breakpoint_gfn_tbl, &gfn);
 }
 
-void tm_track_syscall(trapmngr_t *tm, uint64_t thread_id, syscall_wrapper_t *wrapper)
-{
-    g_hash_table_insert(tm->thread_syscall_tbl, g_memdup(&thread_id, sizeof(uint64_t)), wrapper);
-}
-
-GList *tm_all_threads(trapmngr_t *tm)
-{
-    return g_hash_table_get_keys(tm->thread_syscall_tbl);
-}
-
-GSList *tm_traps_at_thread(trapmngr_t *tm, uint64_t thread_id)
-{
-    syscall_wrapper_t *w = g_hash_table_lookup(tm->thread_syscall_tbl, &thread_id);
-    if (w)
-        return tm_int3traps_at_pa(tm, w->pa);
-    return NULL;
-}
-
-void tm_remove_thread(trapmngr_t *tm, uint64_t thread_id)
-{
-    g_hash_table_remove(tm->thread_syscall_tbl, &thread_id);
-}
-
-uint64_t tm_syscall_return_addr(trapmngr_t *tm, uint64_t thread_id)
-{
-    syscall_wrapper_t *w = g_hash_table_lookup(tm->thread_syscall_tbl, &thread_id);
-    return w ? w->return_addr : 0;
-}
-
 memtrap_t *tm_find_memtrap(trapmngr_t *tm, uint64_t gfn)
 {
     return g_hash_table_lookup(tm->memaccess_tbl, &gfn);

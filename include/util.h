@@ -17,4 +17,11 @@
   */
 uint64_t util_find_trampoline_addr(vmi_instance_t vmi);
 
+/**
+  * @brief Return the return address of the function that call the syscall
+  * @param vmi vmi instance
+  * @return return address
+  */
+uint64_t util_find_return_addr(vmi_instance_t vmi);
+
 #endif
