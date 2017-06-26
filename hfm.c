@@ -147,88 +147,50 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     vmhdlr_t *handler = event->data;
     handler->regs[event->vcpu_id] = event->x86_regs;
 
-    //System call breakpoint
-    if (event->interrupt_event.gla != handler->trampoline_addr) {
-        /* Calculate pa of interrupt event */
-        addr_t pa = (event->interrupt_event.gfn << 12)
-                        + event->interrupt_event.offset + event->interrupt_event.insn_length - 1;
-        writelog(LV_DEBUG, "INT3 event vCPU %u pa %lx", event->vcpu_id, pa);
+    /* Calculate pa of interrupt event */
+    addr_t pa = (event->interrupt_event.gfn << 12)
+                    + event->interrupt_event.offset + event->interrupt_event.insn_length - 1;
+    writelog(LV_DEBUG, "INT3 event vCPU %u pa %lx", event->vcpu_id, pa);
 
-        /* Looking for traps registered at this pa */
-        GSList *int3traps = tm_int3traps_at_pa(handler->trap_manager, pa);
-        if (!int3traps) {
-            /* No trap is currently registered for this location
-               but this event may have been triggered by one we just removed */
-            uint8_t test = 0;
-            if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
-                writelog(LV_ERROR, "Critical error in int3 callback, can't read page");
-                handler->interrupted = -1;
-                return 0;
-            }
-            if (test == INT3_CHAR) {
-                event->interrupt_event.reinject = 1;
-            }
-            else {
-                event->interrupt_event.reinject = 0;
-            }
+    /* Looking for traps registered at this pa */
+    GSList *int3traps = tm_int3traps_at_pa(handler->trap_manager, pa);
+    if (!int3traps) {
+        /* No trap is currently registered for this location
+           but this event may have been triggered by one we just removed */
+        uint8_t test = 0;
+        if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
+            writelog(LV_ERROR, "Critical error in int3 callback, can't read page");
+            handler->interrupted = -1;
             return 0;
         }
-        int8_t doubletrap = tm_check_doubletrap(handler->trap_manager, pa);
-        if (doubletrap)
+        if (test == INT3_CHAR) {
             event->interrupt_event.reinject = 1;
-        else
+        }
+        else {
             event->interrupt_event.reinject = 0;
-        GSList *loop = int3traps;
-        while (loop) {
-            trap_t *trap = loop->data;
-            if (trap->sys_cb)
-                rsp |= trap->sys_cb(handler, NULL);
-            loop = loop->next;
         }
-
-        uint64_t return_loc = event->x86_regs->rsp;
-        uint64_t return_addr;
-        status_t status = vmi_read_64_va(handler->vmi, return_loc, 0, &return_addr);
-        if (VMI_SUCCESS != status) {
-            writelog(LV_ERROR, "Error reading return address of syscall");
-            return 0;
-        }
-
-        /* Overwrite stack to return to trampoline */
-        vmi_write_64_va(handler->vmi, return_loc, 0, &handler->trampoline_addr);
-
-        uint64_t thread_id = event->x86_regs->rsp;      //Choose RSP as ID for each thread, to retrieve the thread information when breakpoint is triggered on syscall return
-        syscall_wrapper_t *sysw = (syscall_wrapper_t *)calloc(1, sizeof(syscall_wrapper_t));
-        sysw->pa = pa;
-        sysw->return_addr = return_addr;
-        tm_track_syscall(handler->trap_manager, thread_id, sysw);
-        printf("register break at address 0x%lx thread_id %lx\n", return_addr, thread_id);
-
-        event->slat_id = ORIGIN_IDX;
-        handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
-        handler->step_event[event->vcpu_id]->data = handler;
-        rsp = rsp |
-                VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP |
-                VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
+        return 0;
     }
-    else {      /* System return syscall */
-        uint64_t thread_id = event->x86_regs->rsp - handler->return_addr_width;
-        GSList *traps = tm_traps_at_thread(handler->trap_manager, thread_id);
-        while (traps) {
-            trap_t *trap = traps->data;
-            if (trap->ret_cb)
-                trap->ret_cb(handler, NULL);
-            traps = traps->next;
-        }
+
+    int8_t doubletrap = tm_check_doubletrap(handler->trap_manager, pa);
+    if (doubletrap)
+        event->interrupt_event.reinject = 1;
+    else
         event->interrupt_event.reinject = 0;
-        //Return to normal state
-        uint64_t return_addr = tm_syscall_return_addr(handler->trap_manager, thread_id);
-        if (return_addr) {
-            vmi_set_vcpureg(handler->vmi, return_addr, RIP, event->vcpu_id);
-            tm_remove_thread(handler->trap_manager, thread_id);
-            printf("breaked at address 0x%lx thread_id %lx\n", return_addr, thread_id);
-        }
+    GSList *loop = int3traps;
+    while (loop) {
+        trap_t *trap = loop->data;
+        if (trap->sys_cb)
+            rsp |= trap->sys_cb(handler, NULL);
+        loop = loop->next;
     }
+
+    event->slat_id = ORIGIN_IDX;
+    handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
+    handler->step_event[event->vcpu_id]->data = handler;
+    rsp = rsp |
+            VMI_EVENT_RESPONSE_TOGGLE_SINGLESTEP |
+            VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
     return rsp;
 }
 
@@ -431,9 +393,6 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
         goto error;
     }
 
-    //Find trampoline_addr
-    handler->return_addr_width = vmi_get_address_width(handler->vmi);
-    handler->trampoline_addr = util_find_trampoline_addr(handler->vmi);
     return SUCCESS;
 error:
     return FAIL;
@@ -475,20 +434,6 @@ static void _reset_altp2m(vmhdlr_t *handler)
 
 static void _destroy_traps(vmhdlr_t *handler)
 {
-    //Restore the return addr for syscalls that is monitoring (restoring stack)
-    status_t status;
-    GList *thread_ids = tm_all_threads(handler->trap_manager);
-    while (thread_ids) {
-        uint64_t *thread_id = thread_ids->data;
-        uint64_t return_addr = tm_syscall_return_addr(handler->trap_manager, *thread_id);
-        uint64_t pa = vmi_translate_kv2p(handler->vmi, *thread_id);
-        status = vmi_write_64_pa(handler->vmi, pa, &return_addr);
-        if (VMI_SUCCESS != status) {
-            writelog(LV_ERROR, "Error restoring stack, guest will likely fail");
-        }
-        thread_ids = thread_ids->next;
-
-    }
     //Reset the memaccess
     GList *memtraps = tm_all_memtraps(handler->trap_manager);
     while (memtraps) {

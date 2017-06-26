@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-ggdb -O0 -I./include -I./monitors -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include 
-LDFLAGS=-lvmi -lglib-2.0 -lxenctrl -lxentoollog -lxenlight
+LDFLAGS=-lvmi -lglib-2.0 -lxenctrl -lxentoollog -lxenlight -lcapstone
 
 STATICLIB=./monitors/libmon.a
 

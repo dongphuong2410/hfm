@@ -10,11 +10,6 @@
 #include <glib.h>
 #include "private.h"
 
-typedef struct syscall_wrapper_t {
-    uint64_t pa;
-    uint64_t return_addr;
-} syscall_wrapper_t;
-
 /**
   * @brief Contain list of int3 breakpoints set at same position
   */
@@ -74,40 +69,6 @@ GSList *tm_int3traps_at_pa(trapmngr_t *tm, uint64_t pa);
   * @param trap Pointer to a breakpoint trap
   */
 void tm_add_int3trap(trapmngr_t *tm, uint64_t pa, trap_t *trap);
-
-/**
-  * @brief Tracking which system call (at pa) that a thread is running on
-  * @param tm Pointer to trapmngr_t
-  * @param thread_id A uniq number for a thread
-  * @param syscall_wrapper
-  */
-void tm_track_syscall(trapmngr_t *tm, uint64_t thread_id, syscall_wrapper_t *wrapper);
-
-/**
-  * @brief Return return_addr of current syscall of a thread
-  * @param tm Pointer to trapmngr
-  * @param thread_id Thread id
-  * @return Return address
-  */
-uint64_t tm_syscall_return_addr(trapmngr_t *tm, uint64_t thread_id);
-
-/**
-  * @brief Return all traps that a thread is triggering
-  * @param tm Pointer to trapmngr_t
-  * @param thread_id A uniq number for a thread
-  * @return List of traps
-  */
-GSList *tm_traps_at_thread(trapmngr_t *tm, uint64_t thread_id);
-
-GList *tm_all_threads(trapmngr_t *tm);
-
-/**
-  * @brief remove a thread
-  * @param tm Pointer to trapmngr_t
-  * @param thread_id A uniq number for a thread
-  * @return List of traps
-  */
-void tm_remove_thread(trapmngr_t *tm, uint64_t thread_id);
 
 /**
   * @brief Find a breakpoint wrapper in a page
