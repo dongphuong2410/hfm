@@ -183,28 +183,30 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     while (loop) {
         trap_t *trap = loop->data;
         if (trap->cb) {
-            rsp |= trap->cb(handler, NULL);
-        }
-        if (trap->ret_cb) {
-            access_context_t ctx;
-            uint64_t ret;
-            ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
-            ctx.dtb = event->x86_regs->cr3;
-            ctx.addr = event->x86_regs->rsp;
-            vmi_read_addr(handler->vmi, &ctx, &ret);
-            trap_t *ret_trap = (trap_t *)calloc(1, sizeof(trap_t));
-            ret_trap->pa = vmi_pagetable_lookup(handler->vmi, ctx.dtb, ret);
-            ret_trap->cb = trap->ret_cb;
-            ret_trap->self_destroy = 1;
-            sprintf(ret_trap->name, "%s_return", trap->name);
+            int trap_sys_ret = trap->cb(handler, NULL);
+            if (trap_sys_ret && trap->ret_cb) {
+                access_context_t ctx;
+                uint64_t ret;
+                ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
+                ctx.dtb = event->x86_regs->cr3;
+                ctx.addr = event->x86_regs->rsp;
+                vmi_read_addr(handler->vmi, &ctx, &ret);
+                trap_t *ret_trap = (trap_t *)calloc(1, sizeof(trap_t));
+                ret_trap->pa = vmi_pagetable_lookup(handler->vmi, ctx.dtb, ret);
+                ret_trap->cb = trap->ret_cb;
+                ret_trap->self_destroy = 1;
+                ret_trap->ret_cb = NULL;
+                sprintf(ret_trap->name, "%s_return", trap->name);
 
-            _inject_trap(handler, ret_trap);
+                _inject_trap(handler, ret_trap);
+            }
         }
         if (trap->self_destroy) {
             int trap_remains = tm_remove_int3trap(handler->trap_manager, trap);
             if (trap_remains == 0) {
                 _remove_int3(handler, trap->pa);
             }
+            free(trap);
         }
         loop = loop->next;
     }

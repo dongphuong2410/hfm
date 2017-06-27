@@ -122,9 +122,6 @@ int tm_remove_int3trap(trapmngr_t *tm, trap_t *trap)
     traps_at_gfn = g_slist_remove(traps_at_gfn, trap);
     if (traps_at_gfn)
         g_hash_table_insert(tm->breakpoint_gfn_tbl, g_memdup(&gfn, sizeof(uint64_t)), traps_at_gfn);
-
-    //Free the trap
-    free(trap);
 done:
     g_mutex_unlock(&tm->lock);
     return trapno;

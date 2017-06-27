@@ -63,14 +63,14 @@ remapped_t *tm_find_remapped(trapmngr_t *tm, uint64_t original);
 GSList *tm_int3traps_at_pa(trapmngr_t *tm, uint64_t pa);
 
 /**
-  * @brief Add a breakpoint trap  at physical address
+  * @brief Add a breakpoint trap
   * @param tm Pointer to trapmngr_t
   * @param trap Pointer to a breakpoint trap
   */
 void tm_add_int3trap(trapmngr_t *tm, trap_t *trap);
 
 /**
-  * @brief Remove a breakpoint trap at physical address
+  * @brief Remove a breakpoint trap
   * @param tm Pointer to trapmngr_t
   * @param trap Pointer to trap
   * @return Return number of trap remains in the pa
