@@ -1,0 +1,50 @@
+OVERVIEW
+--------
+HFM (Hypervisor-based File Monitoring) is a Libvmi based program that is used to monitor
+activities related to files of Virtual Machine  running on XEN.
+
+Currently, HFM just support Windows OS
+
+The activities that HFM is planning to monitor:
+ - Monitor file created activities (TODO)
+ - Monitor file content modify activities (TODO)
+ - Monitor file deleted activites (and extract the deleted files in some situations) (TODO)
+ - Monitor file attributes changed (read only, hidden, file permission, file owner ...) (TODO)
+
+INSTALL
+-------
+## Build the project
+$ make
+
+## Unit test
+$ make test
+
+EXAMPLE
+-------
+## Run program to monitor 2 VM windows1 and windows 2
+## hfm.cfg : config file, define configurations that program will use
+## hfm.pol : policy file, define the policies that decide which actions on which files/folder will be enable
+$ ./hfm -v windows -c hfm.cfg -p hfm.pol
+
+POLICY FILE FORMAT
+------------------
+Rule Definition
+<id> <severity> <action> <filepath> [EXTRACT]
+
+severity : WARN CRITICAL
+
+action : 
+    CREATE
+    DELETE
+    MODIFY_CONTENT
+    MODIFY_LOGFILE
+    CHANGE_ATTR_READONLY
+    CHANGE_ATTR_PERMISSIONS
+    CHANGE_ATTR_OWNERSHIP
+    CHANGE_ATTR_HIDDEN
+
+filepath : linux command style regular expression for file/directory path. For example
+    /home/bin/* : All files in /home/bin
+    /root/**/*  : All files in /root/ and it's subdirectory
+
+
