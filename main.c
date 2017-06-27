@@ -15,6 +15,7 @@
   * and merge with config from config file
   */
 static config_t *_read_config(int argc, char **argv);
+static void usage(void);
 
 /**
   * Parse vmlist string and init the VM handlers (hfm)
@@ -123,6 +124,9 @@ config_t *_read_config(int argc, char **argv)
             case 'v':
                 strncpy(_vmlist, optarg, 1024);
                 break;
+            default:
+                usage();
+                exit(1);
         }
     }
     //Read config from file
@@ -176,4 +180,13 @@ static void _monitor_vm(vmhdlr_t *vm)
     /* release resources */
     hfm_close(vm);
     free(vm);
+}
+
+static void usage(void)
+{
+    printf("Usage: hfm <options>\n");
+    printf( "\t -p <policy file>            Policy file path\n"
+            "\t -c <config file>            Config file path\n"
+            "\t -l <log file>               Log file path\n"
+            "\t -v <vmlist>                 List of VMs to monitor\n");
 }
