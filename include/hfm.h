@@ -40,4 +40,9 @@ hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, cb_t 
   */
 void hfm_destroy_traps(vmhdlr_t *handler);
 
+/**
+  * @brief Remove the int3 breakpoint in shadow page
+  */
+void hfm_remove_int3(vmhdlr_t *handler, addr_t pa);
+
 #endif

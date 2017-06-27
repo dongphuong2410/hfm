@@ -9,7 +9,7 @@ config_t *config;
 
 int main(int argc, char **argv)
 {
-    trapmngr_t *tm = tm_init();
+    trapmngr_t *tm = tm_init(NULL);
 
     remapped_t *re = (remapped_t *)calloc(1, sizeof(remapped_t));
     re->o = 12345;
@@ -31,19 +31,23 @@ int main(int argc, char **argv)
 
     trap_t *trap1 = (trap_t *)calloc(1, sizeof(trap_t));
     strcpy(trap1->name, "Trap 1 frame one pa one");
-    tm_add_int3trap(tm, frame_one_pa_one, trap1);
+    trap1->pa = frame_one_pa_one;
+    tm_add_int3trap(tm, trap1);
 
     trap_t *trap2 = (trap_t *)calloc(1, sizeof(trap_t));
     strcpy(trap2->name, "Trap 2 frame one pa one");
-    tm_add_int3trap(tm, frame_one_pa_one, trap2);
+    trap2->pa = frame_one_pa_one;
+    tm_add_int3trap(tm, trap2);
 
     trap_t *trap3 = (trap_t *)calloc(1, sizeof(trap_t));
     strcpy(trap3->name, "Trap 3 frame one pa two");
-    tm_add_int3trap(tm, frame_one_pa_two, trap3);
+    trap3->pa = frame_one_pa_two;
+    tm_add_int3trap(tm, trap3);
 
     trap_t *trap4 = (trap_t *)calloc(1, sizeof(trap_t));
     strcpy(trap4->name, "Trap 4 frame two pa one");
-    tm_add_int3trap(tm, frame_two_pa_one, trap4);
+    trap4->pa = frame_two_pa_one;
+    tm_add_int3trap(tm, trap4);
 
     GSList *list;
     list = tm_int3traps_at_pa(tm, frame_one_pa_one);
