@@ -35,9 +35,4 @@ void hfm_close(vmhdlr_t *handler);
   */
 hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, cb_t sys_cb, cb_t ret_cb);
 
-/**
-  * @brief Clean all the trap
-  */
-void hfm_destroy_traps(vmhdlr_t *handler);
-
 #endif

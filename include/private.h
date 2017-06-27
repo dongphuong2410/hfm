@@ -113,25 +113,28 @@ typedef struct _vmhdlr {
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
     vmi_event_t *step_event[16];
-
 } vmhdlr_t;
+
+typedef struct trap_data_t trap_data_t;
+
+typedef int (*cb_t)(vmhdlr_t *, trap_data_t *);
 
 /**
   * @brief Trap info to transfer to callback
   */
-typedef struct trap_data_t {
-
-} trap_data_t;
-
-typedef event_response_t (*cb_t)(vmhdlr_t *, trap_data_t *);
+struct trap_data_t {
+    x86_registers_t *regs;
+};
 
 /**
   * @brief A trap to be injected to the VM
   */
-typedef struct trap_t {
+typedef struct _trap_t {
     char name[STR_BUFF];
-    cb_t sys_cb;        //Callback when syscall is called
-    cb_t ret_cb;        //Callback when syscall returns
+    cb_t cb;
+    cb_t ret_cb;
+    uint64_t pa;
+    uint8_t self_destroy;
 } trap_t;
 
 typedef struct memtrap_t {

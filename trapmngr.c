@@ -5,13 +5,14 @@
 #include "private.h"
 #include "log.h"
 #include "trapmngr.h"
+#include "hfm.h"
 
 struct _trapmngr_t {
     GHashTable *remapped_tbl;       /* Key : original frame no, Value : remapped_t */
     GHashTable *breakpoint_tbl;     /* Key : pa, Value : int3_wrapper_t */
     GHashTable *breakpoint_gfn_tbl; /* Key : frame no, Value : GList of traps */
-    GHashTable *thread_syscall_tbl;   /* Key : thread id, Value : syscall wrapper */
     GHashTable *memaccess_tbl;      /* Key : frame no, Value : memtrap_t */
+    GMutex lock;
 };
 
 trapmngr_t *tm_init()
@@ -19,9 +20,9 @@ trapmngr_t *tm_init()
     trapmngr_t *trapmngr = (trapmngr_t *)calloc(1, sizeof(trapmngr_t));
     trapmngr->remapped_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, NULL, free);
     trapmngr->breakpoint_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, free);
-    trapmngr->breakpoint_gfn_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, (GDestroyNotify)g_slist_free);
-    trapmngr->thread_syscall_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, free);
+    trapmngr->breakpoint_gfn_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, NULL);
     trapmngr->memaccess_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, free);
+    g_mutex_init(&trapmngr->lock);
     return trapmngr;
 }
 
@@ -46,11 +47,10 @@ void tm_destroy(trapmngr_t *tm)
     //Free remapped_tbl
     g_hash_table_destroy(tm->remapped_tbl);
 
-    //Free thread_syscall_tbl
-    g_hash_table_destroy(tm->thread_syscall_tbl);
+    //Free breakpoint_gfn_tbl
+    g_hash_table_destroy(tm->breakpoint_gfn_tbl);
 
     //Free breakpoint_tbl
-    g_hash_table_destroy(tm->breakpoint_gfn_tbl);
     int3_wrapper_t *int3w;
     ghashtable_foreach(tm->breakpoint_tbl, i, key, int3w) {
         g_slist_free_full(int3w->traps, (GDestroyNotify)free);
@@ -69,8 +69,10 @@ GSList *tm_int3traps_at_pa(trapmngr_t *tm, uint64_t pa)
     return (w == NULL ? NULL : w->traps);
 }
 
-void tm_add_int3trap(trapmngr_t *tm, uint64_t pa, trap_t *trap)
+void tm_add_int3trap(trapmngr_t *tm, trap_t *trap)
 {
+    g_mutex_lock(&tm->lock);
+    addr_t pa = trap->pa;
     //Update breakpoint_tbl
     int3_wrapper_t *w = g_hash_table_lookup(tm->breakpoint_tbl, &pa);
     if (!w) {
@@ -90,6 +92,39 @@ void tm_add_int3trap(trapmngr_t *tm, uint64_t pa, trap_t *trap)
     else {
         traps_at_gfn = g_slist_append(traps_at_gfn, trap);
     }
+    g_mutex_unlock(&tm->lock);
+}
+
+int tm_remove_int3trap(trapmngr_t *tm, trap_t *trap)
+{
+    g_mutex_lock(&tm->lock);
+    addr_t pa = trap->pa;
+    int trapno = 0;
+    //Remove the trap in traplist
+    int3_wrapper_t *w = g_hash_table_lookup(tm->breakpoint_tbl, &pa);
+    if (w) {
+        w->traps = g_slist_remove(w->traps, trap);
+    }
+    else {
+        goto done;
+    }
+
+    //If number of traps at pa is 0, remove the breakpoint from shadow page
+    trapno = g_slist_length(w->traps);
+    if (trapno == 0) {
+        g_hash_table_remove(tm->breakpoint_tbl, &pa);
+    }
+
+    //Remove the trap in breakpoint_gfn_tbl
+    addr_t gfn = pa >>  PAGE_OFFSET_BITS;
+    GSList *traps_at_gfn = g_hash_table_lookup(tm->breakpoint_gfn_tbl, &gfn);
+    g_hash_table_remove(tm->breakpoint_gfn_tbl, &gfn);
+    traps_at_gfn = g_slist_remove(traps_at_gfn, trap);
+    if (traps_at_gfn)
+        g_hash_table_insert(tm->breakpoint_gfn_tbl, g_memdup(&gfn, sizeof(uint64_t)), traps_at_gfn);
+done:
+    g_mutex_unlock(&tm->lock);
+    return trapno;
 }
 
 uint8_t tm_check_doubletrap(trapmngr_t *tm, uint64_t pa)
