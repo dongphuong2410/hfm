@@ -117,12 +117,13 @@ typedef struct _vmhdlr {
 
 typedef struct trap_data_t trap_data_t;
 
-typedef event_response_t (*cb_t)(vmhdlr_t *, trap_data_t *);
+typedef int (*cb_t)(vmhdlr_t *, trap_data_t *);
 
 /**
   * @brief Trap info to transfer to callback
   */
 struct trap_data_t {
+    x86_registers_t *regs;
 };
 
 /**

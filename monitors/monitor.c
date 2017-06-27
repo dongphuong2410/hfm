@@ -8,8 +8,8 @@ void mon_init(monitor_t type)
 {
 }
 
-event_response_t syscall_cb(vmhdlr_t *handler, trap_data_t *data);
-event_response_t sysret_cb(vmhdlr_t *handler, trap_data_t *data);
+int syscall_cb(vmhdlr_t *handler, trap_data_t *data);
+int sysret_cb(vmhdlr_t *handler, trap_data_t *data);
 
 hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -19,12 +19,14 @@ hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)
     return SUCCESS;
 }
 
-event_response_t syscall_cb(vmhdlr_t *handler, trap_data_t *data)
+int syscall_cb(vmhdlr_t *handler, trap_data_t *data)
 {
     writelog(LV_DEBUG, "NtCreateFile start");
+    return 1;
 }
 
-event_response_t sysret_cb(vmhdlr_t *handler, trap_data_t *data)
+int sysret_cb(vmhdlr_t *handler, trap_data_t *data)
 {
     writelog(LV_DEBUG, "NtCreateFile return");
+    return 0;
 }
