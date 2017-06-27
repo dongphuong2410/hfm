@@ -131,9 +131,9 @@ struct trap_data_t {
 typedef struct _trap_t {
     char name[STR_BUFF];
     cb_t cb;
+    cb_t ret_cb;
     uint64_t pa;
     uint8_t self_destroy;
-    struct _trap_t *ret_trap;     //A return trap that will be injected when syscall is called
 } trap_t;
 
 typedef struct memtrap_t {
