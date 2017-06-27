@@ -39,6 +39,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event);
+void _remove_int3(vmhdlr_t *handler, addr_t pa);
 
 static hfm_status_t _inject_trap(vmhdlr_t *handler, trap_t *trap);
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
@@ -68,7 +69,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         goto error3;
     }
     /* Init trap manager */
-    handler->trap_manager = tm_init(handler);
+    handler->trap_manager = tm_init();
     if (handler->trap_manager == NULL) {
         writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
         goto error4;
@@ -202,7 +203,10 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
             _inject_trap(handler, trap->ret_trap);
         }
         if (trap->self_destroy) {
-            tm_remove_int3trap(handler->trap_manager, trap);
+            int trap_remains = tm_remove_int3trap(handler->trap_manager, trap);
+            if (trap_remains == 0) {
+                _remove_int3(handler, trap->pa);
+            }
         }
         loop = loop->next;
     }
@@ -392,7 +396,6 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     handler->pm = vmi_get_page_mode(handler->vmi, 0);
     handler->vcpus = vmi_get_num_vcpus(handler->vmi);
     handler->memsize = handler->init_memsize = vmi_get_memsize(handler->vmi);
-    g_mutex_init(&handler->vmi_lock);
 
     /* Register events */
     int i;
@@ -517,7 +520,7 @@ error:
     return 0;
 }
 
-void hfm_remove_int3(vmhdlr_t *handler, addr_t pa)
+void _remove_int3(vmhdlr_t *handler, addr_t pa)
 {
     addr_t gfn = pa >>  PAGE_OFFSET_BITS;
     remapped_t *remapped = tm_find_remapped(handler->trap_manager, gfn);

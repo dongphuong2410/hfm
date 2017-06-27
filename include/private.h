@@ -11,7 +11,6 @@
 #include <libvmi/libvmi.h>
 #include <libvmi/events.h>
 #include <xenctrl.h>
-#include <glib.h>
 #include <libxl_utils.h>
 
 #define ghashtable_foreach(table, i, key, val) \
@@ -114,8 +113,6 @@ typedef struct _vmhdlr {
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
     vmi_event_t *step_event[16];
-    GMutex vmi_lock;
-
 } vmhdlr_t;
 
 typedef struct trap_data_t trap_data_t;
