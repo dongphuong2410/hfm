@@ -11,7 +11,6 @@ struct _trapmngr_t {
     GHashTable *remapped_tbl;       /* Key : original frame no, Value : remapped_t */
     GHashTable *breakpoint_tbl;     /* Key : pa, Value : int3_wrapper_t */
     GHashTable *breakpoint_gfn_tbl; /* Key : frame no, Value : GList of traps */
-    GHashTable *thread_syscall_tbl;   /* Key : thread id, Value : syscall wrapper */
     GHashTable *memaccess_tbl;      /* Key : frame no, Value : memtrap_t */
     GMutex lock;
 };
@@ -22,7 +21,6 @@ trapmngr_t *tm_init()
     trapmngr->remapped_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, NULL, free);
     trapmngr->breakpoint_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, free);
     trapmngr->breakpoint_gfn_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, NULL);
-    trapmngr->thread_syscall_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, free);
     trapmngr->memaccess_tbl = g_hash_table_new_full(g_int64_hash, g_int64_equal, free, free);
     g_mutex_init(&trapmngr->lock);
     return trapmngr;
@@ -49,11 +47,10 @@ void tm_destroy(trapmngr_t *tm)
     //Free remapped_tbl
     g_hash_table_destroy(tm->remapped_tbl);
 
-    //Free thread_syscall_tbl
-    g_hash_table_destroy(tm->thread_syscall_tbl);
+    //Free breakpoint_gfn_tbl
+    g_hash_table_destroy(tm->breakpoint_gfn_tbl);
 
     //Free breakpoint_tbl
-    g_hash_table_destroy(tm->breakpoint_gfn_tbl);
     int3_wrapper_t *int3w;
     ghashtable_foreach(tm->breakpoint_tbl, i, key, int3w) {
         g_slist_free_full(int3w->traps, (GDestroyNotify)free);
@@ -125,6 +122,9 @@ int tm_remove_int3trap(trapmngr_t *tm, trap_t *trap)
     traps_at_gfn = g_slist_remove(traps_at_gfn, trap);
     if (traps_at_gfn)
         g_hash_table_insert(tm->breakpoint_gfn_tbl, g_memdup(&gfn, sizeof(uint64_t)), traps_at_gfn);
+
+    //Free the trap
+    free(trap);
 done:
     g_mutex_unlock(&tm->lock);
     return trapno;
