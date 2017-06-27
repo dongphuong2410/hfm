@@ -40,7 +40,7 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event);
 static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event);
 
-static hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap);
+static hfm_status_t _inject_trap(vmhdlr_t *handler, trap_t *trap);
 static hfm_status_t _init_vmi(vmhdlr_t *handler);
 static void _close_vmi(vmhdlr_t *handler);
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler);
@@ -68,7 +68,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         goto error3;
     }
     /* Init trap manager */
-    handler->trap_manager = tm_init();
+    handler->trap_manager = tm_init(handler);
     if (handler->trap_manager == NULL) {
         writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
         goto error4;
@@ -131,11 +131,19 @@ hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, cb_t 
     //Create a trap
     trap_t *trap = (trap_t *)calloc(1, sizeof(trap_t));
     strncpy(trap->name, func_name, STR_BUFF);
-    trap->sys_cb = sys_cb;
-    trap->ret_cb = ret_cb;
+    trap->cb = sys_cb;
+    trap->pa = pa;
+
+    if (ret_cb) {
+        trap_t *ret_trap = (trap_t *)calloc(1, sizeof(trap_t));
+        sprintf(ret_trap->name, "%s_return", func_name);
+        ret_trap->cb = ret_cb;
+        ret_trap->self_destroy = 1;
+        trap->ret_trap = ret_trap;
+    }
 
     //Inject trap at physical address
-    _inject_trap(handler, pa, trap);
+    _inject_trap(handler, trap);
 done:
     vmi_resume_vm(handler->vmi);
     return ret;
@@ -180,8 +188,22 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     GSList *loop = int3traps;
     while (loop) {
         trap_t *trap = loop->data;
-        if (trap->sys_cb)
-            rsp |= trap->sys_cb(handler, NULL);
+        if (trap->cb) {
+            rsp |= trap->cb(handler, NULL);
+        }
+        if (trap->ret_trap) {
+            access_context_t ctx;
+            uint64_t ret;
+            ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
+            ctx.dtb = event->x86_regs->cr3;
+            ctx.addr = event->x86_regs->rsp;
+            vmi_read_addr(handler->vmi, &ctx, &ret);
+            trap->ret_trap->pa = vmi_pagetable_lookup(handler->vmi, ctx.dtb, ret);
+            _inject_trap(handler, trap->ret_trap);
+        }
+        if (trap->self_destroy) {
+            tm_remove_int3trap(handler->trap_manager, trap);
+        }
         loop = loop->next;
     }
 
@@ -210,7 +232,7 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
     pass->handler = handler;
     pass->access = event->mem_event.out_access;
     if (event->mem_event.out_access & VMI_MEMACCESS_W) {
-        pass->traps = tm_int3traps_at_gfn(handler->trap_manager, event->mem_event.gfn);
+        //pass->traps = tm_int3traps_at_gfn(handler->trap_manager, event->mem_event.gfn);
         if (pass->traps)
             pass->remapped = tm_find_remapped(handler->trap_manager,event->mem_event.gfn);
     }
@@ -282,9 +304,10 @@ static event_response_t _singlestep_cb(vmi_instance_t vmi, vmi_event_t *event)
             VMI_EVENT_RESPONSE_VMM_PAGETABLE_ID;
 }
 
-hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
+hfm_status_t _inject_trap(vmhdlr_t *handler, trap_t *trap)
 {
     hfm_status_t status = FAIL;
+    addr_t pa = trap->pa;
     addr_t frame = pa >> PAGE_OFFSET_BITS;
     int doubletrap = -1;
 
@@ -335,7 +358,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, addr_t pa, trap_t *trap)
         }
     }
     //Insert new trap to trap manager
-    tm_add_int3trap(handler->trap_manager, pa, trap);
+    tm_add_int3trap(handler->trap_manager, trap);
     if (doubletrap != -1)
         tm_set_doubletrap(handler->trap_manager, pa, doubletrap);
     status = SUCCESS;
@@ -369,6 +392,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     handler->pm = vmi_get_page_mode(handler->vmi, 0);
     handler->vcpus = vmi_get_num_vcpus(handler->vmi);
     handler->memsize = handler->init_memsize = vmi_get_memsize(handler->vmi);
+    g_mutex_init(&handler->vmi_lock);
 
     /* Register events */
     int i;
@@ -492,3 +516,19 @@ static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t frame)
 error:
     return 0;
 }
+
+void hfm_remove_int3(vmhdlr_t *handler, addr_t pa)
+{
+    addr_t gfn = pa >>  PAGE_OFFSET_BITS;
+    remapped_t *remapped = tm_find_remapped(handler->trap_manager, gfn);
+    uint8_t backup;
+    if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &backup)) {
+        writelog(LV_ERROR, "Critical error in removing int3");
+        handler->interrupted = -1;
+    }
+    if (VMI_FAILURE == vmi_write_8_pa(handler->vmi, (remapped->r << PAGE_OFFSET_BITS) + (pa & VMI_BIT_MASK(0,11)), &backup)) {
+        writelog(LV_ERROR, "Critical error in removing int3");
+        handler->interrupted = -1;
+    }
+}
+
