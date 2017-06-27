@@ -31,7 +31,7 @@ typedef struct _remapped_t {
   * @brief Init trap manager
   * @return Return pointer to trapmngr_t if init success, or else return NULL
   */
-trapmngr_t *tm_init(vmhdlr_t *handler);
+trapmngr_t *tm_init();
 
 /**
   * @brief Destroy trap manager, releases all resources
@@ -73,8 +73,9 @@ void tm_add_int3trap(trapmngr_t *tm, trap_t *trap);
   * @brief Remove a breakpoint trap at physical address
   * @param tm Pointer to trapmngr_t
   * @param trap Pointer to trap
+  * @return Return number of trap remains in the pa
   */
-void tm_remove_int3trap(trapmngr_t *tm, trap_t *trap);
+int tm_remove_int3trap(trapmngr_t *tm, trap_t *trap);
 
 /**
   * @brief Find a breakpoint wrapper in a page

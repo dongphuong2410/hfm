@@ -9,7 +9,7 @@ config_t *config;
 
 int main(int argc, char **argv)
 {
-    trapmngr_t *tm = tm_init(NULL);
+    trapmngr_t *tm = tm_init();
 
     remapped_t *re = (remapped_t *)calloc(1, sizeof(remapped_t));
     re->o = 12345;
