@@ -59,9 +59,9 @@ int main(int argc, char **argv)
 
     //Init logging module
     if (config_get_str(config, "log_file"))
-        log_init(LV_DEBUG, LOG_TEXTFILE, config_get_str(config, "log_file"));
+        log_init(LOG_LEVEL, LOG_TEXTFILE, config_get_str(config, "log_file"));
     else
-        log_init(LV_DEBUG, LOG_CONSOLE);
+        log_init(LOG_LEVEL, LOG_CONSOLE);
 
     //Get policies
     if (!config_get_str(config, "policy_file")) {
