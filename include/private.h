@@ -12,6 +12,7 @@
 #include <libvmi/events.h>
 #include <xenctrl.h>
 #include <libxl_utils.h>
+#include <glib.h>
 
 #define ghashtable_foreach(table, i, key, val) \
           g_hash_table_iter_init(&i, table); \
@@ -109,6 +110,7 @@ typedef struct _vmhdlr {
     uint16_t altp2m_idx;
     trapmngr_t *trap_manager;
     int interrupted;
+    GMutex vmi_lock;
 
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
@@ -117,14 +119,7 @@ typedef struct _vmhdlr {
 
 typedef struct trap_data_t trap_data_t;
 
-typedef int (*cb_t)(vmhdlr_t *, trap_data_t *);
-
-/**
-  * @brief Trap info to transfer to callback
-  */
-struct trap_data_t {
-    x86_registers_t *regs;
-};
+typedef void *(*cb_t)(vmhdlr_t *, trap_data_t *);
 
 /**
   * @brief A trap to be injected to the VM
@@ -135,7 +130,16 @@ typedef struct _trap_t {
     cb_t ret_cb;
     uint64_t pa;
     uint8_t self_destroy;
+    void *extra;
 } trap_t;
+
+/**
+  * @brief Trap info to transfer to callback
+  */
+struct trap_data_t {
+    x86_registers_t *regs;
+    trap_t *trap;
+};
 
 typedef struct memtrap_t {
 } memtrap_t;

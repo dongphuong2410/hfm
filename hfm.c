@@ -10,7 +10,6 @@
 #include "config.h"
 #include "log.h"
 #include "trapmngr.h"
-#include "util.h"
 
 /**
 * hfm maintains two page tables (two views), first page table (ORIGINAL_IDX) maps the kernel
@@ -185,10 +184,11 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
         if (trap->cb) {
             trap_data_t *data = (trap_data_t *)calloc(1, sizeof(trap_data_t));
             data->regs = event->x86_regs;
+            data->trap = trap;
 
-            int trap_sys_ret = trap->cb(handler, data);
+            void *extra = trap->cb(handler, data);
             free(data);
-            if (trap_sys_ret && trap->ret_cb) {
+            if (extra && trap->ret_cb) {
                 access_context_t ctx;
                 uint64_t ret;
                 ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
@@ -200,6 +200,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
                 ret_trap->cb = trap->ret_cb;
                 ret_trap->self_destroy = 1;
                 ret_trap->ret_cb = NULL;
+                ret_trap->extra = extra;
                 sprintf(ret_trap->name, "%s_return", trap->name);
 
                 _inject_trap(handler, ret_trap);
@@ -424,6 +425,8 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
         goto error;
     }
 
+    g_mutex_init(&handler->vmi_lock);
+
     return SUCCESS;
 error:
     return FAIL;
@@ -541,8 +544,11 @@ void _remove_int3(vmhdlr_t *handler, addr_t pa)
 
 vmi_instance_t hfm_lock_and_get_vmi(vmhdlr_t *handler)
 {
-    return NULL;
+    g_mutex_lock(&handler->vmi_lock);
+    return handler->vmi;
 }
 
-void hfm_release_vmi(vmhdlr_t *handler) {
+void hfm_release_vmi(vmhdlr_t *handler)
+{
+    g_mutex_unlock(&handler->vmi_lock);
 }

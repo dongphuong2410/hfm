@@ -11,11 +11,11 @@
 #include "private.h"
 
 /**
-  * @brief Set the function pointers for mon_add_trap
+  * @brief Init monitors
   *
   * @param type monitor type
   */
-void mon_init(monitor_t type);
+int mon_init(void);
 
 /**
   * @brief Add a policy to the vm

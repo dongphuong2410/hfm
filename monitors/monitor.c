@@ -3,8 +3,11 @@
 #include "private.h"
 
 
-void mon_init(monitor_t type)
+int mon_init(void)
 {
+    int status = 0;
+    status |= file_created_init();
+    return status;
 }
 
 hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)

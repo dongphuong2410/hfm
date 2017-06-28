@@ -54,6 +54,9 @@ int main(int argc, char **argv)
     //Read configuration
     config = _read_config(argc, argv);
 
+    //Init monitoring modules
+    mon_init();
+
     //Init logging module
     if (config_get_str(config, "log_file"))
         log_init(LV_DEBUG, LOG_TEXTFILE, config_get_str(config, "log_file"));
