@@ -183,7 +183,11 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     while (loop) {
         trap_t *trap = loop->data;
         if (trap->cb) {
-            int trap_sys_ret = trap->cb(handler, NULL);
+            trap_data_t *data = (trap_data_t *)calloc(1, sizeof(trap_data_t));
+            data->regs = event->x86_regs;
+
+            int trap_sys_ret = trap->cb(handler, data);
+            free(data);
             if (trap_sys_ret && trap->ret_cb) {
                 access_context_t ctx;
                 uint64_t ret;
@@ -535,3 +539,10 @@ void _remove_int3(vmhdlr_t *handler, addr_t pa)
     }
 }
 
+vmi_instance_t hfm_lock_and_get_vmi(vmhdlr_t *handler)
+{
+    return NULL;
+}
+
+void hfm_release_vmi(vmhdlr_t *handler) {
+}

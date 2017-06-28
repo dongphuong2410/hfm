@@ -35,4 +35,17 @@ void hfm_close(vmhdlr_t *handler);
   */
 hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, cb_t sys_cb, cb_t ret_cb);
 
+/**
+  * @brief Lock and return pointer to hfm handler
+  * @param handler Pointer to vmhdlr_t
+  * @return vmi instance
+  */
+vmi_instance_t hfm_lock_and_get_vmi(vmhdlr_t *handler);
+
+/**
+  * @brief Unlock vmi
+  * @param handler Pointer to vmhdlr_t
+  */
+void hfm_release_vmi(vmhdlr_t *handler);
+
 #endif

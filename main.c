@@ -169,7 +169,11 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
 
 static void _set_policies(vmhdlr_t *handler, GSList *policies)
 {
-    mon_add_policy(handler, NULL);
+    policy_t *test = (policy_t *)calloc(1, sizeof(policy_t));
+    test->type = MON_CREATE;
+    mon_add_policy(handler, test);
+
+    free(test);
 }
 
 static void _monitor_vm(vmhdlr_t *vm)
