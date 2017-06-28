@@ -13,12 +13,18 @@ hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 
 int syscall_cb(vmhdlr_t *handler, trap_data_t *data)
 {
-    writelog(LV_DEBUG, "NtCreateFile start");
     return 1;
 }
 
 int sysret_cb(vmhdlr_t *handler, trap_data_t *data)
 {
-    writelog(LV_DEBUG, "NtCreateFile return");
+    addr_t attr = 0;
+    if (handler->pm == VMI_PM_IA32E)
+        attr = data->regs->r8;
+    else {
+        vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
+        vmi_read_32_va(vmi, data->regs->rsp + sizeof(uint32_t) * 3, 0, (uint32_t *)&attr);
+        hfm_release_vmi(handler);
+    }
     return 0;
 }
