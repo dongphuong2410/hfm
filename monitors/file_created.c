@@ -66,7 +66,7 @@ static void *syscall_cb(vmhdlr_t *handler, trap_data_t *data)
         vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
         vmi_read_32_va(vmi, data->regs->rsp + sizeof(uint32_t) * 4, 0, &create);
         hfm_release_vmi(handler);
-        printf("CreateDisposition AAAA %u\n", create);
+        printf("CreateDisposition %u\n", create);
     }
     else {
         vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
