@@ -19,10 +19,10 @@ typedef struct transdata_t {
     char filename[STR_BUFF];
 } transdata_t;
 
-static void *syscall_cb(vmhdlr_t *handler, trap_context_t *context);
-static void *sysret_cb(vmhdlr_t *handler, trap_context_t *context);
-static objattr_t *_objattr_read(vmhdlr_t *handler, trap_context_t *context, addr_t addr);
-static uint64_t _iostatus_read(vmhdlr_t *handler, trap_context_t *context, addr_t addr);
+static void *syscall_cb(vmhdlr_t *handler, const trap_context_t *context);
+static void *sysret_cb(vmhdlr_t *handler, const trap_context_t *context);
+static objattr_t *_objattr_read(vmhdlr_t *handler, const trap_context_t *context, addr_t addr);
+static uint64_t _iostatus_read(vmhdlr_t *handler, const trap_context_t *context, addr_t addr);
 
 config_t *config;
 static addr_t OFFSET_OBJECT_ATTRIBUTES_ObjectName;
@@ -54,7 +54,7 @@ hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
     return FAIL;
 }
 
-static void *syscall_cb(vmhdlr_t *handler, trap_context_t *context)
+static void *syscall_cb(vmhdlr_t *handler, const trap_context_t *context)
 {
     addr_t attr = 0, io_status = 0;
     uint32_t create = 0;
@@ -92,7 +92,7 @@ static void *syscall_cb(vmhdlr_t *handler, trap_context_t *context)
     return dt;
 }
 
-static void *sysret_cb(vmhdlr_t *handler, trap_context_t *context)
+static void *sysret_cb(vmhdlr_t *handler, const trap_context_t *context)
 {
     transdata_t *dt = (transdata_t *)context->trap->extra;
     printf("AFTER\n");
@@ -106,7 +106,7 @@ static void *sysret_cb(vmhdlr_t *handler, trap_context_t *context)
     return NULL;
 }
 
-static objattr_t *_objattr_read(vmhdlr_t *handler, trap_context_t *context, addr_t addr)
+static objattr_t *_objattr_read(vmhdlr_t *handler, const trap_context_t *context, addr_t addr)
 {
     objattr_t *obj = NULL;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
@@ -163,7 +163,7 @@ done:
     return obj;
 }
 
-static uint64_t _iostatus_read(vmhdlr_t *handler, trap_context_t *context, addr_t addr)
+static uint64_t _iostatus_read(vmhdlr_t *handler, const trap_context_t *context, addr_t addr)
 {
     uint64_t information = 0;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);

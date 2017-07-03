@@ -119,7 +119,7 @@ typedef struct _vmhdlr {
 
 typedef struct trap_context_t trap_context_t;
 
-typedef void *(*cb_t)(vmhdlr_t *, trap_context_t *);
+typedef void *(*cb_t)(vmhdlr_t *, const trap_context_t *);
 
 /**
   * @brief A trap to be injected to the VM
