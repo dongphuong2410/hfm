@@ -117,9 +117,9 @@ typedef struct _vmhdlr {
     vmi_event_t *step_event[16];
 } vmhdlr_t;
 
-typedef struct trap_data_t trap_data_t;
+typedef struct trap_context_t trap_context_t;
 
-typedef void *(*cb_t)(vmhdlr_t *, trap_data_t *);
+typedef void *(*cb_t)(vmhdlr_t *, trap_context_t *);
 
 /**
   * @brief A trap to be injected to the VM
@@ -134,9 +134,9 @@ typedef struct _trap_t {
 } trap_t;
 
 /**
-  * @brief Trap info to transfer to callback
+  * @brief Trap context to transfer to callback
   */
-struct trap_data_t {
+struct trap_context_t {
     x86_registers_t *regs;
     trap_t *trap;
 };

@@ -182,12 +182,12 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     while (loop) {
         trap_t *trap = loop->data;
         if (trap->cb) {
-            trap_data_t *data = (trap_data_t *)calloc(1, sizeof(trap_data_t));
-            data->regs = event->x86_regs;
-            data->trap = trap;
+            trap_context_t *context = (trap_context_t *)calloc(1, sizeof(trap_context_t));
+            context->regs = event->x86_regs;
+            context->trap = trap;
 
-            void *extra = trap->cb(handler, data);
-            free(data);
+            void *extra = trap->cb(handler, context);
+            free(context);
             if (extra && trap->ret_cb) {
                 access_context_t ctx;
                 uint64_t ret;
