@@ -179,15 +179,14 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     else
         event->interrupt_event.reinject = 0;
     GSList *loop = int3traps;
+    trap_context_t *context = (trap_context_t *)calloc(1, sizeof(trap_context_t));
     while (loop) {
         trap_t *trap = loop->data;
         if (trap->cb) {
-            trap_context_t *context = (trap_context_t *)calloc(1, sizeof(trap_context_t));
             context->regs = event->x86_regs;
             context->trap = trap;
 
             void *extra = trap->cb(handler, context);
-            free(context);
             if (extra && trap->ret_cb) {
                 access_context_t ctx;
                 uint64_t ret;
@@ -215,6 +214,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
         }
         loop = loop->next;
     }
+    free(context);
 
     event->slat_id = ORIGIN_IDX;
     handler->step_event[event->vcpu_id]->callback = _singlestep_cb;
