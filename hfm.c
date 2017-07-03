@@ -179,11 +179,13 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     else
         event->interrupt_event.reinject = 0;
     GSList *loop = int3traps;
-    trap_context_t *context = (trap_context_t *)calloc(1, sizeof(trap_context_t));
+    context_t *context = (context_t *)calloc(1, sizeof(context_t));
+    context->regs = event->x86_regs;
+    context->access_ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
+    context->access_ctx.dtb = event->x86_regs->cr3;
     while (loop) {
         trap_t *trap = loop->data;
         if (trap->cb) {
-            context->regs = event->x86_regs;
             context->trap = trap;
 
             void *extra = trap->cb(handler, context);

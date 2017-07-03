@@ -8,6 +8,7 @@
 #include "config.h"
 #include "rekall.h"
 #include "constants.h"
+#include "context.h"
 
 typedef struct objattr_t {
     char name[STR_BUFF];
@@ -18,26 +19,26 @@ typedef struct params_t {
     char filename[STR_BUFF];
 } params_t;
 
-static void *syscall_cb(vmhdlr_t *handler, const trap_context_t *context);
-static void *sysret_cb(vmhdlr_t *handler, const trap_context_t *context);
-static char *_read_unicode(vmi_instance_t vmi, const trap_context_t *context, addr_t addr);
+static void *syscall_cb(vmhdlr_t *handler, context_t *context);
+static void *sysret_cb(vmhdlr_t *handler, context_t *context);
+static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t addr);
 
 config_t *config;
-static addr_t OFFSET_OBJECT_ATTRIBUTES_ObjectName;
-static addr_t OFFSET_UNICODE_STRING_Length;
-static addr_t OFFSET_UNICODE_STRING_Buffer;
-static addr_t OFFSET_IO_STATUS_BLOCK_Information;
-static addr_t OFFSET_IO_STATUS_BLOCK_Status;
+static addr_t OBJEC_ATTRIBUTES_OBJECT_NAME;
+static addr_t UNICODE_STRING_LENGTH;
+static addr_t UNICODE_STRING_BUFFER;
+static addr_t IO_STATUS_BLOCK_INFORMATION;
+static addr_t IO_STATUS_BLOCK_STATUS;
 
 int file_created_init(void)
 {
     const char *rekall_profile = config_get_str(config, "rekall_profile");
     int status = 0;
-    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "ObjectName", &OFFSET_OBJECT_ATTRIBUTES_ObjectName, NULL);
-    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "Length", &OFFSET_UNICODE_STRING_Length, NULL);
-    status |= rekall_lookup(rekall_profile, "_UNICODE_STRING", "Buffer", &OFFSET_UNICODE_STRING_Buffer, NULL);
-    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Information", &OFFSET_IO_STATUS_BLOCK_Information, NULL);
-    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Status", &OFFSET_IO_STATUS_BLOCK_Status, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "ObjectName", &OBJEC_ATTRIBUTES_OBJECT_NAME, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "Length", &UNICODE_STRING_LENGTH, NULL);
+    status |= rekall_lookup(rekall_profile, "_UNICODE_STRING", "Buffer", &UNICODE_STRING_BUFFER, NULL);
+    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Information", &IO_STATUS_BLOCK_INFORMATION, NULL);
+    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Status", &IO_STATUS_BLOCK_STATUS, NULL);
     if (status)
         goto error;
     return 0;
@@ -52,7 +53,7 @@ hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
     return FAIL;
 }
 
-static void *syscall_cb(vmhdlr_t *handler, const trap_context_t *context)
+static void *syscall_cb(vmhdlr_t *handler, context_t *context)
 {
     addr_t objattr_addr = 0, io_status_addr = 0;
     uint32_t create = 0;
@@ -72,12 +73,8 @@ static void *syscall_cb(vmhdlr_t *handler, const trap_context_t *context)
         vmi_read_32_va(vmi, context->regs->rsp + sizeof(uint32_t) * 4, 0, (uint32_t *)&io_status_addr);
         vmi_read_32_va(vmi, context->regs->rsp + sizeof(uint32_t) * 8, 0, &create);
     }
-    addr_t objectname_addr;
-    access_context_t ctx;
-    ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
-    ctx.dtb = context->regs->cr3;
-    ctx.addr = objattr_addr + OFFSET_OBJECT_ATTRIBUTES_ObjectName;
-    vmi_read_addr(vmi, &ctx, &objectname_addr);
+
+    addr_t objectname_addr = hfm_read_addr(vmi, context, objattr_addr + OBJEC_ATTRIBUTES_OBJECT_NAME);
     char *filename = _read_unicode(vmi, context, objectname_addr);
 
     params_t *params = (params_t *)calloc(1, sizeof(params_t));
@@ -91,22 +88,14 @@ static void *syscall_cb(vmhdlr_t *handler, const trap_context_t *context)
     return params;
 }
 
-static void *sysret_cb(vmhdlr_t *handler, const trap_context_t *context)
+static void *sysret_cb(vmhdlr_t *handler, context_t *context)
 {
     params_t *params = (params_t *)context->trap->extra;
-    uint64_t information = 0;
-    uint32_t status;
-
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
-    access_context_t ctx;
-    ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
-    ctx.dtb = context->regs->cr3;
 
-    ctx.addr = params->io_status_addr + OFFSET_IO_STATUS_BLOCK_Information;
-    vmi_read_64(vmi, &ctx, &information);
+    uint64_t information = hfm_read_64(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_INFORMATION);
 
-    ctx.addr = params->io_status_addr + OFFSET_IO_STATUS_BLOCK_Status;
-    vmi_read_32(vmi, &ctx, &status);
+    uint32_t status = hfm_read_32(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_STATUS);
 
     if (information == FILE_CREATED && status == STATUS_SUCCESS) {
         printf("File %s\n", params->filename);
@@ -119,41 +108,30 @@ done:
 /**
   * Read Filename from OBJECT_ATTRIBUTES struct
   */
-static char *_read_unicode(vmi_instance_t vmi, const trap_context_t *context, addr_t unicode_str_addr)
+static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr)
 {
     char *ret = NULL;
 
-    access_context_t ctx;
-    ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
-    ctx.dtb = context->regs->cr3;
-
     //Read unicode string length
-    uint16_t length = 0;
-    ctx.addr = unicode_str_addr + OFFSET_UNICODE_STRING_Length;
-    status_t rc = vmi_read_16(vmi, &ctx, &length);
-    if (VMI_FAILURE == rc || length > VMI_PS_4KB) {
+    uint16_t length = hfm_read_16(vmi, context, unicode_str_addr + UNICODE_STRING_LENGTH);
+    if (0 == length || length > VMI_PS_4KB)
         goto done;
-    }
 
     //Read unicode string buffer address
-    addr_t buffer_addr;
-    ctx.addr = unicode_str_addr + OFFSET_UNICODE_STRING_Buffer;
-    rc = vmi_read_addr(vmi, &ctx, &buffer_addr);
-    if (VMI_FAILURE == rc) {
+    addr_t buffer_addr = hfm_read_addr(vmi, context, unicode_str_addr + UNICODE_STRING_BUFFER);
+    if (0 == buffer_addr)
         goto done;
-    }
 
     unicode_string_t str, str2 = {.contents = NULL};
     str.contents = (unsigned char*)g_malloc0(length + 2);
     str.length = length;
     str.encoding = "UTF-16";
 
-    ctx.addr = buffer_addr;
-    if (length != vmi_read(vmi, &ctx, str.contents, length)) {
+    if (length != hfm_read(vmi, context, buffer_addr, str.contents, length)) {
         g_free(str.contents);
         goto done;
     }
-    rc = vmi_convert_str_encoding(&str, &str2, "UTF-8");
+    status_t rc = vmi_convert_str_encoding(&str, &str2, "UTF-8");
     g_free(str.contents);
 
     if (VMI_SUCCESS == rc) {
