@@ -25,20 +25,21 @@ static objattr_t *_objattr_read(vmhdlr_t *handler, trap_data_t *data, addr_t add
 static uint64_t _iostatus_read(vmhdlr_t *handler, trap_data_t *data, addr_t addr);
 
 config_t *config;
-static addr_t objattr_name;
-static addr_t unicode_buff;
-static addr_t iostatus_information;
+static addr_t OFFSET_OBJECT_ATTRIBUTES_ObjectName;
+static addr_t OFFSET_UNICODE_STRING_Buffer;
+static addr_t OFFSET_IO_STATUS_BLOCK_Information;
+static addr_t OFFSET_IO_STATUS_BLOCK_Status;
 
 int file_created_init(void)
 {
     const char *rekall_profile = config_get_str(config, "rekall_profile");
     int status;
-    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "ObjectName", &objattr_name, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "ObjectName", &OFFSET_OBJECT_ATTRIBUTES_ObjectName, NULL);
     if (status)
         goto error;
-    status |= rekall_lookup(rekall_profile, "_UNICODE_STRING", "Buffer", &unicode_buff, NULL);
-    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Information", &iostatus_information, NULL);
-    //printf("iostatus %d\n", iostatus_information);
+    status |= rekall_lookup(rekall_profile, "_UNICODE_STRING", "Buffer", &OFFSET_UNICODE_STRING_Buffer, NULL);
+    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Information", &OFFSET_IO_STATUS_BLOCK_Information, NULL);
+    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Status", &OFFSET_IO_STATUS_BLOCK_Status, NULL);
     if (status)
         goto error;
     return 0;
@@ -48,6 +49,7 @@ error:
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
+    hfm_monitor_syscall(hdlr, "NtOpenFile", syscall_cb, sysret_cb);
     hfm_monitor_syscall(hdlr, "NtCreateFile", syscall_cb, sysret_cb);
     return FAIL;
 }
@@ -66,14 +68,13 @@ static void *syscall_cb(vmhdlr_t *handler, trap_data_t *data)
         vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
         vmi_read_32_va(vmi, data->regs->rsp + sizeof(uint32_t) * 4, 0, &create);
         hfm_release_vmi(handler);
-        printf("CreateDisposition %u\n", create);
+        printf("\n\nCreateDisposition %u\n", create);
     }
     else {
         vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
         vmi_read_32_va(vmi, data->regs->rsp + sizeof(uint32_t) * 3, 0, (uint32_t *)&attr);
         vmi_read_32_va(vmi, data->regs->rsp + sizeof(uint32_t) * 4, 0, (uint32_t *)&io_status);
         vmi_read_32_va(vmi, data->regs->rsp + sizeof(uint32_t) * 8, 0, &create);
-        printf("CreateDisposition %u\n", create);
         hfm_release_vmi(handler);
     }
 
@@ -81,6 +82,9 @@ static void *syscall_cb(vmhdlr_t *handler, trap_data_t *data)
     transdata_t *dt = (transdata_t *)calloc(1, sizeof(transdata_t));
     dt->objattr_addr = attr;
     dt->io_status_addr = io_status;
+    printf("BEFORE\n");
+    uint64_t information = _iostatus_read(handler, data, dt->io_status_addr);
+    printf("Information %lu\n", information);
     if (obj) {
         strncpy(dt->filename, obj->name, STR_BUFF);
         free(obj);
@@ -91,9 +95,11 @@ static void *syscall_cb(vmhdlr_t *handler, trap_data_t *data)
 static void *sysret_cb(vmhdlr_t *handler, trap_data_t *data)
 {
     transdata_t *dt = (transdata_t *)data->trap->extra;
+    printf("AFTER\n");
     uint64_t information = _iostatus_read(handler, data, dt->io_status_addr);
+    printf("Information %lu\n", information);
     objattr_t *obj = _objattr_read(handler, data, dt->objattr_addr);
-    printf("File %s with status code %lu\n", obj->name, information);
+    printf("File %s\n", obj->name);
     //if (FILE_CREATED == information) {
     //    printf("File %s has just been created\n", dt->filename);
     //}
@@ -113,7 +119,7 @@ static objattr_t *_objattr_read(vmhdlr_t *handler, trap_data_t *data, addr_t add
     if (!addr) {
         goto done;
     }
-    ctx.addr = addr + objattr_name;
+    ctx.addr = addr + OFFSET_OBJECT_ATTRIBUTES_ObjectName;
     vmi_read_addr(vmi, &ctx, &name);
 
     ctx.addr = name;
@@ -129,7 +135,7 @@ static objattr_t *_objattr_read(vmhdlr_t *handler, trap_data_t *data, addr_t add
     str.length = length;
     str.encoding = "UTF-16";
 
-    ctx.addr = name + unicode_buff;
+    ctx.addr = name + OFFSET_UNICODE_STRING_Buffer;
     rc = vmi_read_addr(vmi, &ctx, &ctx.addr);
     if (VMI_FAILURE == rc) {
         g_free(str.contents);
@@ -169,8 +175,13 @@ static uint64_t _iostatus_read(vmhdlr_t *handler, trap_data_t *data, addr_t addr
         goto done;
     }
 
-    ctx.addr = addr + iostatus_information;
+    ctx.addr = addr + OFFSET_IO_STATUS_BLOCK_Information;
     vmi_read_64(vmi, &ctx, &information);
+
+    uint32_t status;
+    ctx.addr = addr + 0;
+    vmi_read_32(vmi, &ctx, &status);
+    printf("Status %u\n", status);
 done:
     hfm_release_vmi(handler);
     return information;
