@@ -5,55 +5,44 @@
 #include "file_created.h"
 #include "hfm.h"
 #include "log.h"
-#include "config.h"
 #include "rekall.h"
 #include "constants.h"
 #include "context.h"
 
-typedef struct objattr_t {
-    char name[STR_BUFF];
-} objattr_t;
+/**
+  * typedef struct _UNICODE_STRING {
+  *     USHORT Length;
+  *     USHORT MaximumLength;
+  *     PWSTR  Buffer;
+  * } UNICODE_STRING, *PUNICODE_STRING
+  */
 
 typedef struct params_t {
     addr_t io_status_addr;
     char filename[STR_BUFF];
 } params_t;
 
-static void *syscall_cb(vmhdlr_t *handler, context_t *context);
-static void *sysret_cb(vmhdlr_t *handler, context_t *context);
-static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t addr);
+/**
+  * Callback when the functions NtOpenFile, NtCreateFile, ZwOpenFile, ZwCreateFile is called
+  */
+static void *createfile_cb(vmhdlr_t *handler, context_t *context);
 
-config_t *config;
-static addr_t OBJEC_ATTRIBUTES_OBJECT_NAME;
-static addr_t UNICODE_STRING_LENGTH;
-static addr_t UNICODE_STRING_BUFFER;
-static addr_t IO_STATUS_BLOCK_INFORMATION;
-static addr_t IO_STATUS_BLOCK_STATUS;
+/**
+  * Callback when the functions NtOpenFile, NtCreateFile, ZwOpenFile, ZwCreateFile is return
+  */
+static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context);
 
-int file_created_init(void)
-{
-    const char *rekall_profile = config_get_str(config, "rekall_profile");
-    int status = 0;
-    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "ObjectName", &OBJEC_ATTRIBUTES_OBJECT_NAME, NULL);
-    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "Length", &UNICODE_STRING_LENGTH, NULL);
-    status |= rekall_lookup(rekall_profile, "_UNICODE_STRING", "Buffer", &UNICODE_STRING_BUFFER, NULL);
-    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Information", &IO_STATUS_BLOCK_INFORMATION, NULL);
-    status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Status", &IO_STATUS_BLOCK_STATUS, NULL);
-    if (status)
-        goto error;
-    return 0;
-error:
-    return -1;
-}
-
+/**
+  * Convert the _UNICODE_STRING structure into text
+  */
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
-    hfm_monitor_syscall(hdlr, "NtOpenFile", syscall_cb, sysret_cb);
-    hfm_monitor_syscall(hdlr, "NtCreateFile", syscall_cb, sysret_cb);
+    hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
+    hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
     return FAIL;
 }
 
-static void *syscall_cb(vmhdlr_t *handler, context_t *context)
+static void *createfile_cb(vmhdlr_t *handler, context_t *context)
 {
     addr_t objattr_addr = 0, io_status_addr = 0;
     uint32_t create = 0;
@@ -88,7 +77,7 @@ static void *syscall_cb(vmhdlr_t *handler, context_t *context)
     return params;
 }
 
-static void *sysret_cb(vmhdlr_t *handler, context_t *context)
+static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
 {
     params_t *params = (params_t *)context->trap->extra;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
@@ -105,9 +94,6 @@ done:
     return NULL;
 }
 
-/**
-  * Read Filename from OBJECT_ATTRIBUTES struct
-  */
 static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr)
 {
     char *ret = NULL;

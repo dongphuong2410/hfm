@@ -10,11 +10,6 @@
 #include "private.h"
 
 /**
-  * @brief Init monitor module
-  */
-int file_created_init(void);
-
-/**
   * @brief Implement of abstract function mon_add_policy for file_crated plugin
   *
   * @param hdlr vmhdlr pointer
