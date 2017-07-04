@@ -42,6 +42,28 @@ hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
     return FAIL;
 }
 
+/**
+  * Callback when NtCreateFile or NtOpenFile,.. is called
+  * We will read the ObjectAttributes for ObjectName (filename)
+  * Read the address of IoStatusBlock and transfered to createfile_ret_cb
+  *
+  * NTSTATUS NtCreateFile(
+  *     _Out_   PHANDLE             FileHandle,
+  *     _In_    ACCESS_MASK         DesiredAccess,
+  *     _In_    POBJECT_ATTRIBUTES  ObjectAttributes,
+  *     _Out_   PIO_STATUS_BLOCK    IoStatusBlock,
+  *     ....
+  * );
+  *
+  * typedef _OBJECT_ATTRIBUTES {
+  *     ULONG               Length;
+  *     HANDLE              RootDirectory;
+  *     PUNICODE_STRING     ObjectName;
+  *     ULONG               Attributes;
+  *     PVOID               SecurityDescriptor;
+  *     PVOID               SecurityQualityOfService
+  * } OBJECT_ATTRIBUTES;
+  */
 static void *createfile_cb(vmhdlr_t *handler, context_t *context)
 {
     addr_t objattr_addr = 0, io_status_addr = 0;
@@ -77,6 +99,21 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
     return params;
 }
 
+/**
+  * Callback when NtCreateFile, NtOpenFile, ZwCreateFile, ZwOpenFile ..
+  * is returned.
+  * We received the io_status_block address from createfile_cb through the passing params
+  * Read the IO_STATUS_BLOCK for Information field and Status field
+  * A file is newly created when the Information has value FILE_CREATED and status STATUS_SUCCESS
+  *
+  * typedef struct _IO_STATUS_BLOCK {
+  *     union {
+  *         NTSTATUS Status;
+  *         PVOID    Pointer;
+  *     };
+  *     ULONG_PTR Information;
+  * } IO_STATUS_BLOCK;
+  */
 static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
 {
     params_t *params = (params_t *)context->trap->extra;
