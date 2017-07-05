@@ -33,12 +33,26 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context);
 static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context);
 
 /**
+  * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is called
+  */
+static void *setinformation_cb(vmhdlr_t *handler, context_t *context);
+
+/**
+  * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is returned
+  */
+static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
+
+/**
   * Convert the _UNICODE_STRING structure into text
   */
+static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr);
+
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
-    hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
-    hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
+    //hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
+    //hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
+    hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
+    hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
     return FAIL;
 }
 
@@ -128,6 +142,78 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     }
 done:
     hfm_release_vmi(handler);
+    return NULL;
+}
+
+/**
+  * NTSTATUS ZwSetInformationFile(
+  *     _In_  HANDLE                    FileHandle,
+  *     _Out_ PIO_STATUS_BLOCK          IoStatusBlock,
+  *     _In_  PVOID                     FileInformation,
+  *     _In_  ULONG                     Length,
+  *     _In_  FILE_INFORMATION_CLASS    FileInformationClass
+  * );
+  *
+  * typedef struct _FILE_RENAME_INFORMATION {
+  *     BOOLEAN     ReplaceIfExists;
+  *     HANDLE      RootDirectory;
+  *     ULONG       FileNameLength;
+  *     WCHAR       FileName[1];
+  * } FILE_RENAME_INFORMATION;
+  *
+  * - Read FileInformationClass, check if class is FILE_RENAME_INFORMATION
+  * - Read FILE_RENAME_INFORMATION struct for new filename, transfered to setinformation_ret_cb
+  * - Read the IoStatusBlock, transfered to setinformation_ret_cb
+  */
+static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
+{
+    vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
+    addr_t fileinfo_addr = 0;
+    uint32_t fileinfo_class = 0;
+    addr_t iostatus_addr = 0;
+
+    //Read FileInformationClass and address of FileInformation
+    if (handler->pm == VMI_PM_IA32E) {
+        iostatus_addr = context->regs->rdx;
+        fileinfo_addr = context->regs->r8;
+        fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(addr_t));
+    }
+    else {
+        iostatus_addr = hfm_read_32(vmi, context, context->regs->rsp + 2 * sizeof(uint32_t));
+        fileinfo_addr = hfm_read_32(vmi, context, context->regs->rsp + 3 * sizeof(uint32_t));
+        fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(uint32_t));
+    }
+    if (FILE_RENAME_INFORMATION == fileinfo_class) {
+        //Read FileName length
+        addr_t filename_length_addr = fileinfo_addr + FILE_RENAME_INFORMATION_FILE_NAME_LENGTH;
+        addr_t filename_addr = fileinfo_addr + FILE_RENAME_INFORMATION_FILE_NAME;
+        uint32_t filename_length = hfm_read_32(vmi, context, filename_length_addr);
+        if (filename_length > 0) {
+            unicode_string_t str;
+            str.length = filename_length;
+            str.encoding = "UTF-16";
+            str.contents = (unsigned char *)g_malloc0(filename_length);
+            if (filename_length != hfm_read(vmi, context, filename_addr, str.contents, filename_length)) {
+                free(str.contents);
+                goto done;
+            }
+            unicode_string_t str2 = { .contents = NULL };
+            if (VMI_SUCCESS == vmi_convert_str_encoding(&str, &str2, "UTF-8")) {
+                printf("RENAME %s\n", str2.contents);
+                free(str2.contents);
+            }
+            else {
+                printf("RENAME , filename converted failed\n");
+            }
+            free(str.contents);
+        }
+    }
+done:
+    hfm_release_vmi(handler);
+}
+
+static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
+{
     return NULL;
 }
 
