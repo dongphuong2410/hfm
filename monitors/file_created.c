@@ -50,9 +50,9 @@ static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicod
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
     //hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
-    //hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
-    hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
-    hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
+    hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
+    //hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
+    //hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
     return FAIL;
 }
 
@@ -137,8 +137,8 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
 
     uint32_t status = hfm_read_32(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_STATUS);
 
-    if (information == FILE_CREATED && status == STATUS_SUCCESS) {
-        printf("File %s\n", params->filename);
+    if (information == FILE_CREATED || information == FILE_SUPERSEDED) {
+        printf("CREATE %s\n", params->filename);
     }
 done:
     hfm_release_vmi(handler);
