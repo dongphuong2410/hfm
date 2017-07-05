@@ -20,6 +20,8 @@
 typedef struct params_t {
     addr_t io_status_addr;
     char filename[STR_BUFF];
+    uint32_t create_mode;
+    addr_t ret_addr;
 } params_t;
 
 /**
@@ -49,10 +51,10 @@ static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicod
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
-    //hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
+    hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
     hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
-    //hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
-    //hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
+    hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
+    hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
     return FAIL;
 }
 
@@ -104,6 +106,8 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
 
     params_t *params = (params_t *)calloc(1, sizeof(params_t));
     params->io_status_addr = io_status_addr;
+    params->create_mode = create;
+    params->ret_addr = context->regs->rsp;
     if (filename) {
         strncpy(params->filename, filename, STR_BUFF);
         free(filename);
@@ -135,10 +139,13 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
 
     uint64_t information = hfm_read_64(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_INFORMATION);
 
-    uint32_t status = hfm_read_32(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_STATUS);
+    int status = (int)hfm_read_32(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_STATUS);
 
-    if (information == FILE_CREATED || information == FILE_SUPERSEDED) {
-        printf("CREATE %s\n", params->filename);
+    int ret_status = (int)hfm_read_32(vmi, context, params->ret_addr);
+
+    //if (information == FILE_CREATED || (information == FILE_SUPERSEDED && status == 0) || strcmp(params->filename, "helloworld.txt") == 0) {
+    if (strstr(params->filename, "helloworld") != NULL) {
+        printf("CREATE %s information %lu status %d create_mode %d ret_status %llu\n", params->filename, information, status, params->create_mode, context->regs->rax);
     }
 done:
     hfm_release_vmi(handler);
@@ -244,7 +251,7 @@ static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicod
     g_free(str.contents);
 
     if (VMI_SUCCESS == rc) {
-        ret = strdup(str2.contents + 4);
+        ret = strdup(str2.contents);
         g_free(str2.contents);
         goto done;
     }
