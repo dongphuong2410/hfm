@@ -12,6 +12,12 @@
 
 #include "rekall.h"
 
+#define BIT32 0
+#define BIT64 1
+#define PM2BIT(pm) ((pm == VMI_PM_IA32E) ? BIT64 : BIT32)
+#define EX_FAST_REF_MASK 7
+#define HANDLE_MULTIPLIER 4
+
 enum {
     FILE_CREATED = 0,
     FILE_OPENED,
@@ -40,22 +46,58 @@ enum {
     FILE_MODE_INFORMATION
 };
 
-addr_t OBJEC_ATTRIBUTES_OBJECT_NAME;
+addr_t OBJECT_ATTRIBUTES_OBJECT_NAME;
+addr_t OBJECT_ATTRIBUTES_ROOT_DIRECTORY;
 addr_t UNICODE_STRING_LENGTH;
 addr_t UNICODE_STRING_BUFFER;
 addr_t IO_STATUS_BLOCK_INFORMATION;
 addr_t IO_STATUS_BLOCK_STATUS;
 addr_t FILE_RENAME_INFORMATION_FILE_NAME_LENGTH;
 addr_t FILE_RENAME_INFORMATION_FILE_NAME;
+addr_t KPCR_PRCB;
+addr_t KPRCB_CURRENT_THREAD;
+addr_t KTHREAD_PROCESS;
+addr_t HANDLE_TABLE_HANDLE_COUNT;
+addr_t OBJECT_HEADER_BODY;
+addr_t OBJECT_HEADER_INFO_MASK;
+addr_t FILE_OBJECT_FILE_NAME;
+addr_t FILE_OBJECT_SIZE;
+addr_t FILE_OBJECT_DEVICE_OBJECT;
+addr_t FILE_OBJECT_VPB;
+addr_t VPB_VOLUME_LABEL;
+addr_t VPB_VOLUME_LABEL_LENGTH;
+addr_t EPROCESS_OBJECT_TABLE;
+addr_t OBJECT_HEADER_NAME_INFO_NAME;
+addr_t DEVICE_OBJECT_DRIVER_OBJECT;
+addr_t DRIVER_OBJECT_DRIVER_NAME;
+addr_t DEVICE_OBJECT_VPB;
 
 static int constants_init(const char *rekall_profile)
 {
     int status = 0;
-    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "ObjectName", &OBJEC_ATTRIBUTES_OBJECT_NAME, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "ObjectName", &OBJECT_ATTRIBUTES_OBJECT_NAME, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "RootDirectory", &OBJECT_ATTRIBUTES_ROOT_DIRECTORY, NULL);
     status |= rekall_lookup(rekall_profile, "_OBJECT_ATTRIBUTES", "Length", &UNICODE_STRING_LENGTH, NULL);
     status |= rekall_lookup(rekall_profile, "_UNICODE_STRING", "Buffer", &UNICODE_STRING_BUFFER, NULL);
     status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Information", &IO_STATUS_BLOCK_INFORMATION, NULL);
     status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Status", &IO_STATUS_BLOCK_STATUS, NULL);
+    status |= rekall_lookup(rekall_profile, "_KPCR", "Prcb", &KPCR_PRCB, NULL);
+    status |= rekall_lookup(rekall_profile, "_KPRCB", "CurrentThread", &KPRCB_CURRENT_THREAD, NULL);
+    status |= rekall_lookup(rekall_profile, "_KTHREAD", "Process", &KTHREAD_PROCESS, NULL);
+    status |= rekall_lookup(rekall_profile, "_HANDLE_TABLE", "HandleCount", &HANDLE_TABLE_HANDLE_COUNT, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER", "Body", &OBJECT_HEADER_BODY, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER", "InfoMask", &OBJECT_HEADER_INFO_MASK, NULL);
+    status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "FileName", &FILE_OBJECT_FILE_NAME, NULL);
+    status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "Size", &FILE_OBJECT_SIZE, NULL);
+    status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "DeviceObject", &FILE_OBJECT_DEVICE_OBJECT, NULL);
+    status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "Vpb", &FILE_OBJECT_VPB, NULL);
+    status |= rekall_lookup(rekall_profile, "_VPB", "VolumeLabel", &VPB_VOLUME_LABEL, NULL);
+    status |= rekall_lookup(rekall_profile, "_VPB", "VolumeLabelLength", &VPB_VOLUME_LABEL_LENGTH, NULL);
+    status |= rekall_lookup(rekall_profile, "_EPROCESS", "ObjectTable", &EPROCESS_OBJECT_TABLE, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER_NAME_INFO", "Name", &OBJECT_HEADER_NAME_INFO_NAME, NULL);
+    status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "DriverObject", &DEVICE_OBJECT_DRIVER_OBJECT, NULL);
+    status |= rekall_lookup(rekall_profile, "_DRIVER_OBJECT", "DriverName", &DRIVER_OBJECT_DRIVER_NAME, NULL);
+    status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "VPB", &DEVICE_OBJECT_VPB, NULL);
     FILE_RENAME_INFORMATION_FILE_NAME_LENGTH = 16; //TODO : value calculated by debug, just confirmed for Windows 7 only
     FILE_RENAME_INFORMATION_FILE_NAME = 20; //TODO
     return status;

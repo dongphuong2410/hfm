@@ -19,9 +19,9 @@
 
 typedef struct params_t {
     addr_t io_status_addr;
+    addr_t handler_addr;
     char filename[STR_BUFF];
     uint32_t create_mode;
-    addr_t ret_addr;
 } params_t;
 
 /**
@@ -48,6 +48,11 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
   * Convert the _UNICODE_STRING structure into text
   */
 static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr);
+
+/**
+  * Get current directory of process
+  */
+static char *_read_process_path(vmi_instance_t vmi, context_t *context);
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -101,18 +106,25 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         vmi_read_32_va(vmi, context->regs->rsp + sizeof(uint32_t) * 8, 0, &create);
     }
 
-    addr_t objectname_addr = hfm_read_addr(vmi, context, objattr_addr + OBJEC_ATTRIBUTES_OBJECT_NAME);
+    addr_t objectname_addr = hfm_read_addr(vmi, context, objattr_addr + OBJECT_ATTRIBUTES_OBJECT_NAME);
     char *filename = _read_unicode(vmi, context, objectname_addr);
+    char *filepath = NULL;
+
+    uint64_t rootdir_hdlr = hfm_read_64(vmi, context, objattr_addr + OBJECT_ATTRIBUTES_ROOT_DIRECTORY);
+    if (rootdir_hdlr) {
+        filepath = _read_process_path(vmi, context);
+        if (filepath) {
+            printf("filepath : %s\n", filepath);
+        }
+    }
 
     params_t *params = (params_t *)calloc(1, sizeof(params_t));
     params->io_status_addr = io_status_addr;
     params->create_mode = create;
-    params->ret_addr = context->regs->rsp;
     if (filename) {
         strncpy(params->filename, filename, STR_BUFF);
         free(filename);
     }
-
     hfm_release_vmi(handler);
     return params;
 }
@@ -141,11 +153,8 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
 
     int status = (int)hfm_read_32(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_STATUS);
 
-    int ret_status = (int)hfm_read_32(vmi, context, params->ret_addr);
-
-    //if (information == FILE_CREATED || (information == FILE_SUPERSEDED && status == 0) || strcmp(params->filename, "helloworld.txt") == 0) {
-    if (strstr(params->filename, "helloworld") != NULL) {
-        printf("CREATE %s information %lu status %d create_mode %d ret_status %llu\n", params->filename, information, status, params->create_mode, context->regs->rax);
+    if (information == FILE_CREATED || (information == FILE_SUPERSEDED && status == 0)) {
+        printf("CREATE %s information %lu status %d create_mode %d ret_status %lu\n", params->filename, information, status, params->create_mode, context->regs->rax);
     }
 done:
     hfm_release_vmi(handler);
@@ -261,3 +270,9 @@ static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicod
 done:
     return ret;
 }
+
+static char *_read_process_path(vmi_instance_t vmi, context_t *context)
+{
+    return NULL;
+}
+
