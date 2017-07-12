@@ -55,7 +55,9 @@ int main(int argc, char **argv)
     config = _read_config(argc, argv);
 
     //Init monitoring modules
-    mon_init();
+    if (mon_init()) {
+        goto done;
+    }
 
     //Init logging module
     if (config_get_str(config, "log_file"))
@@ -101,6 +103,7 @@ done:
     free_policies(policies);
     log_close();
     config_close(config);
+    mon_close();
     return 0;
 }
 
@@ -174,6 +177,8 @@ static void _set_policies(vmhdlr_t *handler, GSList *policies)
 {
     policy_t *test = (policy_t *)calloc(1, sizeof(policy_t));
     test->type = MON_CREATE;
+    test->id = 10;
+    strcpy(test->path, "/C:/meo/*");
     mon_add_policy(handler, test);
 
     free(test);

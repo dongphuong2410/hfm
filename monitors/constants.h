@@ -96,7 +96,7 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER_NAME_INFO", "Name", &OBJECT_HEADER_NAME_INFO_NAME, NULL);
     status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "DriverObject", &DEVICE_OBJECT_DRIVER_OBJECT, NULL);
     status |= rekall_lookup(rekall_profile, "_DRIVER_OBJECT", "DriverName", &DRIVER_OBJECT_DRIVER_NAME, NULL);
-    status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "VPB", &DEVICE_OBJECT_VPB, NULL);
+    status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "Vpb", &DEVICE_OBJECT_VPB, NULL);
     status |= rekall_lookup(rekall_profile, "_EPROCESS", "Peb", &EPROCESS_PEB, NULL);
     status |= rekall_lookup(rekall_profile, "_PEB", "ProcessParameters", &PEB_PROCESS_PARAMETERS, NULL);
     status |= rekall_lookup(rekall_profile, "_RTL_USER_PROCESS_PARAMETERS", "CurrentDirectory", &RTL_USER_PROCESS_PARAMETERS_CURRENT_DIRECTORY, NULL);

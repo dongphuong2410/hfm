@@ -8,6 +8,7 @@
 #include "rekall.h"
 #include "constants.h"
 #include "context.h"
+#include "file_filter.h"
 
 #define NT_SUCCESS(status)  ((status) >= 0 && (status) <= 0x7FFFFFFF)
 /**
@@ -24,6 +25,8 @@ typedef struct params_t {
     char filename[STR_BUFF];
     uint32_t create_mode;
 } params_t;
+
+extern filter_t *flt_create;
 
 /**
   * Callback when the functions NtOpenFile, NtCreateFile, ZwOpenFile, ZwCreateFile is called
@@ -57,6 +60,9 @@ static char *_read_process_path(vmhdlr_t *handler, context_t *context);
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
+    if (policy) {
+        filter_add(flt_create, policy->path, policy->id);
+    }
     hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
     hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
     hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
@@ -124,9 +130,17 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
     params->io_status_addr = io_status_addr;
     params->create_mode = create;
     if (filename) {
-        sprintf(params->filename, "%s%s", filepath ? filepath : "", filename);
+        sprintf(params->filename, "/%s%s", filepath ? filepath : "", filename);
         free(filename);
         if (filepath) free(filepath);
+        //Matching file path
+        int arr[10];
+        if (filter_match(flt_create, params->filename, arr)) {
+            printf("Match!\n");
+        }
+        else {
+            printf("Not match!\n");
+        }
     }
     hfm_release_vmi(handler);
     return params;

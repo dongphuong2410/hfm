@@ -26,4 +26,9 @@ int mon_init(void);
   */
 hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy);
 
+/**
+  * @brief Close monitor
+  *
+  */
+void mon_close(void);
 #endif

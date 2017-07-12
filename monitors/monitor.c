@@ -4,9 +4,11 @@
 #include "config.h"
 #include "log.h"
 #include "constants.h"
+#include "file_filter.h"
 
 
 config_t *config;
+filter_t *flt_create;
 
 int mon_init(void)
 {
@@ -15,6 +17,7 @@ int mon_init(void)
         writelog(LV_ERROR, "Read symbols from Rekall failed");
         return -1;
     }
+    flt_create = filter_init();
     return 0;
 }
 
@@ -42,4 +45,9 @@ hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)
             break;
     }
     return SUCCESS;
+}
+
+void mon_close()
+{
+    if (flt_create) filter_close(flt_create);
 }
