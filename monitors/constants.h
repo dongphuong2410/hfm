@@ -12,12 +12,6 @@
 
 #include "rekall.h"
 
-#define BIT32 0
-#define BIT64 1
-#define PM2BIT(pm) ((pm == VMI_PM_IA32E) ? BIT64 : BIT32)
-#define EX_FAST_REF_MASK 7
-#define HANDLE_MULTIPLIER 4
-
 enum {
     FILE_CREATED = 0,
     FILE_OPENED,
@@ -71,6 +65,11 @@ addr_t OBJECT_HEADER_NAME_INFO_NAME;
 addr_t DEVICE_OBJECT_DRIVER_OBJECT;
 addr_t DRIVER_OBJECT_DRIVER_NAME;
 addr_t DEVICE_OBJECT_VPB;
+addr_t EPROCESS_PEB;
+addr_t PEB_PROCESS_PARAMETERS;
+addr_t RTL_USER_PROCESS_PARAMETERS_CURRENT_DIRECTORY;
+addr_t RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
+addr_t CURDIR_DOS_PATH;
 
 static int constants_init(const char *rekall_profile)
 {
@@ -98,6 +97,11 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "DriverObject", &DEVICE_OBJECT_DRIVER_OBJECT, NULL);
     status |= rekall_lookup(rekall_profile, "_DRIVER_OBJECT", "DriverName", &DRIVER_OBJECT_DRIVER_NAME, NULL);
     status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "VPB", &DEVICE_OBJECT_VPB, NULL);
+    status |= rekall_lookup(rekall_profile, "_EPROCESS", "Peb", &EPROCESS_PEB, NULL);
+    status |= rekall_lookup(rekall_profile, "_PEB", "ProcessParameters", &PEB_PROCESS_PARAMETERS, NULL);
+    status |= rekall_lookup(rekall_profile, "_RTL_USER_PROCESS_PARAMETERS", "CurrentDirectory", &RTL_USER_PROCESS_PARAMETERS_CURRENT_DIRECTORY, NULL);
+    status |= rekall_lookup(rekall_profile, "_RTL_USER_PROCESS_PARAMETERS", "ImagePathName", &RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME, NULL);
+    status |= rekall_lookup(rekall_profile, "_CURDIR", "DosPath", &CURDIR_DOS_PATH, NULL);
     FILE_RENAME_INFORMATION_FILE_NAME_LENGTH = 16; //TODO : value calculated by debug, just confirmed for Windows 7 only
     FILE_RENAME_INFORMATION_FILE_NAME = 20; //TODO
     return status;

@@ -9,6 +9,7 @@
 #include "constants.h"
 #include "context.h"
 
+#define NT_SUCCESS(status)  ((status) >= 0 && (status) <= 0x7FFFFFFF)
 /**
   * typedef struct _UNICODE_STRING {
   *     USHORT Length;
@@ -52,7 +53,7 @@ static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicod
 /**
   * Get current directory of process
   */
-static char *_read_process_path(vmi_instance_t vmi, context_t *context);
+static char *_read_process_path(vmhdlr_t *handler, context_t *context);
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -112,9 +113,10 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
 
     uint64_t rootdir_hdlr = hfm_read_64(vmi, context, objattr_addr + OBJECT_ATTRIBUTES_ROOT_DIRECTORY);
     if (rootdir_hdlr) {
-        filepath = _read_process_path(vmi, context);
+        filepath = _read_process_path(handler, context);
         if (filepath) {
-            printf("filepath : %s\n", filepath);
+            char *pos = strrchr(filepath, '\\');
+            if (pos) *(pos+1) = '\0';
         }
     }
 
@@ -122,8 +124,9 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
     params->io_status_addr = io_status_addr;
     params->create_mode = create;
     if (filename) {
-        strncpy(params->filename, filename, STR_BUFF);
+        sprintf(params->filename, "%s%s", filepath ? filepath : "", filename);
         free(filename);
+        if (filepath) free(filepath);
     }
     hfm_release_vmi(handler);
     return params;
@@ -148,13 +151,12 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
 {
     params_t *params = (params_t *)context->trap->extra;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
-
     uint64_t information = hfm_read_64(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_INFORMATION);
-
     int status = (int)hfm_read_32(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_STATUS);
+    int ret_status = context->regs->rax;
 
-    if (information == FILE_CREATED || (information == FILE_SUPERSEDED && status == 0)) {
-        printf("CREATE %s information %lu status %d create_mode %d ret_status %lu\n", params->filename, information, status, params->create_mode, context->regs->rax);
+    if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
+        printf("CREATE file %s\n", params->filename);
     }
 done:
     hfm_release_vmi(handler);
@@ -271,8 +273,27 @@ done:
     return ret;
 }
 
-static char *_read_process_path(vmi_instance_t vmi, context_t *context)
+static char *_read_process_path(vmhdlr_t *handler, context_t *context)
 {
+    vmi_instance_t vmi = handler->vmi;
+    addr_t kpcr = 0;
+    if (handler->pm == VMI_PM_IA32E) {
+        kpcr = context->regs->gs_base;
+    }
+    else {
+        kpcr = context->regs->fs_base;
+    }
+    addr_t thread = hfm_read_addr(vmi, context, kpcr + KPCR_PRCB + KPRCB_CURRENT_THREAD);
+    if (!thread) goto done;
+    addr_t process = hfm_read_addr(vmi, context, thread + KTHREAD_PROCESS);
+    if (!process) goto done;
+    addr_t peb = hfm_read_addr(vmi, context, process + EPROCESS_PEB);
+    if (!peb) goto done;
+    addr_t process_parameters = hfm_read_addr(vmi, context, peb + PEB_PROCESS_PARAMETERS);
+    if (!process_parameters) goto done;
+    addr_t imagepath = process_parameters + RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
+    return _read_unicode(vmi, context, imagepath);
+done:
     return NULL;
 }
 
