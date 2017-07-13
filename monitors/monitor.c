@@ -1,4 +1,5 @@
 #include "file_created.h"
+#include "file_deleted.h"
 #include "libmon.h"
 #include "private.h"
 #include "config.h"
@@ -26,6 +27,7 @@ hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)
             file_created_add_policy(hdlr, policy);
             break;
         case MON_DELETE:
+            file_deleted_add_policy(hdlr, policy);
             break;
         case MON_MODIFY_CONTENT:
             break;

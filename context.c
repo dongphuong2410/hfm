@@ -50,3 +50,8 @@ size_t hfm_read(vmi_instance_t vmi, context_t *ctx, addr_t addr, void *buf, size
     ctx->access_ctx.addr = addr;
     return vmi_read(vmi, &ctx->access_ctx, buf, count);
 }
+
+void hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *filename)
+{
+
+}

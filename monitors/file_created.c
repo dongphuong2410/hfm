@@ -26,7 +26,7 @@ typedef struct params_t {
     uint32_t create_mode;
 } params_t;
 
-filter_t *filter = NULL;
+static filter_t *filter = NULL;
 
 /**
   * Callback when the functions NtOpenFile, NtCreateFile, ZwOpenFile, ZwCreateFile is called
@@ -71,7 +71,7 @@ hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
         hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
     }
     filter_add(filter, policy->path, policy->id);
-    return FAIL;
+    return SUCCESS;
 }
 
 void file_created_close(void)
@@ -168,7 +168,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     int ret_status = context->regs->rax;
 
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
-        printf("CREATE file %s\n", params->filename);
+        printf("[CREATE] %s\n", params->filename);
     }
 done:
     hfm_release_vmi(handler);

@@ -140,6 +140,7 @@ struct context_t {
     x86_registers_t *regs;
     access_context_t access_ctx;
     trap_t *trap;
+    page_mode_t pm;
 };
 
 typedef struct memtrap_t {

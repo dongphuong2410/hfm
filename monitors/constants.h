@@ -48,6 +48,7 @@ addr_t IO_STATUS_BLOCK_INFORMATION;
 addr_t IO_STATUS_BLOCK_STATUS;
 addr_t FILE_RENAME_INFORMATION_FILE_NAME_LENGTH;
 addr_t FILE_RENAME_INFORMATION_FILE_NAME;
+addr_t FILE_DISPOSITION_INFORMATION_DELETE_FILE;
 addr_t KPCR_PRCB;
 addr_t KPRCB_CURRENT_THREAD;
 addr_t KTHREAD_PROCESS;
@@ -104,6 +105,7 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_CURDIR", "DosPath", &CURDIR_DOS_PATH, NULL);
     FILE_RENAME_INFORMATION_FILE_NAME_LENGTH = 16; //TODO : value calculated by debug, just confirmed for Windows 7 only
     FILE_RENAME_INFORMATION_FILE_NAME = 20; //TODO
+    FILE_DISPOSITION_INFORMATION_DELETE_FILE = 0;
     return status;
 }
 
