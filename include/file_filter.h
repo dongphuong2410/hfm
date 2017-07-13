@@ -37,6 +37,6 @@ int filter_add(filter_t *filter, const char *pattern, int id);
   * @param filepath Filepath string
   * @return number of matching pattern
   */
-int filter_match(filter_t *filter, const char *filepath, int *arr);
+int filter_match(filter_t *filter, const char *filepath);
 
 #endif

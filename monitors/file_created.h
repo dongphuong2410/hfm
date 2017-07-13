@@ -18,4 +18,9 @@
   */
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy);
 
+/**
+  * @brief Close
+  */
+void file_created_close(void);
+
 #endif

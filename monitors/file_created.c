@@ -26,7 +26,7 @@ typedef struct params_t {
     uint32_t create_mode;
 } params_t;
 
-extern filter_t *flt_create;
+filter_t *filter = NULL;
 
 /**
   * Callback when the functions NtOpenFile, NtCreateFile, ZwOpenFile, ZwCreateFile is called
@@ -60,16 +60,22 @@ static char *_read_process_path(vmhdlr_t *handler, context_t *context);
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
-    if (policy) {
-        filter_add(flt_create, policy->path, policy->id);
+    if (!filter) {
+        //Init the plugin
+        filter = filter_init();
+        hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
+        hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
+        hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
+        hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
     }
-    hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
-    hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
-    hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
-    hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
+    filter_add(filter, policy->path, policy->id);
     return FAIL;
 }
 
+void file_created_close(void)
+{
+    if (filter) filter_close(filter);
+}
 /**
   * Callback when NtCreateFile or NtOpenFile,.. is called
   * We will read the ObjectAttributes for ObjectName (filename)
@@ -134,12 +140,9 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         free(filename);
         if (filepath) free(filepath);
         //Matching file path
-        int arr[10];
-        if (filter_match(flt_create, params->filename, arr)) {
-            printf("Match!\n");
-        }
-        else {
-            printf("Not match!\n");
+        if (!filter_match(filter, params->filename)) {
+            free(params);
+            params = NULL;
         }
     }
     hfm_release_vmi(handler);

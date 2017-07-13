@@ -37,7 +37,7 @@ int filter_add(filter_t *filter, const char *pattern, int id)
     return -1;
 }
 
-int filter_match(filter_t *filter, const char *filepath, int *arr)
+int filter_match(filter_t *filter, const char *filepath)
 {
     int cnt = 0;
     nodelist_t *nodes = fn_translate(filepath, 0);
@@ -47,7 +47,7 @@ int filter_match(filter_t *filter, const char *filepath, int *arr)
     for (i = 0; i < g_slist_length(filter->patterns); i++) {
         nodelist_t *pattern = g_slist_nth_data(filter->patterns, i);
         if (!fn_match(pattern, nodes))
-            arr[cnt++] = i;
+            cnt++;
     }
     free(nodes);
     return cnt;

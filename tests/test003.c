@@ -10,7 +10,6 @@ config_t *config;
 
 int main(int argc, char *argv)
 {
-    int matches[15];
     int matchno;
     filter_t *filter = filter_init();
     filter_add(filter, "/home/meo/exercise/01.pdf", 1);
@@ -18,9 +17,9 @@ int main(int argc, char *argv)
     filter_add(filter, "/home/*/exercise/02.txt", 3);
     filter_add(filter, "/home/**/02.txt", 3);
 
-    matchno = filter_match(filter, "/home/meo/exercise/01.pdf", matches);
+    matchno = filter_match(filter, "/home/meo/exercise/01.pdf");
     printf("%d\n", matchno);
-    matchno = filter_match(filter, "/home/meo/exercise/02.txt", matches);
+    matchno = filter_match(filter, "/home/meo/exercise/02.txt");
     printf("%d\n", matchno);
     filter_close(filter);
 }
