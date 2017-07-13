@@ -50,13 +50,15 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
 
 /**
   * Convert the _UNICODE_STRING structure into text
+  * @return Len of text converted
   */
-static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr);
+static int _read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr, char *buffer);
 
 /**
   * Get current directory of process
+  * @return Length of path
   */
-static char *_read_process_path(vmhdlr_t *handler, context_t *context);
+int _read_process_path(vmhdlr_t *handler, context_t *context, char *path);
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -103,6 +105,7 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
     addr_t objattr_addr = 0, io_status_addr = 0;
     uint32_t create = 0;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
+    params_t *params = NULL;
 
     /* Get address of ObjectAttributes (third parameter) and IoStatusBlock (fourth parameter) */
     if (handler->pm == VMI_PM_IA32E) {
@@ -119,31 +122,23 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         vmi_read_32_va(vmi, context->regs->rsp + sizeof(uint32_t) * 8, 0, &create);
     }
 
+    uint64_t rootdir_addr = hfm_read_64(vmi, context, objattr_addr + OBJECT_ATTRIBUTES_ROOT_DIRECTORY);
     addr_t objectname_addr = hfm_read_addr(vmi, context, objattr_addr + OBJECT_ATTRIBUTES_OBJECT_NAME);
-    char *filename = _read_unicode(vmi, context, objectname_addr);
-    char *filepath = NULL;
+    char filepath[STR_BUFF] = "";
+    int pathlen = 0;
 
-    uint64_t rootdir_hdlr = hfm_read_64(vmi, context, objattr_addr + OBJECT_ATTRIBUTES_ROOT_DIRECTORY);
-    if (rootdir_hdlr) {
-        filepath = _read_process_path(handler, context);
-        if (filepath) {
-            char *pos = strrchr(filepath, '\\');
-            if (pos) *(pos+1) = '\0';
-        }
+    if (rootdir_addr) {
+        pathlen = _read_process_path(handler, context, filepath);
     }
 
-    params_t *params = (params_t *)calloc(1, sizeof(params_t));
-    params->io_status_addr = io_status_addr;
-    params->create_mode = create;
-    if (filename) {
-        sprintf(params->filename, "/%s%s", filepath ? filepath : "", filename);
-        free(filename);
-        if (filepath) free(filepath);
-        //Matching file path
-        if (filter_match(filter, params->filename) < 0) {
-            free(params);
-            params = NULL;
-        }
+    int namelen = _read_unicode(vmi, context, objectname_addr, filepath + pathlen);
+
+    //Matching file path
+    if (filter_match(filter, filepath) >= 0) {
+        params = (params_t *)calloc(1, sizeof(params_t));
+        strncpy(params->filename, filepath, pathlen + namelen + 1);
+        params->io_status_addr = io_status_addr;
+        params->create_mode = create;
     }
     hfm_release_vmi(handler);
     return params;
@@ -252,9 +247,10 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
     return NULL;
 }
 
-static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr)
+static int _read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr, char *buffer)
 {
-    char *ret = NULL;
+    //TODO Rewrite the read_unicode function, not using vmi_convert_str_encoding to avoid dynamic allocation
+    int ret = 0;
 
     //Read unicode string length
     uint16_t length = hfm_read_16(vmi, context, unicode_str_addr + UNICODE_STRING_LENGTH);
@@ -279,7 +275,8 @@ static char *_read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicod
     g_free(str.contents);
 
     if (VMI_SUCCESS == rc) {
-        ret = strdup(str2.contents);
+        ret = str2.length;
+        strncpy(buffer, str2.contents, str2.length);
         g_free(str2.contents);
         goto done;
     }
@@ -290,8 +287,10 @@ done:
     return ret;
 }
 
-static char *_read_process_path(vmhdlr_t *handler, context_t *context)
+int _read_process_path(vmhdlr_t *handler, context_t *context, char *path)
 {
+    path[0] = '\\'; //Temporarily
+    int len = 1;
     vmi_instance_t vmi = handler->vmi;
     addr_t kpcr = 0;
     if (handler->pm == VMI_PM_IA32E) {
@@ -309,8 +308,15 @@ static char *_read_process_path(vmhdlr_t *handler, context_t *context)
     addr_t process_parameters = hfm_read_addr(vmi, context, peb + PEB_PROCESS_PARAMETERS);
     if (!process_parameters) goto done;
     addr_t imagepath = process_parameters + RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
-    return _read_unicode(vmi, context, imagepath);
+    len += _read_unicode(vmi, context, imagepath, path + 1);
+    if (len) {
+        char *pos = strrchr(path, '\\');
+        if (pos && pos != path) {
+            *(pos+1) = '\0';
+            len = pos + 1 - path;
+        }
+    }
 done:
-    return NULL;
+    return len;
 }
 
