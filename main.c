@@ -181,6 +181,10 @@ static void _set_policies(vmhdlr_t *handler, GSList *policies)
     strcpy(test->path, "/C:/meo/*");
     mon_add_policy(handler, test);
 
+    test->type = MON_CREATE;
+    test->id = 20;
+    mon_add_policy(handler, test);
+
     free(test);
 }
 

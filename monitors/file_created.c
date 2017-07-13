@@ -292,16 +292,7 @@ int _read_process_path(vmhdlr_t *handler, context_t *context, char *path)
     path[0] = '\\'; //Temporarily
     int len = 1;
     vmi_instance_t vmi = handler->vmi;
-    addr_t kpcr = 0;
-    if (handler->pm == VMI_PM_IA32E) {
-        kpcr = context->regs->gs_base;
-    }
-    else {
-        kpcr = context->regs->fs_base;
-    }
-    addr_t thread = hfm_read_addr(vmi, context, kpcr + KPCR_PRCB + KPRCB_CURRENT_THREAD);
-    if (!thread) goto done;
-    addr_t process = hfm_read_addr(vmi, context, thread + KTHREAD_PROCESS);
+    addr_t process = hfm_get_current_process(vmi, context);
     if (!process) goto done;
     addr_t peb = hfm_read_addr(vmi, context, process + EPROCESS_PEB);
     if (!peb) goto done;

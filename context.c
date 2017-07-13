@@ -3,6 +3,7 @@
 #include <libvmi/libvmi.h>
 
 #include "context.h"
+#include "constants.h"
 #include "log.h"
 
 addr_t hfm_read_addr(vmi_instance_t vmi, context_t *ctx, addr_t addr)
@@ -49,6 +50,23 @@ size_t hfm_read(vmi_instance_t vmi, context_t *ctx, addr_t addr, void *buf, size
 {
     ctx->access_ctx.addr = addr;
     return vmi_read(vmi, &ctx->access_ctx, buf, count);
+}
+
+addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx)
+{
+    addr_t process = 0;
+    addr_t kpcr = 0;
+    if (ctx->pm == VMI_PM_IA32E) {
+        kpcr = ctx->regs->gs_base;
+    }
+    else {
+        kpcr = ctx->regs->fs_base;
+    }
+    addr_t thread = hfm_read_addr(vmi, ctx, kpcr + KPCR_PRCB + KPRCB_CURRENT_THREAD);
+    if (!thread) goto done;
+    process = hfm_read_addr(vmi, ctx, thread + KTHREAD_PROCESS);
+done:
+    return process;
 }
 
 void hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *filename)
