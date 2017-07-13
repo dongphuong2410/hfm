@@ -140,7 +140,7 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         free(filename);
         if (filepath) free(filepath);
         //Matching file path
-        if (!filter_match(filter, params->filename)) {
+        if (filter_match(filter, params->filename) < 0) {
             free(params);
             params = NULL;
         }

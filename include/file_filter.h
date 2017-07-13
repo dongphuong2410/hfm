@@ -35,7 +35,7 @@ int filter_add(filter_t *filter, const char *pattern, int id);
   * @brief Check if a filepath/directory path matching with the pattern
   * @param filter Filter handler
   * @param filepath Filepath string
-  * @return number of matching pattern
+  * @return ID of first matching pattern, return -1 if not match
   */
 int filter_match(filter_t *filter, const char *filepath);
 

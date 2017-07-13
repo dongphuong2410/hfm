@@ -39,18 +39,21 @@ int filter_add(filter_t *filter, const char *pattern, int id)
 
 int filter_match(filter_t *filter, const char *filepath)
 {
-    int cnt = 0;
+    int match = -1;
     nodelist_t *nodes = fn_translate(filepath, 0);
     if (!nodes)
-        return 0;
+        goto done;
     int i;
     for (i = 0; i < g_slist_length(filter->patterns); i++) {
         nodelist_t *pattern = g_slist_nth_data(filter->patterns, i);
-        if (!fn_match(pattern, nodes))
-            cnt++;
+        if (!fn_match(pattern, nodes)) {
+            match = filter->ids[i];
+            break;
+        }
     }
     free(nodes);
-    return cnt;
+done:
+    return match;
 }
 
 void _free_pattern(nodelist_t *nodes)
