@@ -9,6 +9,12 @@
 #define __HFM_MONITOR_CONSTANTS_H__
 
 #define STATUS_SUCCESS 0
+#define EX_FAST_REF_MASK 7
+#define HANDLE_MULTIPLIER 4
+#define BIT32 0
+#define BIT64 1
+#define PM2BIT(pm) ((pm == VMI_PM_IA32E) ? BIT64 : BIT32)
+#define WIN7_TYPEINDEX_LAST 44
 
 #include "rekall.h"
 
@@ -53,8 +59,10 @@ addr_t KPCR_PRCB;
 addr_t KPRCB_CURRENT_THREAD;
 addr_t KTHREAD_PROCESS;
 addr_t HANDLE_TABLE_HANDLE_COUNT;
+addr_t HANDLE_TABLE_TABLE_CODE;
 addr_t OBJECT_HEADER_BODY;
 addr_t OBJECT_HEADER_INFO_MASK;
+addr_t OBJECT_HEADER_TYPE_INDEX;
 addr_t FILE_OBJECT_FILE_NAME;
 addr_t FILE_OBJECT_SIZE;
 addr_t FILE_OBJECT_DEVICE_OBJECT;
@@ -85,8 +93,10 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_KPRCB", "CurrentThread", &KPRCB_CURRENT_THREAD, NULL);
     status |= rekall_lookup(rekall_profile, "_KTHREAD", "Process", &KTHREAD_PROCESS, NULL);
     status |= rekall_lookup(rekall_profile, "_HANDLE_TABLE", "HandleCount", &HANDLE_TABLE_HANDLE_COUNT, NULL);
+    status |= rekall_lookup(rekall_profile, "_HANDLE_TABLE", "TableCode", &HANDLE_TABLE_TABLE_CODE, NULL);
     status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER", "Body", &OBJECT_HEADER_BODY, NULL);
     status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER", "InfoMask", &OBJECT_HEADER_INFO_MASK, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER", "TypeIndex", &OBJECT_HEADER_TYPE_INDEX, NULL);
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "FileName", &FILE_OBJECT_FILE_NAME, NULL);
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "Size", &FILE_OBJECT_SIZE, NULL);
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "DeviceObject", &FILE_OBJECT_DEVICE_OBJECT, NULL);

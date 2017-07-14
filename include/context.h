@@ -18,6 +18,8 @@ size_t hfm_read(vmi_instance_t vmi, context_t *ctx, addr_t addr, void *buf, size
 
 addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx);
 
-void hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *filename);
+int hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, reg_t handle, char *filename);
+
+int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buffer);
 
 #endif

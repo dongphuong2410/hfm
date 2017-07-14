@@ -67,5 +67,8 @@ int rekall_lookup(const char *rekall_profile,
         ret = 0;
     }
 done:
+    if (root) {
+        json_object_put(root);
+    }
     return ret;
 }

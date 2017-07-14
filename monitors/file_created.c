@@ -58,7 +58,7 @@ static int _read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_
   * Get current directory of process
   * @return Length of path
   */
-int _read_process_path(vmhdlr_t *handler, context_t *context, char *path);
+int _read_process_path(vmi_instance_t vmi, context_t *context, char *path);
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -128,7 +128,7 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
     int pathlen = 0;
 
     if (rootdir_addr) {
-        pathlen = _read_process_path(handler, context, filepath);
+        pathlen = _read_process_path(vmi, context, filepath);
     }
 
     int namelen = _read_unicode(vmi, context, objectname_addr, filepath + pathlen);
@@ -287,11 +287,10 @@ done:
     return ret;
 }
 
-int _read_process_path(vmhdlr_t *handler, context_t *context, char *path)
+int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
 {
     path[0] = '\\'; //Temporarily
     int len = 1;
-    vmi_instance_t vmi = handler->vmi;
     addr_t process = hfm_get_current_process(vmi, context);
     if (!process) goto done;
     addr_t peb = hfm_read_addr(vmi, context, process + EPROCESS_PEB);
