@@ -49,12 +49,6 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context);
 static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
 
 /**
-  * Convert the _UNICODE_STRING structure into text
-  * @return Len of text converted
-  */
-static int _read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr, char *buffer);
-
-/**
   * Get current directory of process
   * @return Length of path
   */
@@ -131,7 +125,7 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         pathlen = _read_process_path(vmi, context, filepath);
     }
 
-    int namelen = _read_unicode(vmi, context, objectname_addr, filepath + pathlen);
+    int namelen = hfm_read_unicode(vmi, context, objectname_addr, filepath + pathlen);
 
     //Matching file path
     if (filter_match(filter, filepath) >= 0) {
@@ -247,46 +241,6 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
     return NULL;
 }
 
-static int _read_unicode(vmi_instance_t vmi, context_t *context, addr_t unicode_str_addr, char *buffer)
-{
-    //TODO Rewrite the read_unicode function, not using vmi_convert_str_encoding to avoid dynamic allocation
-    int ret = 0;
-
-    //Read unicode string length
-    uint16_t length = hfm_read_16(vmi, context, unicode_str_addr + UNICODE_STRING_LENGTH);
-    if (0 == length || length > VMI_PS_4KB)
-        goto done;
-
-    //Read unicode string buffer address
-    addr_t buffer_addr = hfm_read_addr(vmi, context, unicode_str_addr + UNICODE_STRING_BUFFER);
-    if (0 == buffer_addr)
-        goto done;
-
-    unicode_string_t str, str2 = {.contents = NULL};
-    str.contents = (unsigned char*)g_malloc0(length + 2);
-    str.length = length;
-    str.encoding = "UTF-16";
-
-    if (length != hfm_read(vmi, context, buffer_addr, str.contents, length)) {
-        g_free(str.contents);
-        goto done;
-    }
-    status_t rc = vmi_convert_str_encoding(&str, &str2, "UTF-8");
-    g_free(str.contents);
-
-    if (VMI_SUCCESS == rc) {
-        ret = str2.length;
-        strncpy(buffer, str2.contents, str2.length);
-        g_free(str2.contents);
-        goto done;
-    }
-    else {
-        writelog(LV_DEBUG, "Convert string encoding failed");
-    }
-done:
-    return ret;
-}
-
 int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
 {
     int len = 1;
@@ -297,7 +251,7 @@ int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
     addr_t process_parameters = hfm_read_addr(vmi, context, peb + PEB_PROCESS_PARAMETERS);
     if (!process_parameters) goto done;
     addr_t imagepath = process_parameters + RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
-    len += _read_unicode(vmi, context, imagepath, path);
+    len += hfm_read_unicode(vmi, context, imagepath, path);
     if (len) {
         char *pos = strrchr(path, '\\');
         if (pos && pos != path) {
