@@ -1,3 +1,0 @@
-#!/bin/bash
-# Test init vmi with wrong domain name
-sudo ../hfm -v fakewin | awk -d '{$1=$2=""; print $0}'
