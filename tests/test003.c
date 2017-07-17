@@ -28,5 +28,10 @@ int main(int argc, char *argv)
     matchno = filter_match(filter, "/home/abc/def/04.txt");
     printf("%d\n", matchno);
     filter_close(filter);
+
+    filter = filter_init();
+    filter_add(filter, "C:/Windows/meo/*", 10);
+    matchno = filter_match(filter, "C:/Windows/meo/hello.txt");
+    printf("%d\n", matchno);
 }
 

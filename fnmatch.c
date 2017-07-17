@@ -69,17 +69,20 @@ int fn_match(nodelist_t *pattern, nodelist_t *expression)
 
 nodelist_t *fn_translate(const char *str, uint8_t is_pattern)
 {
+    char ch;
+    char *destPtr;
+    const char *last_slash;
     const char *strPtr = str;
     nodelist_t *pattern = (nodelist_t *)calloc(1, sizeof(nodelist_t));
-    char ch;
 
-    if (*strPtr != '/' && *strPtr != '\\') {
-        fprintf(stderr, "Translate Error : Work only with absolute path\n");
-        goto error;
+    if (*strPtr == '/' || *strPtr == '\\') {
+        last_slash = strPtr;
+        strPtr += 1;
     }
-    const char *last_slash = strPtr;
-    char *destPtr = pattern->str;
-    strPtr++;
+    else {
+        last_slash = strPtr - 1;
+    }
+    destPtr = pattern->str;
 
     int cnt = 0;
     while (*strPtr) {
@@ -89,7 +92,7 @@ nodelist_t *fn_translate(const char *str, uint8_t is_pattern)
                 goto error;
             }
             else {
-                last_slash =strPtr;
+                last_slash = strPtr;
             }
         }
         else if (strPtr - last_slash == 1) {   //Meet first character of one item
