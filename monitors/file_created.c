@@ -289,7 +289,6 @@ done:
 
 int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
 {
-    path[0] = '\\'; //Temporarily
     int len = 1;
     addr_t process = hfm_get_current_process(vmi, context);
     if (!process) goto done;
@@ -298,7 +297,7 @@ int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
     addr_t process_parameters = hfm_read_addr(vmi, context, peb + PEB_PROCESS_PARAMETERS);
     if (!process_parameters) goto done;
     addr_t imagepath = process_parameters + RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
-    len += _read_unicode(vmi, context, imagepath, path + 1);
+    len += _read_unicode(vmi, context, imagepath, path);
     if (len) {
         char *pos = strrchr(path, '\\');
         if (pos && pos != path) {
