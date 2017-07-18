@@ -164,6 +164,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
         printf("[CREATE] %s\n", params->filename);
     }
+    free(params);
 done:
     hfm_release_vmi(handler);
     return NULL;
