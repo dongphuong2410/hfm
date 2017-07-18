@@ -8,6 +8,8 @@
 #ifndef __HFM_MONITOR_FILE_MODIFIED_H__
 #define __HFM_MONITOR_FILE_MODIFIED_H__
 
+#include "private.h"
+
 /**
   * @brief Implement of abstract function mon_add_policy for file_modified plugin
   *
@@ -15,6 +17,6 @@
   * @param policy Pointer to policy
   * @return FAIL or success
   */
-hfm_status_t file_modified(vmhdlr_t *hdlr, policy_t *policy);
+hfm_status_t file_modified_add_policy(vmhdlr_t *hdlr, policy_t *policy);
 
 #endif
