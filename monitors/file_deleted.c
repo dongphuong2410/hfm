@@ -55,9 +55,11 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
     if (FILE_DISPOSITION_INFORMATION == fileinfo_class) {
         char filename[STR_BUFF] = "";
         hfm_read_filename_from_handler(vmi, context, handle, filename);
-        uint8_t delete = hfm_read_8(vmi, context, fileinfo_addr + FILE_DISPOSITION_INFORMATION_DELETE_FILE);
-        if (delete) {
-            printf("[DELETE] file %s\n", filename);
+        if (filter_match(filter, filename) >= 0) {
+            uint8_t delete = hfm_read_8(vmi, context, fileinfo_addr + FILE_DISPOSITION_INFORMATION_DELETE_FILE);
+            if (delete) {
+                printf("[DELETE] file %s\n", filename);
+            }
         }
     }
 done:
