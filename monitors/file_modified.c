@@ -32,6 +32,18 @@ hfm_status_t file_modified_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 static void *writefile_cb(vmhdlr_t *handler, context_t *context)
 {
     printf("NtWriteFile called\n");
+    vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
+    reg_t handle = 0;
+
+    if (handler->pm == VMI_PM_IA32E) {
+        handle = context->regs->rcx;
+    }
+    else {
+        handle = hfm_read_32(vmi, context, context->regs->rsp + 1 * sizeof(uint32_t));
+    }
+    printf("File handle %u\n", handle);
+done:
+    hfm_release_vmi(handler);
     return NULL;
 }
 
