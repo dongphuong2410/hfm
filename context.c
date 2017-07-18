@@ -6,7 +6,8 @@
 #include "constants.h"
 #include "log.h"
 
-static addr_t handle_table_get_entry(uint32_t bit, vmi_instance_t vmi,
+static addr_t _get_obj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle);
+static addr_t _handle_table_get_entry(uint32_t bit, vmi_instance_t vmi,
         addr_t table_base, uint32_t level, uint32_t depth,
         uint32_t *handle_count, uint64_t handle);
 
@@ -75,55 +76,43 @@ done:
 
 int hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, reg_t handle, char *filename)
 {
-    int filename_len = 0;
-    int drive_len = 0;
-    addr_t process = hfm_get_current_process(vmi, ctx);
-    if (!process) goto done;
+    int filepath_len = 0;
+    int drivename_len = 0;
 
-    addr_t handletable = hfm_read_addr(vmi, ctx, process + EPROCESS_OBJECT_TABLE);
-    if (!handletable) goto done;
-
-    addr_t tablecode = hfm_read_addr(vmi, ctx, handletable + HANDLE_TABLE_TABLE_CODE);
-    if (!tablecode) goto done;
-
-    uint32_t handlecount = hfm_read_32(vmi, ctx,handletable + HANDLE_TABLE_HANDLE_COUNT);
-    if (!handlecount) goto done;
-
-    addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
-    uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
-    uint32_t table_depth = 0;
-    addr_t obj = handle_table_get_entry(PM2BIT(ctx->pm), vmi, table_base, table_levels, table_depth, &handlecount, handle);
-    if (!obj) goto done;
-
-    uint8_t type_index = hfm_read_8(vmi, ctx, obj + OBJECT_HEADER_TYPE_INDEX);
+    /* Find the file object from the handle number*/
+    addr_t handle_obj = _get_obj_from_handle(vmi, ctx, handle);
+    uint8_t type_index = hfm_read_8(vmi, ctx, handle_obj + OBJECT_HEADER_TYPE_INDEX);
     if (type_index >= WIN7_TYPEINDEX_LAST || type_index != 28) goto done;
+    addr_t file_object = handle_obj + OBJECT_HEADER_BODY;
 
-    addr_t file_object = obj + OBJECT_HEADER_BODY;
-
-    //Read device name
+    /* Find the drive label (device name) from file object */
+    char drivename[STR_BUFF] = "";
     addr_t device_object = hfm_read_addr(vmi, ctx, file_object + FILE_OBJECT_DEVICE_OBJECT);
-    addr_t device_name_info_offset = OBJECT_HEADER_BODY;
-    addr_t device_object_header = device_object - OBJECT_HEADER_BODY;
-    char device_name[STR_BUFF] = "";
-    uint8_t infomask = hfm_read_8(vmi, ctx, device_object_header + OBJECT_HEADER_INFO_MASK);
+    addr_t device_header = device_object - OBJECT_HEADER_BODY;
+    uint8_t infomask = hfm_read_8(vmi, ctx, device_header + OBJECT_HEADER_INFO_MASK);
+    addr_t device_name_info_offset = 0;
     if (infomask & OB_INFOMASK_CREATOR_INFO) {
         device_name_info_offset += 0x20;        //TODO 0x20 = sizeof struct OBJECT_HEADER_CREATOR_INFO, should remove hardcode
     }
     if (infomask & OB_INFOMASK_NAME) {
         device_name_info_offset += 0x20;        //TODO Here, 0x20 = sizeof struct OBJECT_HEADER_NAME_INFO, should remove hardcode
-        addr_t device_name_info_addr = device_object - device_name_info_offset;
-        hfm_read_unicode(vmi, ctx, device_name_info_addr + OBJECT_HEADER_NAME_INFO_NAME, device_name);
+        addr_t device_name_info_addr = device_header - device_name_info_offset;
+        hfm_read_unicode(vmi, ctx, device_name_info_addr + OBJECT_HEADER_NAME_INFO_NAME, drivename);
         //TODO: hardcode mapping Windows Device Name to Drive Label
-        if (!strncmp(device_name, "HarddiskVolume2", STR_BUFF)) {
-            sprintf(filename, "%s", "C:");
-            drive_len = 2;
+        if (!strncmp(drivename, "HarddiskVolume2", STR_BUFF)) {
+            sprintf(drivename, "%s", "C:");
+            drivename_len = 2;
         }
     }
 
-    addr_t filename_addr = file_object + FILE_OBJECT_FILE_NAME;
-    filename_len = hfm_read_unicode(vmi, ctx, filename_addr, filename + drive_len);
+    /* Find filepath from file object */
+    char filepath[STR_BUFF] = "";
+    filepath_len = hfm_read_unicode(vmi, ctx, file_object + FILE_OBJECT_FILE_NAME, filepath);
+
+    /* Return the full path read : path = drivename + filepath */
+    snprintf(filename, STR_BUFF, "%s%s", drivename, filepath);
 done:
-    return drive_len + filename_len;
+    return drivename_len + filepath_len;
 }
 
 int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buffer)
@@ -166,7 +155,7 @@ done:
     return ret;
 }
 
-static addr_t handle_table_get_entry(uint32_t bit, vmi_instance_t vmi,
+static addr_t _handle_table_get_entry(uint32_t bit, vmi_instance_t vmi,
         addr_t table_base, uint32_t level, uint32_t depth,
         uint32_t *handle_count, uint64_t handle) {
 
@@ -206,7 +195,7 @@ static addr_t handle_table_get_entry(uint32_t bit, vmi_instance_t vmi,
             if ( VMI_FAILURE == vmi_read_addr_va(vmi, table_base + i * table_entry_size, 0, &next_level) )
                 continue;
 
-            addr_t test = handle_table_get_entry(bit, vmi, next_level, level - 1,
+            addr_t test = _handle_table_get_entry(bit, vmi, next_level, level - 1,
                                                  depth, handle_count, handle);
             if (test)
                 return test;
@@ -230,3 +219,21 @@ static addr_t handle_table_get_entry(uint32_t bit, vmi_instance_t vmi,
     return 0;
 }
 
+static addr_t _get_obj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
+{
+    addr_t handle_obj = 0;
+    addr_t process = hfm_get_current_process(vmi, ctx);
+    if (!process) goto done;
+    addr_t handletable = hfm_read_addr(vmi, ctx, process + EPROCESS_OBJECT_TABLE);
+    if (!handletable) goto done;
+    addr_t tablecode = hfm_read_addr(vmi, ctx, handletable + HANDLE_TABLE_TABLE_CODE);
+    if (!tablecode) goto done;
+    uint32_t handlecount = hfm_read_32(vmi, ctx,handletable + HANDLE_TABLE_HANDLE_COUNT);
+    if (!handlecount) goto done;
+    addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
+    uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
+    uint32_t table_depth = 0;
+    handle_obj = _handle_table_get_entry(PM2BIT(ctx->pm), vmi, table_base, table_levels, table_depth, &handlecount, handle);
+done:
+    return handle_obj;
+}
