@@ -75,7 +75,8 @@ done:
 
 int hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, reg_t handle, char *filename)
 {
-    int byteread = 0;
+    int filename_len = 0;
+    int drive_len = 0;
     addr_t process = hfm_get_current_process(vmi, ctx);
     if (!process) goto done;
 
@@ -98,10 +99,31 @@ int hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, reg_t han
     if (type_index >= WIN7_TYPEINDEX_LAST || type_index != 28) goto done;
 
     addr_t file_object = obj + OBJECT_HEADER_BODY;
+
+    //Read device name
+    addr_t device_object = hfm_read_addr(vmi, ctx, file_object + FILE_OBJECT_DEVICE_OBJECT);
+    addr_t device_name_info_offset = OBJECT_HEADER_BODY;
+    addr_t device_object_header = device_object - OBJECT_HEADER_BODY;
+    char device_name[STR_BUFF] = "";
+    uint8_t infomask = hfm_read_8(vmi, ctx, device_object_header + OBJECT_HEADER_INFO_MASK);
+    if (infomask & OB_INFOMASK_CREATOR_INFO) {
+        device_name_info_offset += 0x20;        //TODO 0x20 = sizeof struct OBJECT_HEADER_CREATOR_INFO, should remove hardcode
+    }
+    if (infomask & OB_INFOMASK_NAME) {
+        device_name_info_offset += 0x20;        //TODO Here, 0x20 = sizeof struct OBJECT_HEADER_NAME_INFO, should remove hardcode
+        addr_t device_name_info_addr = device_object - device_name_info_offset;
+        hfm_read_unicode(vmi, ctx, device_name_info_addr + OBJECT_HEADER_NAME_INFO_NAME, device_name);
+        //TODO: hardcode mapping Windows Device Name to Drive Label
+        if (!strncmp(device_name, "HarddiskVolume2", STR_BUFF)) {
+            sprintf(filename, "%s", "C:");
+            drive_len = 2;
+        }
+    }
+
     addr_t filename_addr = file_object + FILE_OBJECT_FILE_NAME;
-    byteread = hfm_read_unicode(vmi, ctx, filename_addr, filename);
+    filename_len = hfm_read_unicode(vmi, ctx, filename_addr, filename + drive_len);
 done:
-    return byteread;
+    return drive_len + filename_len;
 }
 
 int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buffer)

@@ -16,6 +16,12 @@
 #define PM2BIT(pm) ((pm == VMI_PM_IA32E) ? BIT64 : BIT32)
 #define WIN7_TYPEINDEX_LAST 44
 
+#define OB_INFOMASK_PROCESS_INFO        0x10
+#define OB_INFOMASK_QUOTA               0x08
+#define OB_INFOMASK_HANDLE              0x04
+#define OB_INFOMASK_NAME                0x02
+#define OB_INFOMASK_CREATOR_INFO        0x01
+
 #include "rekall.h"
 
 enum {
