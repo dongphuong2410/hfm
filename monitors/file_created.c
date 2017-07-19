@@ -10,7 +10,6 @@
 #include "context.h"
 #include "file_filter.h"
 
-#define NT_SUCCESS(status)  ((status) >= 0 && (status) <= 0x7FFFFFFF)
 /**
   * typedef struct _UNICODE_STRING {
   *     USHORT Length;

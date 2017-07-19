@@ -15,6 +15,7 @@
 #define BIT64 1
 #define PM2BIT(pm) ((pm == VMI_PM_IA32E) ? BIT64 : BIT32)
 #define WIN7_TYPEINDEX_LAST 44
+#define NT_SUCCESS(status)  ((status) >= 0 && (status) <= 0x7FFFFFFF)
 
 #define OB_INFOMASK_PROCESS_INFO        0x10
 #define OB_INFOMASK_QUOTA               0x08
