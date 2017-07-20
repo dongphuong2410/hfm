@@ -17,6 +17,8 @@ typedef enum {
 
 typedef struct _output_info {
     char time[PATH_MAX_LEN];
+    unsigned int time_sec;
+    unsigned int time_usec;
     int pid;
     int vmid;
     int policy_id;

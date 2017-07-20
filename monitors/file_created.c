@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 #include "file_created.h"
 #include "hfm.h"
@@ -164,8 +165,13 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
         output_info_t output;
         output.pid = hfm_get_process_pid(vmi, context);
+        struct timeval now;
+        gettimeofday(&now, NULL);
+        output.time_sec = now.tv_sec;
+        output.time_usec = now.tv_usec;
         printf("[CREATE] %s\n", params->filename);
         printf("PID %u\n", output.pid);
+        printf("Time %u-%u\n", output.time_sec, output.time_usec);
     }
     free(params);
 done:
