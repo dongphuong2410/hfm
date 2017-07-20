@@ -25,6 +25,7 @@ typedef struct params_t {
     addr_t handler_addr;
     char filename[STR_BUFF];
     uint32_t create_mode;
+    int policy_id;
 } params_t;
 
 static filter_t *filter = NULL;
@@ -129,11 +130,13 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
     int namelen = hfm_read_unicode(vmi, context, objectname_addr, filepath + pathlen);
 
     //Matching file path
-    if (filter_match(filter, filepath) >= 0) {
+    int policy_match = filter_match(filter, filepath);
+    if (policy_match >= 0) {
         params = (params_t *)calloc(1, sizeof(params_t));
         strncpy(params->filename, filepath, pathlen + namelen + 1);
         params->io_status_addr = io_status_addr;
         params->create_mode = create;
+        params->policy_id = policy_match;
     }
     hfm_release_vmi(handler);
     return params;
@@ -170,10 +173,15 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.time_sec = now.tv_sec;
         output.time_usec = now.tv_usec;
         output.vmid = handler->domid;
-        printf("[CREATE] %s\n", params->filename);
+        output.action = MON_CREATE;
+        output.policy_id = params->policy_id;
+        strncpy(output.filepath, params->filename, PATH_MAX_LEN);
+        printf("Action %d\n", output.action);
+        printf("Filepath %s\n", output.filepath);
         printf("PID %u\n", output.pid);
         printf("Time %u-%u\n", output.time_sec, output.time_usec);
         printf("vmid %d\n", output.vmid);
+        printf("policy_id %d\n", output.policy_id);
     }
     free(params);
 done:

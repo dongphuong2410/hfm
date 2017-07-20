@@ -39,22 +39,6 @@ void out_write(output_t *out, output_info_t *info)
     out->writefc(out, info);
 }
 
-char *action_tostr(monitor_t type)
-{
-    static char *names[] = {
-            "INVALID",
-            "CREATE",
-            "DELETE",
-            "MODIFY_CONTENT",
-            "MODIFY_LOGFILE",
-            "CHANGE_ATTR_READONLY",
-            "CHANGE_ATTR_PERMISSION",
-            "CHANGE_ATTR_OWNERSHIP",
-            "CHANGE_ATTR_HIDDEN"
-    };
-    return names[type];
-}
-
 void out_close(output_t *out)
 {
     out->closefc(out);

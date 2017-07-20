@@ -16,12 +16,12 @@ void out_csv_init(output_t *output, const char *filepath)
 void out_csv_write(output_t *output, output_info_t *info)
 {
     if (output->fp) {
-        fprintf(output->fp, "%s,%d,%d,%d,%s,%s,%s",
+        fprintf(output->fp, "%s,%d,%d,%d,%d,%s,%s",
                 info->time,
                 info->pid,
                 info->vmid,
                 info->policy_id,
-                action_tostr(info->action),
+                info->action,
                 info->filepath,
                 info->extpath);
     }

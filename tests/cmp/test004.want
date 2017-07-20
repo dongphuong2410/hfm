@@ -1,2 +1,2 @@
-time : 2017-06-02 03:14, pid : 1120, vmid : 20, policy_id : 30, action : DELETE, filepath : /bin/lib/abc.so, extpath : /home/phuong/abc.so
-2017-06-02 03:14,1120,20,30,DELETE,/bin/lib/abc.so,/home/phuong/abc.so
+time : 2017-06-02 03:14, pid : 1120, vmid : 20, policy_id : 30, action : 2, filepath : /bin/lib/abc.so, extpath : /home/phuong/abc.so
+2017-06-02 03:14,1120,20,30,2,/bin/lib/abc.so,/home/phuong/abc.so

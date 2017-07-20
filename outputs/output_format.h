@@ -7,7 +7,10 @@
 #ifndef __HFM_OUTPUT_FORMAT_H__
 #define __HFM_OUTPUT_FORMAT_H__
 
-#include "private.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
 
 typedef enum {
     OUT_CONSOLE,
@@ -22,7 +25,7 @@ typedef struct _output_info {
     int pid;
     int vmid;
     int policy_id;
-    monitor_t action;
+    int action;
     char filepath[PATH_MAX_LEN];
     char extpath[PATH_MAX_LEN];
 } output_info_t;
@@ -55,6 +58,5 @@ void out_write(output_t *out, output_info_t *info);
   * @param out Output handler
   */
 void out_close(output_t *out);
-char *action_tostr(monitor_t type);
 
 #endif

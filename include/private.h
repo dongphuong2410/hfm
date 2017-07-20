@@ -14,6 +14,8 @@
 #include <libxl_utils.h>
 #include <glib.h>
 
+#include "output_format.h"
+
 #define ghashtable_foreach(table, i, key, val) \
           g_hash_table_iter_init(&i, table); \
       while(g_hash_table_iter_next(&i,(void**)&key,(void**)&val))
@@ -43,21 +45,6 @@ typedef enum {
 } hfm_status_t;
 
 /**
-  * @brief monitoring plugin id
-  */
-typedef enum {
-    MON_INVALID,
-    MON_CREATE,
-    MON_DELETE,
-    MON_MODIFY_CONTENT,
-    MON_MODIFY_LOGFILE,
-    MON_CHANGE_ATTR_READONLY,
-    MON_CHANGE_ATTR_PERMISSION,
-    MON_CHANGE_ATTR_OWNERSHIP,
-    MON_CHANGE_ATTR_HIDDEN
-} monitor_t;
-
-/**
   * @brief Policy severity
   */
 typedef enum {
@@ -83,6 +70,21 @@ typedef enum {
     ADDR_VA,    /** < Virtual Address */
     ADDR_RVA    /** < Relative virtual address */
 } addr_type_t;
+
+/**
+  * @brief monitoring plugin id
+  */
+typedef enum {
+    MON_INVALID,
+    MON_CREATE,
+    MON_DELETE,
+    MON_MODIFY_CONTENT,
+    MON_MODIFY_LOGFILE,
+    MON_CHANGE_ATTR_READONLY,
+    MON_CHANGE_ATTR_PERMISSION,
+    MON_CHANGE_ATTR_OWNERSHIP,
+    MON_CHANGE_ATTR_HIDDEN
+} monitor_t;
 
 typedef struct _policy {
     int id;
@@ -112,6 +114,7 @@ typedef struct _vmhdlr {
     trapmngr_t *trap_manager;
     int interrupted;
     GMutex vmi_lock;
+    output_t *out;
 
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
