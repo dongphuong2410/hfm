@@ -55,10 +55,22 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
     if (FILE_DISPOSITION_INFORMATION == fileinfo_class) {
         char filename[STR_BUFF] = "";
         hfm_read_filename_from_handler(vmi, context, handle, filename);
-        if (filter_match(filter, filename) >= 0) {
+        int policy_id = filter_match(filter, filename);
+        if (policy_id >= 0) {
             uint8_t delete = hfm_read_8(vmi, context, fileinfo_addr + FILE_DISPOSITION_INFORMATION_DELETE_FILE);
             if (delete) {
-                printf("[DELETE] file %s\n", filename);
+                output_info_t output;
+                output.pid = hfm_get_process_pid(vmi, context);
+                struct timeval now;
+                gettimeofday(&now, NULL);
+                output.time_sec = now.tv_sec;
+                output.time_usec = now.tv_usec;
+                output.vmid = handler->domid;
+                output.action = MON_DELETE;
+                output.policy_id = policy_id;
+                strncpy(output.filepath, filename, PATH_MAX_LEN);
+                output.extpath[0] = '\0';
+                out_write(handler->out, &output);
             }
         }
     }

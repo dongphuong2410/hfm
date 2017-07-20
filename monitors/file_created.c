@@ -176,6 +176,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.action = MON_CREATE;
         output.policy_id = params->policy_id;
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
+        output.extpath[0] = '\0';
         out_write(handler->out, &output);
     }
     free(params);
