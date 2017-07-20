@@ -10,6 +10,7 @@
 typedef struct params_t {
     char filename[STR_BUFF];
     addr_t io_status_addr;
+    int policy_id;
 } params_t;
 
 static filter_t *filter = NULL;
@@ -57,10 +58,12 @@ static void *writefile_cb(vmhdlr_t *handler, context_t *context)
 
     char filename[STR_BUFF] = "";
     int len = hfm_read_filename_from_handler(vmi, context, handle, filename);
-    if (filename[0] && filter_match(filter, filename) >= 0) {
+    int policy_id;
+    if (filename[0] && (policy_id = filter_match(filter, filename)) >= 0) {
         params = (params_t *)calloc(1, sizeof(params_t));
         strncpy(params->filename, filename, len);
         params->io_status_addr = io_status_addr;
+        params->policy_id = policy_id;
     }
 done:
     hfm_release_vmi(handler);
@@ -74,6 +77,18 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
     int status = context->regs->rax;
     uint64_t information = hfm_read_64(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_INFORMATION);
     if (NT_SUCCESS(status)) {
+        output_info_t output;
+        output.pid = hfm_get_process_pid(vmi, context);
+        struct timeval now;
+        gettimeofday(&now, NULL);
+        output.time_sec = now.tv_sec;
+        output.time_usec = now.tv_usec;
+        output.vmid = handler->domid;
+        output.action = MON_MODIFY_CONTENT;
+        output.policy_id = params->policy_id;
+        strncpy(output.filepath, params->filename, PATH_MAX_LEN);
+        output.extpath[0] = '\0';
+        out_write(handler->out, &output);
         printf("[MODIFY] %s information %lu \n", params->filename, information);
     }
     free(params);
