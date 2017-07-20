@@ -53,14 +53,15 @@ uint8_t INT3_CHAR = 0xCC;
 
 hfm_status_t hfm_init(vmhdlr_t *handler)
 {
-    /* Init LibVMI */
-    if (SUCCESS != _init_vmi(handler)) {
-        goto error1;
-    }
     /* Init xen interface*/
     if ((handler->xen = xen_init_interface(handler->name)) == NULL) {
         writelog(LV_ERROR, "Failed to init XEN on domain %s", handler->name);
         xen_free_interface(handler->xen);
+        goto error1;
+    }
+
+    /* Init LibVMI */
+    if (SUCCESS != _init_vmi(handler)) {
         goto error2;
     }
     /* Create altp2m view */
@@ -78,9 +79,9 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
 error4:
     _reset_altp2m(handler);
 error3:
-    xen_free_interface(handler->xen);
-error2:
     _close_vmi(handler);
+error2:
+    xen_free_interface(handler->xen);
 error1:
     return FAIL;
 }
@@ -405,6 +406,12 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     handler->vcpus = vmi_get_num_vcpus(handler->vmi);
     handler->memsize = handler->init_memsize = vmi_get_memsize(handler->vmi);
 
+    //Get domid info
+    libxl_name_to_domid(handler->xen->xl_ctx, handler->name, &handler->domid);
+    if (!handler->domid || handler->domid == ~0U) {
+        writelog(LV_ERROR, "Domain is not running, failed to get domID from name %s!", handler->name);
+        goto error;
+    }
     /* Register events */
     int i;
     for (i = 0; i < handler->vcpus && i < 16; i++) {

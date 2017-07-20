@@ -101,6 +101,7 @@ typedef struct _xen_interface {
 typedef struct _vmhdlr {
     xen_interface_t *xen;
     char name[STR_BUFF];
+    int domid;
     vmi_instance_t vmi;
     x86_registers_t *regs[16];          //vCPU specific registers recorded during the last events
     page_mode_t pm;

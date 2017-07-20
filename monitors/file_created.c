@@ -169,9 +169,11 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
         gettimeofday(&now, NULL);
         output.time_sec = now.tv_sec;
         output.time_usec = now.tv_usec;
+        output.vmid = handler->domid;
         printf("[CREATE] %s\n", params->filename);
         printf("PID %u\n", output.pid);
         printf("Time %u-%u\n", output.time_sec, output.time_usec);
+        printf("vmid %d\n", output.vmid);
     }
     free(params);
 done:
