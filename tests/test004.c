@@ -12,7 +12,9 @@ int main(int argc, char *argv)
 {
     char *csvpath = "./tmp.csv";
     output_info_t info;
-    strcpy(info.time, "2017-06-02 03:14");
+    //strcpy(info.time, "2017-06-02 03:14");
+    info.time_sec = 15000145;
+    info.time_usec = 1234;
     info.pid = 1120;
     info.vmid = 20;
     info.policy_id = 30;

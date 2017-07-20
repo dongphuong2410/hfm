@@ -10,6 +10,7 @@
 #include "config.h"
 #include "log.h"
 #include "trapmngr.h"
+#include "output_format.h"
 
 /**
 * hfm maintains two page tables (two views), first page table (ORIGINAL_IDX) maps the kernel
@@ -74,8 +75,24 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
         goto error4;
     }
+    /* Init output plugin */
+    char *output = config_get_str(config, "output");
+    if (0 == strncmp(output, "csv", STR_BUFF)) {
+        handler->out = out_init(OUT_CSV, config_get_str(config, "output_csvfile"));
+    }
+    else if (0 == strncmp(output, "es", STR_BUFF)) {
+        handler->out = out_init(OUT_ELASTICSEARCH, config_get_str(config, "output_es_url"));
+    }
+    else {
+        handler->out = out_init(OUT_CONSOLE);
+    }
+    if (!handler->out) {
+        goto error5;
+    }
 
     return SUCCESS;
+error5:
+    tm_destroy(handler->trap_manager);
 error4:
     _reset_altp2m(handler);
 error3:
@@ -90,6 +107,9 @@ void hfm_close(vmhdlr_t *handler)
 {
     writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
     vmi_pause_vm(handler->vmi);
+
+    /* Close output plugin */
+    out_close(handler->out);
 
     /* Destroy all traps */
     _destroy_traps(handler);

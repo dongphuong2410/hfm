@@ -176,12 +176,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.action = MON_CREATE;
         output.policy_id = params->policy_id;
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
-        printf("Action %d\n", output.action);
-        printf("Filepath %s\n", output.filepath);
-        printf("PID %u\n", output.pid);
-        printf("Time %u-%u\n", output.time_sec, output.time_usec);
-        printf("vmid %d\n", output.vmid);
-        printf("policy_id %d\n", output.policy_id);
+        out_write(handler->out, &output);
     }
     free(params);
 done:
