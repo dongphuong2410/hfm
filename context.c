@@ -237,3 +237,17 @@ static addr_t _get_obj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t han
 done:
     return handle_obj;
 }
+
+vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
+{
+    vmi_pid_t pid;
+    if (!ctx->process_base) {
+        ctx->process_base = hfm_get_current_process(vmi, ctx);
+    }
+    ctx->access_ctx.addr = ctx->process_base + EPROCESS_UNIQUE_PROCESS_ID;
+    if (VMI_SUCCESS != vmi_read_32(vmi, &ctx->access_ctx, &pid)) {
+        writelog(LV_ERROR, "Failed to get the pid of process %p", ctx->process_base);
+        pid = -1;
+    }
+    return pid;
+}

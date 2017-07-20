@@ -141,6 +141,7 @@ struct context_t {
     access_context_t access_ctx;
     trap_t *trap;
     page_mode_t pm;
+    addr_t process_base;    //Address of EPROCESS
 };
 
 typedef struct memtrap_t {

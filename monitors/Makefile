@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-ggdb -O0 -I../include -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
+CFLAGS=-ggdb -O0 -I../include -I../outputs -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
 LDFLAGS=glib-2.0
 
 #OBJECTS=monitor.o file_created.o file_deleted.o hidden_changed.o permission_changed.o owner_changed.o

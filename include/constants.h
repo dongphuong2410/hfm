@@ -82,6 +82,7 @@ addr_t DEVICE_OBJECT_DRIVER_OBJECT;
 addr_t DRIVER_OBJECT_DRIVER_NAME;
 addr_t DEVICE_OBJECT_VPB;
 addr_t EPROCESS_PEB;
+addr_t EPROCESS_UNIQUE_PROCESS_ID;
 addr_t PEB_PROCESS_PARAMETERS;
 addr_t RTL_USER_PROCESS_PARAMETERS_CURRENT_DIRECTORY;
 addr_t RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
@@ -116,6 +117,7 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_DRIVER_OBJECT", "DriverName", &DRIVER_OBJECT_DRIVER_NAME, NULL);
     status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "Vpb", &DEVICE_OBJECT_VPB, NULL);
     status |= rekall_lookup(rekall_profile, "_EPROCESS", "Peb", &EPROCESS_PEB, NULL);
+    status |= rekall_lookup(rekall_profile, "_EPROCESS", "UniqueProcessId", &EPROCESS_UNIQUE_PROCESS_ID, NULL);
     status |= rekall_lookup(rekall_profile, "_PEB", "ProcessParameters", &PEB_PROCESS_PARAMETERS, NULL);
     status |= rekall_lookup(rekall_profile, "_RTL_USER_PROCESS_PARAMETERS", "CurrentDirectory", &RTL_USER_PROCESS_PARAMETERS_CURRENT_DIRECTORY, NULL);
     status |= rekall_lookup(rekall_profile, "_RTL_USER_PROCESS_PARAMETERS", "ImagePathName", &RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME, NULL);

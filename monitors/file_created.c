@@ -9,6 +9,7 @@
 #include "constants.h"
 #include "context.h"
 #include "file_filter.h"
+#include "output_format.h"
 
 /**
   * typedef struct _UNICODE_STRING {
@@ -161,7 +162,10 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     int ret_status = context->regs->rax;
 
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
+        output_info_t output;
+        output.pid = hfm_get_process_pid(vmi, context);
         printf("[CREATE] %s\n", params->filename);
+        printf("PID %u\n", output.pid);
     }
     free(params);
 done:

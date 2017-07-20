@@ -84,4 +84,12 @@ int hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, reg_t han
   */
 int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buffer);
 
+/**
+  * @brief Get current process pid
+  * @param vmi vmi instance
+  * @param ctx context
+  * @return PID of process if operation succeeds, return -1 if fails
+  */
+vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx);
+
 #endif
