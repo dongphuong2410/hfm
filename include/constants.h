@@ -88,6 +88,8 @@ addr_t RTL_USER_PROCESS_PARAMETERS_CURRENT_DIRECTORY;
 addr_t RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
 addr_t CURDIR_DOS_PATH;
 
+size_t HANDLE_TABLE_ENTRY_SIZE;
+
 static int constants_init(const char *rekall_profile)
 {
     int status = 0;
@@ -125,6 +127,8 @@ static int constants_init(const char *rekall_profile)
     FILE_RENAME_INFORMATION_FILE_NAME_LENGTH = 16; //TODO : value calculated by debug, just confirmed for Windows 7 only
     FILE_RENAME_INFORMATION_FILE_NAME = 20; //TODO
     FILE_DISPOSITION_INFORMATION_DELETE_FILE = 0;
+
+    HANDLE_TABLE_ENTRY_SIZE = 16;       //TODO: should be read from rekall
     return status;
 }
 

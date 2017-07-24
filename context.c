@@ -7,9 +7,6 @@
 #include "log.h"
 
 static addr_t _get_obj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle);
-static addr_t _handle_table_get_entry(uint32_t bit, vmi_instance_t vmi,
-        addr_t table_base, uint32_t level, uint32_t depth,
-        uint32_t *handle_count, uint64_t handle);
 
 addr_t hfm_read_addr(vmi_instance_t vmi, context_t *ctx, addr_t addr)
 {
@@ -155,70 +152,6 @@ done:
     return ret;
 }
 
-static addr_t _handle_table_get_entry(uint32_t bit, vmi_instance_t vmi,
-        addr_t table_base, uint32_t level, uint32_t depth,
-        uint32_t *handle_count, uint64_t handle) {
-
-    uint32_t count;
-    uint32_t table_entry_size = 0;
-
-    if (level > 0) {
-        if (bit == BIT32)
-            table_entry_size = 0x4;
-        else
-            table_entry_size = 0x8;
-    } else if (level == 0) {
-        if (bit == BIT32)
-            table_entry_size = 0x8;
-        else
-            table_entry_size = 0x10;
-    };
-    count = VMI_PS_4KB / table_entry_size;
-    uint32_t i;
-    for (i = 0; i < count; i++) {
-
-        // Only read the already known number of entries
-        if (*handle_count == 0)
-            break;
-
-        addr_t table_entry_addr;
-        if ( VMI_FAILURE == vmi_read_addr_va(vmi, table_base + i * table_entry_size, 0, &table_entry_addr) )
-            continue;
-
-        // skip entries that point nowhere
-        if (!table_entry_addr)
-            continue;
-
-        // real entries are further down the chain
-        if (level > 0) {
-            addr_t next_level;
-            if ( VMI_FAILURE == vmi_read_addr_va(vmi, table_base + i * table_entry_size, 0, &next_level) )
-                continue;
-
-            addr_t test = _handle_table_get_entry(bit, vmi, next_level, level - 1,
-                                                 depth, handle_count, handle);
-            if (test)
-                return test;
-
-            depth++;
-            continue;
-        }
-
-        // At this point each (table_base + i*entry) is a _HANDLE_TABLE_ENTRY
-
-        uint32_t level_base = depth * count * HANDLE_MULTIPLIER;
-        uint32_t handle_value = (i * table_entry_size * HANDLE_MULTIPLIER)
-                / table_entry_size + level_base;
-
-        if (handle_value == handle)
-            return table_entry_addr & ~EX_FAST_REF_MASK;
-
-        // decrement the handle counter because we found one here
-        --(*handle_count);
-    }
-    return 0;
-}
-
 static addr_t _get_obj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
 {
     addr_t handle_obj = 0;
@@ -232,8 +165,63 @@ static addr_t _get_obj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t han
     if (!handlecount) goto done;
     addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
     uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
-    uint32_t table_depth = 0;
-    handle_obj = _handle_table_get_entry(PM2BIT(ctx->pm), vmi, table_base, table_levels, table_depth, &handlecount, handle);
+
+    reg_t handle_idx = handle / HANDLE_MULTIPLIER;
+    switch (table_levels) {
+        case 0:
+            handle_obj = hfm_read_addr(vmi, ctx, table_base + handle_idx * HANDLE_TABLE_ENTRY_SIZE);
+            break;
+        case 1:
+        {
+            addr_t table = 0;
+            size_t psize = (ctx->pm == VMI_PM_IA32E ? 8 : 4);
+            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;   //Number of handle entry in the lowest level table
+            uint32_t i = handle_idx % lowest_count;
+            handle_idx -= i;
+            uint32_t j = handle_idx / lowest_count;
+            table = hfm_read_addr(vmi, ctx, table_base + j * psize);
+            if (table) {
+                handle_obj = hfm_read_addr(vmi, ctx, table + i * HANDLE_TABLE_ENTRY_SIZE);
+            }
+            break;
+        }
+        case 2:
+        {
+            addr_t table = 0, table2 = 0;
+            size_t psize = (ctx->pm == VMI_PM_IA32E ? 8 : 4);
+            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;
+            uint32_t mid_count = VMI_PS_4KB / psize;
+            uint32_t i = handle_idx % lowest_count;
+            handle_idx -= i;
+            uint32_t j = handle_idx / lowest_count;
+            uint32_t k = j % mid_count;
+            j = (j - k)/mid_count;
+            table = hfm_read_addr(vmi, ctx, table_base + j * psize);
+            if (table)
+                table2 = hfm_read_addr(vmi, ctx, table + k * psize);
+            if (table2)
+                handle_obj = hfm_read_addr(vmi, ctx, table2 + i * HANDLE_TABLE_ENTRY_SIZE);
+            break;
+        }
+    }
+    switch (ctx->winver) {
+        case VMI_OS_WINDOWS_7:
+            handle_obj &= ~EX_FAST_REF_MASK;
+            break;
+        case VMI_OS_WINDOWS_8:
+            if (ctx->pm == VMI_PM_IA32E)
+                handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFFE00000000000;
+            else
+                handle_obj &= VMI_BIT_MASK(2,31);
+            break;
+        default:
+        case VMI_OS_WINDOWS_10:
+            if (ctx->pm == VMI_PM_IA32E)
+                handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFF000000000000;
+            else
+                handle_obj &= VMI_BIT_MASK(2,31);
+            break;
+    }
 done:
     return handle_obj;
 }

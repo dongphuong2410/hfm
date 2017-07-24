@@ -107,6 +107,7 @@ typedef struct _vmhdlr {
     vmi_instance_t vmi;
     x86_registers_t *regs[16];          //vCPU specific registers recorded during the last events
     page_mode_t pm;
+    win_ver_t winver;
     uint32_t vcpus;
     uint32_t memsize;
     uint32_t init_memsize;
@@ -145,6 +146,7 @@ struct context_t {
     access_context_t access_ctx;
     trap_t *trap;
     page_mode_t pm;
+    win_ver_t winver;
     addr_t process_base;    //Address of EPROCESS
 };
 

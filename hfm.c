@@ -205,6 +205,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     context->access_ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
     context->access_ctx.dtb = event->x86_regs->cr3;
     context->pm = handler->pm;
+    context->winver = handler->winver;
     while (loop) {
         trap_t *trap = loop->data;
         if (trap->cb) {
@@ -425,6 +426,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     handler->pm = vmi_get_page_mode(handler->vmi, 0);
     handler->vcpus = vmi_get_num_vcpus(handler->vmi);
     handler->memsize = handler->init_memsize = vmi_get_memsize(handler->vmi);
+    handler->winver = VMI_OS_WINDOWS_7;     //TODO: Hardcode window versions, should be replace with function vmi_get_winver
 
     //Get domid info
     libxl_name_to_domid(handler->xen->xl_ctx, handler->name, &handler->domid);
