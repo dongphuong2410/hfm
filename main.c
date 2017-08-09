@@ -176,18 +176,19 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
 static void _set_policies(vmhdlr_t *handler, GSList *policies)
 {
     policy_t *test = (policy_t *)calloc(1, sizeof(policy_t));
-    test->type = MON_DELETE;
-    test->id = 10;
     strcpy(test->path, "C:/meo/*");
-    mon_add_policy(handler, test);
+
+    //test->type = MON_DELETE;
+    //test->id = 10;
+    //mon_add_policy(handler, test);
 
     test->type = MON_CREATE;
     test->id = 20;
     mon_add_policy(handler, test);
 
-    test->type = MON_MODIFY_CONTENT;
-    test->id = 30;
-    mon_add_policy(handler, test);
+    //test->type = MON_MODIFY_CONTENT;
+    //test->id = 30;
+    //mon_add_policy(handler, test);
     free(test);
 }
 

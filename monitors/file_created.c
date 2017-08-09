@@ -129,11 +129,15 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
 
     int namelen = hfm_read_unicode(vmi, context, objectname_addr, filepath + pathlen);
 
+    char *start_filepath = filepath;
+    if (strstr(start_filepath, "\\??\\")) {
+        start_filepath += 4;
+    }
     //Matching file path
-    int policy_match = filter_match(filter, filepath);
+    int policy_match = filter_match(filter, start_filepath);
     if (policy_match >= 0) {
         params = (params_t *)calloc(1, sizeof(params_t));
-        strncpy(params->filename, filepath, pathlen + namelen + 1);
+        strncpy(params->filename, start_filepath, pathlen + namelen + 1);
         params->io_status_addr = io_status_addr;
         params->create_mode = create;
         params->policy_id = policy_match;
@@ -165,6 +169,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     int status = (int)hfm_read_32(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_STATUS);
     int ret_status = context->regs->rax;
 
+    printf("File %s\n", params->filename);
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
         output_info_t output;
         output.pid = hfm_get_process_pid(vmi, context);
@@ -259,13 +264,14 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
 
 int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
 {
-    int len = 1;
+    int len = 0;
     addr_t process = hfm_get_current_process(vmi, context);
     if (!process) goto done;
     addr_t peb = hfm_read_addr(vmi, context, process + EPROCESS_PEB);
     if (!peb) goto done;
     addr_t process_parameters = hfm_read_addr(vmi, context, peb + PEB_PROCESS_PARAMETERS);
     if (!process_parameters) goto done;
+    len = 1;
     addr_t imagepath = process_parameters + RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
     len += hfm_read_unicode(vmi, context, imagepath, path);
     if (len) {

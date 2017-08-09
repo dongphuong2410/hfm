@@ -405,7 +405,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     writelog(LV_INFO, "Init VMI on domain %s", handler->name);
     if (VMI_FAILURE == vmi_init(&handler->vmi, VMI_XEN, handler->name, VMI_INIT_DOMAINNAME | VMI_INIT_EVENTS, NULL, NULL)) {
         writelog(LV_ERROR, "Failed to init LibVMI on domain %s", handler->name);
-        goto error;
+        goto error1;
     }
     char *rekall_profile = config_get_str(config, "rekall_profile");
     GHashTable *vmicfg = g_hash_table_new(g_str_hash, g_str_equal);
@@ -413,16 +413,18 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     g_hash_table_insert(vmicfg, "os_type", "Windows");
     uint64_t flags = VMI_PM_INITFLAG_TRANSITION_PAGES;
     if (VMI_PM_UNKNOWN == vmi_init_paging(handler->vmi, flags)) {
-        writelog(LV_ERROR, "Failed to init LibVMI paging on domain %s", handler->name);
         g_hash_table_destroy(vmicfg);
-        goto error;
+        writelog(LV_ERROR, "Failed to init LibVMI paging on domain %s", handler->name);
+        goto error2;
     }
     os_t os = vmi_init_os(handler->vmi, VMI_CONFIG_GHASHTABLE, vmicfg, NULL);
-    g_hash_table_destroy(vmicfg);
     if (os != VMI_OS_WINDOWS) {
+        g_hash_table_destroy(vmicfg);
         writelog(LV_ERROR, "Failed to init LibVMI library on domain %s", handler->name);
-        goto error;
+        goto error2;
     }
+    g_hash_table_destroy(vmicfg);
+
     handler->pm = vmi_get_page_mode(handler->vmi, 0);
     handler->vcpus = vmi_get_num_vcpus(handler->vmi);
     handler->memsize = handler->init_memsize = vmi_get_memsize(handler->vmi);
@@ -432,7 +434,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     libxl_name_to_domid(handler->xen->xl_ctx, handler->name, &handler->domid);
     if (!handler->domid || handler->domid == ~0U) {
         writelog(LV_ERROR, "Domain is not running, failed to get domID from name %s!", handler->name);
-        goto error;
+        goto error2;
     }
     /* Register events */
     int i;
@@ -442,7 +444,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
         handler->step_event[i]->data = handler;
         if (VMI_FAILURE == vmi_register_event(handler->vmi, handler->step_event[i])) {
             writelog(LV_ERROR, "Failed to register singlestep for vCPU on %s", handler->name);
-            goto error;
+            goto error2;
         }
     }
     SETUP_INTERRUPT_EVENT(&handler->interrupt_event, 0, _int3_cb);
@@ -454,13 +456,15 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     handler->mem_event.data = handler;
     if (VMI_FAILURE == vmi_register_event(handler->vmi, &handler->mem_event)) {
         writelog(LV_ERROR, "Failed to register generic mem event on %s", handler->name);
-        goto error;
+        goto error2;
     }
 
     g_mutex_init(&handler->vmi_lock);
 
     return SUCCESS;
-error:
+error2:
+    vmi_destroy(handler->vmi);
+error1:
     return FAIL;
 }
 
