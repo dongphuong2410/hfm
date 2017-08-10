@@ -46,6 +46,7 @@ int rekall_lookup(const char *rekall_profile,
         if (size) {
             json_object *jsize = json_object_array_get_idx(jstruct, 0);
             *size = json_object_get_int64(jsize);
+            ret = 0;
             goto done;
         }
 

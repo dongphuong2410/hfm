@@ -78,6 +78,8 @@ addr_t FILE_OBJECT_VPB;
 addr_t VPB_VOLUME_LABEL;
 addr_t VPB_VOLUME_LABEL_LENGTH;
 addr_t EPROCESS_OBJECT_TABLE;
+addr_t OBJECT_HEADER_NAME_INFO_SIZE;
+addr_t OBJECT_HEADER_CREATOR_INFO_SIZE;
 addr_t OBJECT_HEADER_NAME_INFO_NAME;
 addr_t DEVICE_OBJECT_DRIVER_OBJECT;
 addr_t DRIVER_OBJECT_DRIVER_NAME;
@@ -117,6 +119,8 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_VPB", "VolumeLabelLength", &VPB_VOLUME_LABEL_LENGTH, NULL);
     status |= rekall_lookup(rekall_profile, "_EPROCESS", "ObjectTable", &EPROCESS_OBJECT_TABLE, NULL);
     status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER_NAME_INFO", "Name", &OBJECT_HEADER_NAME_INFO_NAME, NULL);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER_NAME_INFO", NULL, NULL, &OBJECT_HEADER_NAME_INFO_SIZE);
+    status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER_CREATOR_INFO", NULL, NULL, &OBJECT_HEADER_CREATOR_INFO_SIZE);
     status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "DriverObject", &DEVICE_OBJECT_DRIVER_OBJECT, NULL);
     status |= rekall_lookup(rekall_profile, "_DRIVER_OBJECT", "DriverName", &DRIVER_OBJECT_DRIVER_NAME, NULL);
     status |= rekall_lookup(rekall_profile, "_DEVICE_OBJECT", "Vpb", &DEVICE_OBJECT_VPB, NULL);
@@ -126,11 +130,11 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_RTL_USER_PROCESS_PARAMETERS", "CurrentDirectory", &RTL_USER_PROCESS_PARAMETERS_CURRENT_DIRECTORY, NULL);
     status |= rekall_lookup(rekall_profile, "_RTL_USER_PROCESS_PARAMETERS", "ImagePathName", &RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME, NULL);
     status |= rekall_lookup(rekall_profile, "_CURDIR", "DosPath", &CURDIR_DOS_PATH, NULL);
+    status |= rekall_lookup(rekall_profile, "_HANDLE_TABLE_ENTRY", NULL, NULL, &HANDLE_TABLE_ENTRY_SIZE);
     FILE_RENAME_INFORMATION_FILE_NAME_LENGTH = 16; //TODO : value calculated by debug, just confirmed for Windows 7 only
     FILE_RENAME_INFORMATION_FILE_NAME = 20; //TODO
     FILE_DISPOSITION_INFORMATION_DELETE_FILE = 0;
 
-    HANDLE_TABLE_ENTRY_SIZE = 16;       //TODO: should be read from rekall
     return status;
 }
 

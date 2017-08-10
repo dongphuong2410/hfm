@@ -91,10 +91,10 @@ int hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, reg_t han
     uint8_t infomask = hfm_read_8(vmi, ctx, device_header + OBJECT_HEADER_INFO_MASK);
     addr_t device_name_info_offset = 0;
     if (infomask & OB_INFOMASK_CREATOR_INFO) {
-        device_name_info_offset += 0x20;        //TODO 0x20 = sizeof struct OBJECT_HEADER_CREATOR_INFO, should remove hardcode
+        device_name_info_offset += OBJECT_HEADER_CREATOR_INFO_SIZE;
     }
     if (infomask & OB_INFOMASK_NAME) {
-        device_name_info_offset += 0x20;        //TODO Here, 0x20 = sizeof struct OBJECT_HEADER_NAME_INFO, should remove hardcode
+        device_name_info_offset += OBJECT_HEADER_NAME_INFO_SIZE;
         addr_t device_name_info_addr = device_header - device_name_info_offset;
         hfm_read_unicode(vmi, ctx, device_name_info_addr + OBJECT_HEADER_NAME_INFO_NAME, drivename);
         //TODO: hardcode mapping Windows Device Name to Drive Label
