@@ -63,6 +63,7 @@ addr_t FILE_RENAME_INFORMATION_FILE_NAME_LENGTH;
 addr_t FILE_RENAME_INFORMATION_FILE_NAME;
 addr_t FILE_DISPOSITION_INFORMATION_DELETE_FILE;
 addr_t KPCR_PRCB;
+addr_t KPCR_PRCB_DATA;
 addr_t KPRCB_CURRENT_THREAD;
 addr_t KTHREAD_PROCESS;
 addr_t HANDLE_TABLE_HANDLE_COUNT;
@@ -100,6 +101,7 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Information", &IO_STATUS_BLOCK_INFORMATION, NULL);
     status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Status", &IO_STATUS_BLOCK_STATUS, NULL);
     status |= rekall_lookup(rekall_profile, "_KPCR", "Prcb", &KPCR_PRCB, NULL);
+    status |= rekall_lookup(rekall_profile, "_KPCR", "PrcbData", &KPCR_PRCB_DATA, NULL);
     status |= rekall_lookup(rekall_profile, "_KPRCB", "CurrentThread", &KPRCB_CURRENT_THREAD, NULL);
     status |= rekall_lookup(rekall_profile, "_KTHREAD", "Process", &KTHREAD_PROCESS, NULL);
     status |= rekall_lookup(rekall_profile, "_HANDLE_TABLE", "HandleCount", &HANDLE_TABLE_HANDLE_COUNT, NULL);

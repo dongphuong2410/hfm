@@ -57,14 +57,16 @@ size_t hfm_read(vmi_instance_t vmi, context_t *ctx, addr_t addr, void *buf, size
 addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx)
 {
     addr_t process = 0;
-    addr_t kpcr = 0;
+    addr_t kpcr = 0, prcb = 0;
     if (ctx->pm == VMI_PM_IA32E) {
         kpcr = ctx->regs->gs_base;
+        prcb = KPCR_PRCB;
     }
     else {
         kpcr = ctx->regs->fs_base;
+        prcb = KPCR_PRCB_DATA;
     }
-    addr_t thread = hfm_read_addr(vmi, ctx, kpcr + KPCR_PRCB + KPRCB_CURRENT_THREAD);
+    addr_t thread = hfm_read_addr(vmi, ctx, kpcr + prcb + KPRCB_CURRENT_THREAD);
     if (!thread) goto done;
     process = hfm_read_addr(vmi, ctx, thread + KTHREAD_PROCESS);
 done:
