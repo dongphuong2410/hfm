@@ -6,8 +6,6 @@
 #include "constants.h"
 #include "log.h"
 
-static addr_t _get_obj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle);
-
 addr_t hfm_read_addr(vmi_instance_t vmi, context_t *ctx, addr_t addr)
 {
     addr_t ret = 0;
@@ -73,16 +71,88 @@ done:
     return process;
 }
 
-int hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, reg_t handle, char *filename)
+addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
+{
+    addr_t file_obj = 0;
+    addr_t handle_obj = 0;
+    addr_t process = hfm_get_current_process(vmi, ctx);
+    if (!process) goto done;
+    addr_t handletable = hfm_read_addr(vmi, ctx, process + EPROCESS_OBJECT_TABLE);
+    if (!handletable) goto done;
+    addr_t tablecode = hfm_read_addr(vmi, ctx, handletable + HANDLE_TABLE_TABLE_CODE);
+    if (!tablecode) goto done;
+    uint32_t handlecount = hfm_read_32(vmi, ctx,handletable + HANDLE_TABLE_HANDLE_COUNT);
+    if (!handlecount) goto done;
+    addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
+    uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
+
+    reg_t handle_idx = handle / HANDLE_MULTIPLIER;
+    switch (table_levels) {
+        case 0:
+            handle_obj = hfm_read_addr(vmi, ctx, table_base + handle_idx * HANDLE_TABLE_ENTRY_SIZE);
+            break;
+        case 1:
+        {
+            addr_t table = 0;
+            size_t psize = (ctx->pm == VMI_PM_IA32E ? 8 : 4);
+            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;   //Number of handle entry in the lowest level table
+            uint32_t i = handle_idx % lowest_count;
+            handle_idx -= i;
+            uint32_t j = handle_idx / lowest_count;
+            table = hfm_read_addr(vmi, ctx, table_base + j * psize);
+            if (table) {
+                handle_obj = hfm_read_addr(vmi, ctx, table + i * HANDLE_TABLE_ENTRY_SIZE);
+            }
+            break;
+        }
+        case 2:
+        {
+            addr_t table = 0, table2 = 0;
+            size_t psize = (ctx->pm == VMI_PM_IA32E ? 8 : 4);
+            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;
+            uint32_t mid_count = VMI_PS_4KB / psize;
+            uint32_t i = handle_idx % lowest_count;
+            handle_idx -= i;
+            uint32_t j = handle_idx / lowest_count;
+            uint32_t k = j % mid_count;
+            j = (j - k)/mid_count;
+            table = hfm_read_addr(vmi, ctx, table_base + j * psize);
+            if (table)
+                table2 = hfm_read_addr(vmi, ctx, table + k * psize);
+            if (table2)
+                handle_obj = hfm_read_addr(vmi, ctx, table2 + i * HANDLE_TABLE_ENTRY_SIZE);
+            break;
+        }
+    }
+    switch (ctx->winver) {
+        case VMI_OS_WINDOWS_7:
+            handle_obj &= ~EX_FAST_REF_MASK;
+            break;
+        case VMI_OS_WINDOWS_8:
+            if (ctx->pm == VMI_PM_IA32E)
+                handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFFE00000000000;
+            else
+                handle_obj &= VMI_BIT_MASK(2,31);
+            break;
+        default:
+        case VMI_OS_WINDOWS_10:
+            if (ctx->pm == VMI_PM_IA32E)
+                handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFF000000000000;
+            else
+                handle_obj &= VMI_BIT_MASK(2,31);
+            break;
+    }
+    uint8_t type_index = hfm_read_8(vmi, ctx, handle_obj + OBJECT_HEADER_TYPE_INDEX);
+    if (type_index >= WIN7_TYPEINDEX_LAST || type_index != 28) goto done;
+    file_obj = handle_obj + OBJECT_HEADER_BODY;
+done:
+    return file_obj;
+}
+
+int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t file_object, char *filename)
 {
     int filepath_len = 0;
     int drivename_len = 0;
-
-    /* Find the file object from the handle number*/
-    addr_t handle_obj = _get_obj_from_handle(vmi, ctx, handle);
-    uint8_t type_index = hfm_read_8(vmi, ctx, handle_obj + OBJECT_HEADER_TYPE_INDEX);
-    if (type_index >= WIN7_TYPEINDEX_LAST || type_index != 28) goto done;
-    addr_t file_object = handle_obj + OBJECT_HEADER_BODY;
 
     /* Find the drive label (device name) from file object */
     char drivename[STR_BUFF] = "";
@@ -152,80 +222,6 @@ int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buff
     }
 done:
     return ret;
-}
-
-static addr_t _get_obj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
-{
-    addr_t handle_obj = 0;
-    addr_t process = hfm_get_current_process(vmi, ctx);
-    if (!process) goto done;
-    addr_t handletable = hfm_read_addr(vmi, ctx, process + EPROCESS_OBJECT_TABLE);
-    if (!handletable) goto done;
-    addr_t tablecode = hfm_read_addr(vmi, ctx, handletable + HANDLE_TABLE_TABLE_CODE);
-    if (!tablecode) goto done;
-    uint32_t handlecount = hfm_read_32(vmi, ctx,handletable + HANDLE_TABLE_HANDLE_COUNT);
-    if (!handlecount) goto done;
-    addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
-    uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
-
-    reg_t handle_idx = handle / HANDLE_MULTIPLIER;
-    switch (table_levels) {
-        case 0:
-            handle_obj = hfm_read_addr(vmi, ctx, table_base + handle_idx * HANDLE_TABLE_ENTRY_SIZE);
-            break;
-        case 1:
-        {
-            addr_t table = 0;
-            size_t psize = (ctx->pm == VMI_PM_IA32E ? 8 : 4);
-            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;   //Number of handle entry in the lowest level table
-            uint32_t i = handle_idx % lowest_count;
-            handle_idx -= i;
-            uint32_t j = handle_idx / lowest_count;
-            table = hfm_read_addr(vmi, ctx, table_base + j * psize);
-            if (table) {
-                handle_obj = hfm_read_addr(vmi, ctx, table + i * HANDLE_TABLE_ENTRY_SIZE);
-            }
-            break;
-        }
-        case 2:
-        {
-            addr_t table = 0, table2 = 0;
-            size_t psize = (ctx->pm == VMI_PM_IA32E ? 8 : 4);
-            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;
-            uint32_t mid_count = VMI_PS_4KB / psize;
-            uint32_t i = handle_idx % lowest_count;
-            handle_idx -= i;
-            uint32_t j = handle_idx / lowest_count;
-            uint32_t k = j % mid_count;
-            j = (j - k)/mid_count;
-            table = hfm_read_addr(vmi, ctx, table_base + j * psize);
-            if (table)
-                table2 = hfm_read_addr(vmi, ctx, table + k * psize);
-            if (table2)
-                handle_obj = hfm_read_addr(vmi, ctx, table2 + i * HANDLE_TABLE_ENTRY_SIZE);
-            break;
-        }
-    }
-    switch (ctx->winver) {
-        case VMI_OS_WINDOWS_7:
-            handle_obj &= ~EX_FAST_REF_MASK;
-            break;
-        case VMI_OS_WINDOWS_8:
-            if (ctx->pm == VMI_PM_IA32E)
-                handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFFE00000000000;
-            else
-                handle_obj &= VMI_BIT_MASK(2,31);
-            break;
-        default:
-        case VMI_OS_WINDOWS_10:
-            if (ctx->pm == VMI_PM_IA32E)
-                handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFF000000000000;
-            else
-                handle_obj &= VMI_BIT_MASK(2,31);
-            break;
-    }
-done:
-    return handle_obj;
 }
 
 vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)

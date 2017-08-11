@@ -65,14 +65,22 @@ size_t hfm_read(vmi_instance_t vmi, context_t *ctx, addr_t addr, void *buf, size
 addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx);
 
 /**
+  * @brief Get file object address from handle
+  * @param vmi vmi instance
+  * @param ctx context
+  * @param handle File handle
+  */
+addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle);
+
+/**
   * @brief Read filename of File object from file handler
   * @param vmi vmi instance
   * @param ctx context
-  * @param handle Handle number
+  * @param object File object address
   * @param filename Address of buffer to write filename to
   * @return Lengh of filename read
   */
-int hfm_read_filename_from_handler(vmi_instance_t vmi, context_t *ctx, reg_t handle, char *filename);
+int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t object, char *filename);
 
 /**
   * @brief Read and convert a unicode string at address

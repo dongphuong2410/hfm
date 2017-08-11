@@ -57,7 +57,8 @@ static void *writefile_cb(vmhdlr_t *handler, context_t *context)
     }
 
     char filename[STR_BUFF] = "";
-    int len = hfm_read_filename_from_handler(vmi, context, handle, filename);
+    addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
+    int len = hfm_read_filename_from_object(vmi, context, file_object, filename);
     int policy_id;
     if (filename[0] && (policy_id = filter_match(filter, filename)) >= 0) {
         params = (params_t *)calloc(1, sizeof(params_t));

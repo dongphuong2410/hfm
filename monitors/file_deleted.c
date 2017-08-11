@@ -54,7 +54,8 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
     }
     if (FILE_DISPOSITION_INFORMATION == fileinfo_class) {
         char filename[STR_BUFF] = "";
-        hfm_read_filename_from_handler(vmi, context, handle, filename);
+        addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
+        hfm_read_filename_from_object(vmi, context, file_object, filename);
         int policy_id = filter_match(filter, filename);
         if (policy_id >= 0) {
             uint8_t delete = hfm_read_8(vmi, context, fileinfo_addr + FILE_DISPOSITION_INFORMATION_DELETE_FILE);
