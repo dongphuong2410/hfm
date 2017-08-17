@@ -75,6 +75,7 @@ addr_t FILE_OBJECT_FILE_NAME;
 addr_t FILE_OBJECT_SIZE;
 addr_t FILE_OBJECT_DEVICE_OBJECT;
 addr_t FILE_OBJECT_VPB;
+addr_t FILE_OBJECT_SECTION_OBJECT_POINTER;
 addr_t VPB_VOLUME_LABEL;
 addr_t VPB_VOLUME_LABEL_LENGTH;
 addr_t EPROCESS_OBJECT_TABLE;
@@ -90,6 +91,21 @@ addr_t PEB_PROCESS_PARAMETERS;
 addr_t RTL_USER_PROCESS_PARAMETERS_CURRENT_DIRECTORY;
 addr_t RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME;
 addr_t CURDIR_DOS_PATH;
+addr_t SECTION_OBJECT_POINTERS_DATA_SECTION_OBJECT;
+addr_t SECTION_OBJECT_POINTERS_IMAGE_SECTION_OBJECT;
+addr_t SECTION_OBJECT_POINTERS_SHARED_CACHE_MAP;
+
+addr_t CONTROL_AREA_SIZE;
+addr_t CONTROL_AREA_SEGMENT;
+addr_t SEGMENT_CONTROL_AREA;
+addr_t SEGMENT_SIZE_OF_SEGMENT;
+addr_t SEGMENT_TOTAL_NUMBER_OF_PTES;
+
+addr_t SUBSECTION_CONTROL_AREA;
+addr_t SUBSECTION_PTES_IN_SUBSECTION;
+addr_t SUBSECTION_STARTING_SECTOR;
+addr_t SUBSECTION_SUBSECTION_BASE;
+addr_t SUBSECTION_NEXT_SUBSECTION;
 
 size_t HANDLE_TABLE_ENTRY_SIZE;
 
@@ -103,7 +119,7 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Information", &IO_STATUS_BLOCK_INFORMATION, NULL);
     status |= rekall_lookup(rekall_profile, "_IO_STATUS_BLOCK", "Status", &IO_STATUS_BLOCK_STATUS, NULL);
     status |= rekall_lookup(rekall_profile, "_KPCR", "Prcb", &KPCR_PRCB, NULL);
-    status |= rekall_lookup(rekall_profile, "_KPCR", "PrcbData", &KPCR_PRCB_DATA, NULL);
+    rekall_lookup(rekall_profile, "_KPCR", "PrcbData", &KPCR_PRCB_DATA, NULL);      //For Win32, No PrcbData field exists
     status |= rekall_lookup(rekall_profile, "_KPRCB", "CurrentThread", &KPRCB_CURRENT_THREAD, NULL);
     status |= rekall_lookup(rekall_profile, "_KTHREAD", "Process", &KTHREAD_PROCESS, NULL);
     status |= rekall_lookup(rekall_profile, "_HANDLE_TABLE", "HandleCount", &HANDLE_TABLE_HANDLE_COUNT, NULL);
@@ -115,6 +131,7 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "Size", &FILE_OBJECT_SIZE, NULL);
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "DeviceObject", &FILE_OBJECT_DEVICE_OBJECT, NULL);
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "Vpb", &FILE_OBJECT_VPB, NULL);
+    status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "SectionObjectPointer", &FILE_OBJECT_SECTION_OBJECT_POINTER, NULL);
     status |= rekall_lookup(rekall_profile, "_VPB", "VolumeLabel", &VPB_VOLUME_LABEL, NULL);
     status |= rekall_lookup(rekall_profile, "_VPB", "VolumeLabelLength", &VPB_VOLUME_LABEL_LENGTH, NULL);
     status |= rekall_lookup(rekall_profile, "_EPROCESS", "ObjectTable", &EPROCESS_OBJECT_TABLE, NULL);
@@ -131,6 +148,19 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_RTL_USER_PROCESS_PARAMETERS", "ImagePathName", &RTL_USER_PROCESS_PARAMETERS_IMAGE_PATH_NAME, NULL);
     status |= rekall_lookup(rekall_profile, "_CURDIR", "DosPath", &CURDIR_DOS_PATH, NULL);
     status |= rekall_lookup(rekall_profile, "_HANDLE_TABLE_ENTRY", NULL, NULL, &HANDLE_TABLE_ENTRY_SIZE);
+    status |= rekall_lookup(rekall_profile, "_SECTION_OBJECT_POINTERS", "DataSectionObject", &SECTION_OBJECT_POINTERS_DATA_SECTION_OBJECT, NULL);
+    status |= rekall_lookup(rekall_profile, "_SECTION_OBJECT_POINTERS", "ImageSectionObject", &SECTION_OBJECT_POINTERS_IMAGE_SECTION_OBJECT, NULL);
+    status |= rekall_lookup(rekall_profile, "_SECTION_OBJECT_POINTERS", "SharedCacheMap", &SECTION_OBJECT_POINTERS_SHARED_CACHE_MAP, NULL);
+    status |= rekall_lookup(rekall_profile, "_CONTROL_AREA", NULL, NULL, &CONTROL_AREA_SIZE);
+    status |= rekall_lookup(rekall_profile, "_CONTROL_AREA", "Segment", &CONTROL_AREA_SEGMENT, NULL);
+    status |= rekall_lookup(rekall_profile, "_SEGMENT", "ControlArea", &SEGMENT_CONTROL_AREA, NULL);
+    status |= rekall_lookup(rekall_profile, "_SEGMENT", "SizeOfSegment", &SEGMENT_SIZE_OF_SEGMENT, NULL);
+    status |= rekall_lookup(rekall_profile, "_SEGMENT", "TotalNumberOfPtes", &SEGMENT_TOTAL_NUMBER_OF_PTES, NULL);
+    status |= rekall_lookup(rekall_profile, "_SUBSECTION", "ControlArea", &SUBSECTION_CONTROL_AREA, NULL);
+    status |= rekall_lookup(rekall_profile, "_SUBSECTION", "PtesInSubsection", &SUBSECTION_PTES_IN_SUBSECTION, NULL);
+    status |= rekall_lookup(rekall_profile, "_SUBSECTION", "StartingSector", &SUBSECTION_STARTING_SECTOR, NULL);
+    status |= rekall_lookup(rekall_profile, "_SUBSECTION", "SubsectionBase", &SUBSECTION_SUBSECTION_BASE, NULL);
+    status |= rekall_lookup(rekall_profile, "_SUBSECTION", "NextSubsection", &SUBSECTION_NEXT_SUBSECTION, NULL);
     FILE_RENAME_INFORMATION_FILE_NAME_LENGTH = 16; //TODO : value calculated by debug, just confirmed for Windows 7 only
     FILE_RENAME_INFORMATION_FILE_NAME = 20; //TODO
     FILE_DISPOSITION_INFORMATION_DELETE_FILE = 0;

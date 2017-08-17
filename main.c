@@ -178,13 +178,13 @@ static void _set_policies(vmhdlr_t *handler, GSList *policies)
     policy_t *test = (policy_t *)calloc(1, sizeof(policy_t));
     strcpy(test->path, "C:/meo/*");
 
-    //test->type = MON_DELETE;
-    //test->id = 10;
-    //mon_add_policy(handler, test);
-
-    test->type = MON_CREATE;
-    test->id = 20;
+    test->type = MON_DELETE;
+    test->id = 10;
     mon_add_policy(handler, test);
+
+    //test->type = MON_CREATE;
+    //test->id = 20;
+    //mon_add_policy(handler, test);
 
     //test->type = MON_MODIFY_CONTENT;
     //test->id = 30;

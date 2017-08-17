@@ -374,7 +374,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, trap_t *trap)
         vmi_set_mem_event(handler->vmi, frame, VMI_MEMACCESS_RW, handler->altp2m_idx);
 
         //Set INT3
-        addr_t rpa = (remapped->r << PAGE_OFFSET_BITS) + pa % PAGE_SIZE;
+        addr_t rpa = (remapped->r << PAGE_OFFSET_BITS) + pa % PAGESIZE;
         uint8_t test;
         if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
             writelog(LV_ERROR, "Failed to read 0%lx", pa);
@@ -529,7 +529,7 @@ static void _destroy_traps(vmhdlr_t *handler)
 static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t frame)
 {
     /* Setup and activate shadow view */
-    uint64_t proposed_memsize = handler->memsize + PAGE_SIZE;
+    uint64_t proposed_memsize = handler->memsize + PAGESIZE;
     uint64_t remapped = xen_alloc_shadow_frame(handler->xen, proposed_memsize);
     if (remapped == 0) {
         writelog(LV_DEBUG, "Extend memory failed for shadow page");
@@ -545,15 +545,15 @@ static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t frame)
     }
 
     /* Copy original page to remapped page */
-    uint8_t buff[PAGE_SIZE] = {0};
-    size_t ret = vmi_read_pa(handler->vmi, frame << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
-    if (PAGE_SIZE != ret) {
+    uint8_t buff[PAGESIZE] = {0};
+    size_t ret = vmi_read_pa(handler->vmi, frame << PAGE_OFFSET_BITS, buff, PAGESIZE);
+    if (PAGESIZE != ret) {
         writelog(LV_DEBUG, "Failed to read in syscall page");
         goto error;
     }
 
-    ret = vmi_write_pa(handler->vmi, remapped << PAGE_OFFSET_BITS, buff, PAGE_SIZE);
-    if (PAGE_SIZE != ret) {
+    ret = vmi_write_pa(handler->vmi, remapped << PAGE_OFFSET_BITS, buff, PAGESIZE);
+    if (PAGESIZE != ret) {
         writelog(LV_DEBUG, "Failed to write to remapped page");
         goto error;
     }

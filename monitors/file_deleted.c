@@ -72,6 +72,7 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
                 strncpy(output.filepath, filename, PATH_MAX_LEN);
                 output.extpath[0] = '\0';
                 out_write(handler->out, &output);
+                hfm_extract_file(vmi, context, file_object);
             }
         }
     }

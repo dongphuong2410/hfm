@@ -83,6 +83,15 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
 int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t object, char *filename);
 
 /**
+  * @brief Extract file from the file object address
+  * @param vmi Vmi instance
+  * @param ctx context
+  * @param object File object address
+  * @return Length of filename extracted
+  */
+int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object);
+
+/**
   * @brief Read and convert a unicode string at address
   * @param vmi vmi instance
   * @param ctx context

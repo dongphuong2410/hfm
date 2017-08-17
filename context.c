@@ -1,10 +1,14 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <libvmi/libvmi.h>
+#include <libvmi/x86.h>
 
 #include "context.h"
 #include "constants.h"
 #include "log.h"
+
+static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area);
 
 addr_t hfm_read_addr(vmi_instance_t vmi, context_t *ctx, addr_t addr)
 {
@@ -224,6 +228,26 @@ done:
     return ret;
 }
 
+int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object)
+{
+    addr_t sop = 0;
+    addr_t datasection = 0, sharedcachemap = 0, imagesection = 0;
+    sop = hfm_read_addr(vmi, ctx, object + FILE_OBJECT_SECTION_OBJECT_POINTER);
+    datasection = hfm_read_addr(vmi, ctx, sop + SECTION_OBJECT_POINTERS_DATA_SECTION_OBJECT);
+    if (datasection) {
+        _extract_ca_file(vmi, ctx, datasection);
+    }
+    sharedcachemap = hfm_read_addr(vmi, ctx, sop + SECTION_OBJECT_POINTERS_SHARED_CACHE_MAP);
+    //TODO: extraction from sharedcachedmap
+    imagesection = hfm_read_addr(vmi, ctx, sop + SECTION_OBJECT_POINTERS_IMAGE_SECTION_OBJECT);
+    if (!imagesection)
+        return 0;
+    if (imagesection != datasection) {
+        _extract_ca_file(vmi, ctx, imagesection);
+    }
+    return 0;
+}
+
 vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
 {
     vmi_pid_t pid;
@@ -236,4 +260,66 @@ vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
         pid = -1;
     }
     return pid;
+}
+
+static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area)
+{
+    addr_t subsection = control_area + CONTROL_AREA_SIZE;
+    addr_t segment = 0, test = 0, test2 = 0;
+
+    uint8_t mmpte_size;
+    if (VMI_PM_LEGACY == ctx->pm)
+        mmpte_size = 4;
+    else
+        mmpte_size = 8;
+    /* Check whether subsection points back to the control area */
+    segment = hfm_read_addr(vmi, ctx, control_area + CONTROL_AREA_SEGMENT);
+    test = hfm_read_addr(vmi, ctx, segment + SEGMENT_CONTROL_AREA);
+    if (test != control_area)
+        return;
+    test = hfm_read_64(vmi, ctx, segment + SEGMENT_SIZE_OF_SEGMENT);
+    test2 = hfm_read_32(vmi, ctx, segment + SEGMENT_TOTAL_NUMBER_OF_PTES);
+    if (test != (test2 * 4096))
+        return;
+    char *file = NULL;
+    if (asprintf(&file, "file.0x%lx.mm", control_area) < 0)
+        return;
+    FILE *fp = fopen(file, "w");
+    while (subsection)
+    {
+        /* Check whether subsection points back to the control area */
+        test = hfm_read_addr(vmi, ctx, subsection + SUBSECTION_CONTROL_AREA);
+        if (test != control_area)
+            break;
+        addr_t base = 0, start = 0;
+        uint32_t ptes = 0;
+        base = hfm_read_addr(vmi, ctx, subsection + SUBSECTION_SUBSECTION_BASE);
+        if (!(base & VMI_BIT_MASK(0,11)))
+            break;
+        ptes = hfm_read_32(vmi, ctx, subsection + SUBSECTION_PTES_IN_SUBSECTION);
+        if (ptes == 0)
+            break;
+        start = hfm_read_32(vmi, ctx, subsection + SUBSECTION_STARTING_SECTOR);
+        /* The offset into the file is stored implicitely
+           based on the PTE's location within the subsection */
+        addr_t subsection_offset = start * 0x200;
+        addr_t ptecount;
+        for (ptecount = 0; ptecount < ptes; ptecount++) {
+            addr_t pteoffset = base + mmpte_size * ptecount;
+            addr_t fileoffset = subsection_offset + ptecount * 0x1000;
+            addr_t pte = 0;
+            if (mmpte_size != hfm_read(vmi, ctx, pteoffset, &pte, mmpte_size))
+                break;
+            if (ENTRY_PRESENT(1, pte)) {
+                uint8_t page[4096];
+                if (4096 != vmi_read_pa(vmi, VMI_BIT_MASK(12,48) & pte, page, 4096))
+                    continue;
+                if (!fseek(fp, fileoffset, SEEK_SET))
+                    fwrite(page, 4096, 1, fp);
+            }
+        }
+        subsection = hfm_read_addr(vmi, ctx, subsection + SUBSECTION_NEXT_SUBSECTION);
+    }
+    fclose(fp);
+    free(file);
 }
