@@ -146,8 +146,6 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
                 handle_obj &= VMI_BIT_MASK(2,31);
             break;
     }
-    uint8_t type_index = hfm_read_8(vmi, ctx, handle_obj + OBJECT_HEADER_TYPE_INDEX);
-    if (type_index >= WIN7_TYPEINDEX_LAST || type_index != 28) goto done;
     file_obj = handle_obj + OBJECT_HEADER_BODY;
 done:
     return file_obj;

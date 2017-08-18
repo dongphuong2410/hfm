@@ -70,7 +70,6 @@ addr_t HANDLE_TABLE_HANDLE_COUNT;
 addr_t HANDLE_TABLE_TABLE_CODE;
 addr_t OBJECT_HEADER_BODY;
 addr_t OBJECT_HEADER_INFO_MASK;
-addr_t OBJECT_HEADER_TYPE_INDEX;
 addr_t FILE_OBJECT_FILE_NAME;
 addr_t FILE_OBJECT_SIZE;
 addr_t FILE_OBJECT_DEVICE_OBJECT;
@@ -126,7 +125,6 @@ static int constants_init(const char *rekall_profile)
     status |= rekall_lookup(rekall_profile, "_HANDLE_TABLE", "TableCode", &HANDLE_TABLE_TABLE_CODE, NULL);
     status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER", "Body", &OBJECT_HEADER_BODY, NULL);
     status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER", "InfoMask", &OBJECT_HEADER_INFO_MASK, NULL);
-    status |= rekall_lookup(rekall_profile, "_OBJECT_HEADER", "TypeIndex", &OBJECT_HEADER_TYPE_INDEX, NULL);
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "FileName", &FILE_OBJECT_FILE_NAME, NULL);
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "Size", &FILE_OBJECT_SIZE, NULL);
     status |= rekall_lookup(rekall_profile, "_FILE_OBJECT", "DeviceObject", &FILE_OBJECT_DEVICE_OBJECT, NULL);
