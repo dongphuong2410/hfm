@@ -120,6 +120,9 @@ typedef struct _vmhdlr {
     vmi_event_t interrupt_event;
     vmi_event_t mem_event;
     vmi_event_t *step_event[16];
+
+    char dos_drive_name[26][STR_BUFF];
+    char win_drive_name[26][STR_BUFF];
 } vmhdlr_t;
 
 typedef struct context_t context_t;
@@ -145,9 +148,8 @@ struct context_t {
     x86_registers_t *regs;
     access_context_t access_ctx;
     trap_t *trap;
-    page_mode_t pm;
-    win_ver_t winver;
     addr_t process_base;    //Address of EPROCESS
+    vmhdlr_t *hdlr;
 };
 
 typedef struct memtrap_t {

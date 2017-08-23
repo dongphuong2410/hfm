@@ -60,7 +60,7 @@ addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx)
 {
     addr_t process = 0;
     addr_t kpcr = 0, prcb = 0;
-    if (ctx->pm == VMI_PM_IA32E) {
+    if (ctx->hdlr->pm == VMI_PM_IA32E) {
         kpcr = ctx->regs->gs_base;
         prcb = KPCR_PRCB;
     }
@@ -98,7 +98,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
         case 1:
         {
             addr_t table = 0;
-            size_t psize = (ctx->pm == VMI_PM_IA32E ? 8 : 4);
+            size_t psize = (ctx->hdlr->pm == VMI_PM_IA32E ? 8 : 4);
             uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;   //Number of handle entry in the lowest level table
             uint32_t i = handle_idx % lowest_count;
             handle_idx -= i;
@@ -112,7 +112,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
         case 2:
         {
             addr_t table = 0, table2 = 0;
-            size_t psize = (ctx->pm == VMI_PM_IA32E ? 8 : 4);
+            size_t psize = (ctx->hdlr->pm == VMI_PM_IA32E ? 8 : 4);
             uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;
             uint32_t mid_count = VMI_PS_4KB / psize;
             uint32_t i = handle_idx % lowest_count;
@@ -128,19 +128,19 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
             break;
         }
     }
-    switch (ctx->winver) {
+    switch (ctx->hdlr->winver) {
         case VMI_OS_WINDOWS_7:
             handle_obj &= ~EX_FAST_REF_MASK;
             break;
         case VMI_OS_WINDOWS_8:
-            if (ctx->pm == VMI_PM_IA32E)
+            if (ctx->hdlr->pm == VMI_PM_IA32E)
                 handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFFE00000000000;
             else
                 handle_obj &= VMI_BIT_MASK(2,31);
             break;
         default:
         case VMI_OS_WINDOWS_10:
-            if (ctx->pm == VMI_PM_IA32E)
+            if (ctx->hdlr->pm == VMI_PM_IA32E)
                 handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFF000000000000;
             else
                 handle_obj &= VMI_BIT_MASK(2,31);
@@ -160,20 +160,15 @@ int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t fil
     char drivename[STR_BUFF] = "";
     addr_t device_object = hfm_read_addr(vmi, ctx, file_object + FILE_OBJECT_DEVICE_OBJECT);
     addr_t device_header = device_object - OBJECT_HEADER_BODY;
-    uint8_t infomask = hfm_read_8(vmi, ctx, device_header + OBJECT_HEADER_INFO_MASK);
     addr_t device_name_info_offset = 0;
-    if (infomask & OB_INFOMASK_CREATOR_INFO) {
-        device_name_info_offset += OBJECT_HEADER_CREATOR_INFO_SIZE;
-    }
-    if (infomask & OB_INFOMASK_NAME) {
-        device_name_info_offset += OBJECT_HEADER_NAME_INFO_SIZE;
-        addr_t device_name_info_addr = device_header - device_name_info_offset;
-        hfm_read_unicode(vmi, ctx, device_name_info_addr + OBJECT_HEADER_NAME_INFO_NAME, drivename);
-        //TODO: hardcode mapping Windows Device Name to Drive Label
-        if (!strncmp(drivename, "HarddiskVolume2", STR_BUFF)) {
-            sprintf(drivename, "%s", "C:");
-            drivename_len = 2;
-        }
+
+    device_name_info_offset += OBJECT_HEADER_NAME_INFO_SIZE;
+    addr_t device_name_info_addr = device_header - device_name_info_offset;
+    hfm_read_unicode(vmi, ctx, device_name_info_addr + OBJECT_HEADER_NAME_INFO_NAME, drivename);
+    //TODO: hardcode mapping Windows Device Name to Drive Label
+    if (!strncmp(drivename, "HarddiskVolume2", STR_BUFF)) {
+        sprintf(drivename, "%s", "C:");
+        drivename_len = 2;
     }
 
     /* Find filepath from file object */
@@ -266,7 +261,7 @@ static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_
     addr_t segment = 0, test = 0, test2 = 0;
 
     uint8_t mmpte_size;
-    if (VMI_PM_LEGACY == ctx->pm)
+    if (VMI_PM_LEGACY == ctx->hdlr->pm)
         mmpte_size = 4;
     else
         mmpte_size = 8;

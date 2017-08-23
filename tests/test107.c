@@ -12,7 +12,7 @@ config_t *config;
 int main(int argc, char **argv)
 {
     log_init(LV_DEBUG, LOG_CONSOLE);
-    config = config_init("../hfm.cfg");
+    config = config_init("hfm.cfg");
     vmhdlr_t *vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
     strncpy(vmhdlr->name, "windows", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {

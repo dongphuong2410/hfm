@@ -204,8 +204,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     context->regs = event->x86_regs;
     context->access_ctx.translate_mechanism = VMI_TM_PROCESS_DTB;
     context->access_ctx.dtb = event->x86_regs->cr3;
-    context->pm = handler->pm;
-    context->winver = handler->winver;
+    context->hdlr = handler;
     while (loop) {
         trap_t *trap = loop->data;
         if (trap->cb) {
