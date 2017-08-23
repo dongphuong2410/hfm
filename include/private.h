@@ -35,6 +35,7 @@
 #define PAGESIZE (1 << PAGE_OFFSET_BITS)
 
 #define BREAKPOINT_INST 0xCC
+#define MAX_DRIVE_DEVICE 256
 
 /**
   * @brief Return status code
@@ -121,8 +122,7 @@ typedef struct _vmhdlr {
     vmi_event_t mem_event;
     vmi_event_t *step_event[16];
 
-    char dos_drive_name[26][STR_BUFF];
-    char win_drive_name[26][STR_BUFF];
+    GSList *drives;
 } vmhdlr_t;
 
 typedef struct context_t context_t;

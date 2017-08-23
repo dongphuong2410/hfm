@@ -11,6 +11,8 @@
 #include "log.h"
 #include "trapmngr.h"
 #include "output_format.h"
+#include "vmi_helper.h"
+#include "constants.h"
 
 /**
 * hfm maintains two page tables (two views), first page table (ORIGINAL_IDX) maps the kernel
@@ -59,6 +61,12 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         writelog(LV_ERROR, "Failed to init XEN on domain %s", handler->name);
         xen_free_interface(handler->xen);
         goto error1;
+    }
+
+    const char *rekall_profile = config_get_str(config, "rekall_profile");
+    if (0 != constants_init(rekall_profile)) {
+        writelog(LV_ERROR, "Read symbols from Rekall failed");
+        goto error2;
     }
 
     /* Init LibVMI */
@@ -427,7 +435,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     handler->pm = vmi_get_page_mode(handler->vmi, 0);
     handler->vcpus = vmi_get_num_vcpus(handler->vmi);
     handler->memsize = handler->init_memsize = vmi_get_memsize(handler->vmi);
-    handler->winver = vmi_get_winver(handler->vmi);     //TODO: Hardcode window versions, should be replace with function vmi_get_winver
+    handler->winver = vmi_get_winver(handler->vmi);
 
     //Get domid info
     libxl_name_to_domid(handler->xen->xl_ctx, handler->name, &handler->domid);
@@ -446,7 +454,8 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
             goto error2;
         }
     }
-    //Update drive name mapping
+    //Get all drive devices
+    handler->drives = vmi_list_drives(handler->vmi);
 
     SETUP_INTERRUPT_EVENT(&handler->interrupt_event, 0, _int3_cb);
     handler->interrupt_event.data = handler;

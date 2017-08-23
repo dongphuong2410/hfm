@@ -6,7 +6,7 @@ STATICLIB=./monitors/libmon.a ./outputs/libout.a
 
 SUBDIRS = monitors outputs tests
 
-SRC= main.c log.c config.c policy.c hfm.c xen_helper.c file_filter.c fnmatch.c trapmngr.c rekall.c context.c
+SRC= main.c log.c config.c policy.c hfm.c xen_helper.c file_filter.c fnmatch.c trapmngr.c rekall.c context.c vmi_helper.c
 
 CFLAGS+= -DLOG_LEVEL=LV_WARN
 .PHONY : all $(SUBDIRS) clean

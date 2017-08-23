@@ -13,11 +13,6 @@ config_t *config;
 
 int mon_init(void)
 {
-    const char *rekall_profile = config_get_str(config, "rekall_profile");
-    if (0 != constants_init(rekall_profile)) {
-        writelog(LV_ERROR, "Read symbols from Rekall failed");
-        return -1;
-    }
     return 0;
 }
 

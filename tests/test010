@@ -1,4 +1,0 @@
-#!/bin/bash
-valgrind ./test009 &> test010.tmp
-cat test010.tmp | grep "ERROR SUMMARY: 0 errors" | wc -l
-rm -rf test010.tmp
