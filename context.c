@@ -7,6 +7,7 @@
 #include "context.h"
 #include "constants.h"
 #include "log.h"
+#include "vmi_helper.h"
 
 static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area);
 
@@ -165,10 +166,15 @@ int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t fil
     device_name_info_offset += OBJECT_HEADER_NAME_INFO_SIZE;
     addr_t device_name_info_addr = device_header - device_name_info_offset;
     hfm_read_unicode(vmi, ctx, device_name_info_addr + OBJECT_HEADER_NAME_INFO_NAME, drivename);
-    //TODO: hardcode mapping Windows Device Name to Drive Label
-    if (!strncmp(drivename, "HarddiskVolume2", STR_BUFF)) {
-        sprintf(drivename, "%s", "C:");
-        drivename_len = 2;
+    drivename_len = strlen(drivename);
+    GSList *it = NULL;
+    for (it = ctx->hdlr->drives; it; it = it->next) {
+        drive_t *drive = (drive_t *)it->data;
+        if (!strncmp(drivename, drive->win_name, STR_BUFF)) {
+            sprintf(drivename, "%s", drive->dos_name);
+            drivename_len = strlen(drive->dos_name);
+            break;
+        }
     }
 
     /* Find filepath from file object */

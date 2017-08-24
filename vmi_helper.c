@@ -148,7 +148,12 @@ GSList *vmi_list_drives(vmi_instance_t vmi)
                             if (us) {
                                 status_t status = vmi_convert_str_encoding(us, &out, "UTF-8");
                                 if (VMI_SUCCESS == status) {
-                                    sprintf(drive->win_name, "%s", out.contents);
+                                    int len = strlen("\\Device\\");
+                                    //Remove \Device part if exists
+                                    if (!strncmp(out.contents, "\\Device\\", len))
+                                        sprintf(drive->win_name, "%s", out.contents + len);
+                                    else
+                                        sprintf(drive->win_name, "%s", out.contents);
                                     g_free(out.contents);
                                 }
                                 vmi_free_unicode_str(us);

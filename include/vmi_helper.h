@@ -14,7 +14,7 @@ typedef struct _drive {
   * @brief Get address of a process from its pid
   * @param[in] vmi vmi_instance_t
   * @param[in] pid Process Id
-  * @return address of _EPROCESS struct, return 0x0 if failed 
+  * @return address of _EPROCESS struct, return 0x0 if failed
   */
 addr_t vmi_get_process(vmi_instance_t vmi, pid_t pid);
 
