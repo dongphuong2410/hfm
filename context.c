@@ -7,7 +7,7 @@
 #include "context.h"
 #include "constants.h"
 #include "log.h"
-#include "vmi_helper.h"
+#include "win.h"
 
 static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area);
 

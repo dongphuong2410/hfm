@@ -1,12 +1,12 @@
 #include <stdlib.h>
 
 #include "log.h"
-#include "vmi_helper.h"
+#include "win.h"
 #include "constants.h"
 
 addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj);
 
-GSList *vmi_list_drives(vmi_instance_t vmi)
+GSList *win_list_drives(vmi_instance_t vmi)
 {
     GSList *list = NULL;
     pid_t pid = 4;
@@ -14,7 +14,7 @@ GSList *vmi_list_drives(vmi_instance_t vmi)
     page_mode_t pm = vmi_get_page_mode(vmi, 0);
     uint32_t psize = (pm == VMI_PM_IA32E ? 8 : 4);
 
-    addr_t process = vmi_get_process(vmi, pid);
+    addr_t process = win_get_process(vmi, pid);
     addr_t handle_table = 0;
     vmi_read_addr_va(vmi, process + EPROCESS_OBJECT_TABLE, pid, &handle_table);
 
@@ -170,7 +170,7 @@ done:
     return list;
 }
 
-addr_t vmi_get_process(vmi_instance_t vmi, pid_t pid)
+addr_t win_get_process(vmi_instance_t vmi, pid_t pid)
 {
     addr_t process_addr = 0;
     addr_t list_head = 0, next_list_entry = 0;

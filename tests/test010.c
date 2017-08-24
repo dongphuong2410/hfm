@@ -6,7 +6,7 @@
 #include "config.h"
 #include "private.h"
 #include "log.h"
-#include "vmi_helper.h"
+#include "win.h"
 
 config_t *config;
 

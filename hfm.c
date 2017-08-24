@@ -11,7 +11,7 @@
 #include "log.h"
 #include "trapmngr.h"
 #include "output_format.h"
-#include "vmi_helper.h"
+#include "win.h"
 #include "constants.h"
 
 /**
@@ -455,7 +455,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
         }
     }
     //Get all drive devices
-    handler->drives = vmi_list_drives(handler->vmi);
+    handler->drives = win_list_drives(handler->vmi);
 
     SETUP_INTERRUPT_EVENT(&handler->interrupt_event, 0, _int3_cb);
     handler->interrupt_event.data = handler;
