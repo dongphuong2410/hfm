@@ -6,6 +6,10 @@
 
 addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj);
 
+void win_fill_offsets(vmi_instance_t vmi, addr_t *offsets)
+{
+}
+
 GSList *win_list_drives(vmi_instance_t vmi)
 {
     GSList *list = NULL;

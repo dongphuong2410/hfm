@@ -11,6 +11,13 @@ typedef struct _drive {
 } drive_t;
 
 /**
+  * @brief Fill the offsets of kernel structs
+  * @param[in] vmi vmi_instance_t
+  * @param[out] offsets Array to keep the offsets output
+  */
+void win_fill_offsets(vmi_instance_t vmi, addr_t *offsets);
+
+/**
   * @brief Get address of a process from its pid
   * @param[in] vmi vmi_instance_t
   * @param[in] pid Process Id

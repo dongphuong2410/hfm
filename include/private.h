@@ -15,6 +15,7 @@
 #include <glib.h>
 
 #include "output_format.h"
+#include "win_offsets.h"
 
 #define ghashtable_foreach(table, i, key, val) \
           g_hash_table_iter_init(&i, table); \
@@ -123,6 +124,8 @@ typedef struct _vmhdlr {
     vmi_event_t *step_event[16];
 
     GSList *drives;
+    addr_t offsets[WIN_OFFSETS_MAX];
+    addr_t sizes[WIN_SIZES_MAX];
 } vmhdlr_t;
 
 typedef struct context_t context_t;
