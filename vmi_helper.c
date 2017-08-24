@@ -99,7 +99,7 @@ GSList *vmi_list_drives(vmi_instance_t vmi)
             uint8_t object_type = 0;
             vmi_read_8_va(vmi, obj + OBJECT_HEADER_TYPE_INDEX, pid, &object_type);
             if (object_type == 3) {     //Directory
-                addr_t name_info = obj - 0x20;
+                addr_t name_info = obj - OBJECT_HEADER_NAME_INFO_SIZE;
                 addr_t dirname = name_info + OBJECT_HEADER_NAME_INFO_NAME;
                 unicode_string_t *us = vmi_read_unicode_str_va(vmi, dirname, pid);
                 unicode_string_t out = { .contents = NULL };
@@ -133,7 +133,7 @@ GSList *vmi_list_drives(vmi_instance_t vmi)
                 vmi_read_addr_va(vmi, dir_entry + OBJECT_DIRECTORY_ENTRY_OBJECT, pid, &obj);
                 if (obj) {
                     //Check type of object,for SymbolicLink object
-                    addr_t obj_header = obj - 0x30;
+                    addr_t obj_header = obj - OBJECT_HEADER_BODY;
                     uint8_t type_index = 0;
                     vmi_read_8_va(vmi, obj_header + OBJECT_HEADER_TYPE_INDEX, pid, &type_index);
                     if (type_index == 0x4) {             //SymbolicLink
