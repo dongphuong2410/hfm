@@ -7,7 +7,6 @@ OBJECTS=monitor.o file_created.o file_deleted.o file_modified.o hidden_changed.o
 
 all: $(OBJECTS)
 	ar rcs libmon.a $^
-	rm -f $(OBJECTS)
 
 %.o:%.c
 	$(CC) -c $< -o $@ $(CFLAGS)
