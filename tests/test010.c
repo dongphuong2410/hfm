@@ -12,23 +12,23 @@ config_t *config;
 
 int main(int argc, char **argv)
 {
+    GSList *it = NULL;
     log_init(LV_DEBUG, LOG_CONSOLE);
     config = config_init("win7_64.cfg");
     vmhdlr_t *vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
     strncpy(vmhdlr->name, "windows", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
-        free(vmhdlr);
-        return -1;
     }
-    GSList *it = NULL;
-    for (it = vmhdlr->drives; it; it = it->next) {
-        drive_t *drive = (drive_t *)it->data;
-        printf("%s\n", drive->win_name);
-        printf("%s\n", drive->dos_name);
+    else {
+        for (it = vmhdlr->drives; it; it = it->next) {
+            drive_t *drive = (drive_t *)it->data;
+            printf("%s\n", drive->win_name);
+            printf("%s\n", drive->dos_name);
+        }
+        hfm_close(vmhdlr);
+        config_close(config);
     }
-    hfm_close(vmhdlr);
-    config_close(config);
     free(vmhdlr);
 
     config = config_init("win7_32.cfg");
@@ -36,16 +36,16 @@ int main(int argc, char **argv)
     strncpy(vmhdlr->name, "windows7_32", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
-        free(vmhdlr);
-        return -1;
     }
-    for (it = vmhdlr->drives; it; it = it->next) {
-        drive_t *drive = (drive_t *)it->data;
-        printf("%s\n", drive->win_name);
-        printf("%s\n", drive->dos_name);
+    else {
+        for (it = vmhdlr->drives; it; it = it->next) {
+            drive_t *drive = (drive_t *)it->data;
+            printf("%s\n", drive->win_name);
+            printf("%s\n", drive->dos_name);
+        }
+        hfm_close(vmhdlr);
+        config_close(config);
     }
-    hfm_close(vmhdlr);
-    config_close(config);
     free(vmhdlr);
 
     config = config_init("vista32.cfg");
@@ -53,15 +53,15 @@ int main(int argc, char **argv)
     strncpy(vmhdlr->name, "vista32", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {
         writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
-        free(vmhdlr);
-        return -1;
     }
-    for (it = vmhdlr->drives; it; it = it->next) {
-        drive_t *drive = (drive_t *)it->data;
-        printf("%s\n", drive->win_name);
-        printf("%s\n", drive->dos_name);
+    else {
+        for (it = vmhdlr->drives; it; it = it->next) {
+            drive_t *drive = (drive_t *)it->data;
+            printf("%s\n", drive->win_name);
+            printf("%s\n", drive->dos_name);
+        }
+        hfm_close(vmhdlr);
+        config_close(config);
     }
-    hfm_close(vmhdlr);
-    config_close(config);
     free(vmhdlr);
 }

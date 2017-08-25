@@ -71,8 +71,5 @@ done:
     if (root) {
         json_object_put(root);
     }
-    if (ret) {
-        writelog(LV_ERROR, "Error read rekall symbol %s %s", symbol, subsymbol ? subsymbol : "");
-    }
     return ret;
 }

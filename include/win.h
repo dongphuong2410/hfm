@@ -12,10 +12,17 @@ typedef struct _drive {
 
 /**
   * @brief Fill the offsets of kernel structs
-  * @param[in] vmi vmi_instance_t
+  * @param[in] rekall_profile Rekall profile path
   * @param[out] offsets Array to keep the offsets output
   */
-void win_fill_offsets(vmi_instance_t vmi, addr_t *offsets);
+void win_fill_offsets(const char *rekall_profile, addr_t *offsets);
+
+/**
+  * @brief Fill the sizes of kernel structs
+  * @param[in] rekall_profile Rekall profile path
+  * @param[out] sizes Array to keep the sizes output
+  */
+void win_fill_sizes(const char *rekall_profile, addr_t *sizes);
 
 /**
   * @brief Get address of a process from its pid

@@ -3,11 +3,29 @@
 #include "log.h"
 #include "win.h"
 #include "constants.h"
+#include "win_offsets.h"
+#include "rekall.h"
 
 addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj);
 
-void win_fill_offsets(vmi_instance_t vmi, addr_t *offsets)
+void win_fill_offsets(const char *rekall_profile, addr_t *offsets)
 {
+    int i;
+    for (i = 0; i < REKALL_OFFSETS_MAX; i++) {
+        rekall_lookup(rekall_profile, win_offset_names[i][0], win_offset_names[i][1], offsets + i, NULL);
+    }
+    //TODO
+    offsets[FILE_RENAME_INFORMATION__FILE_NAME_LENGTH] = 16;
+    offsets[FILE_RENAME_INFORMATION__FILE_NAME] = 20;
+    offsets[FILE_DISPOSITION_INFORMATION__DELETE_FILE] = 0;
+}
+
+void win_fill_sizes(const char *rekall_profile, addr_t *sizes)
+{
+    int i;
+    for (i = 0; i < WIN_SIZES_MAX; i++) {
+        rekall_lookup(rekall_profile, win_size_names[i], NULL, NULL, sizes + i);
+    }
 }
 
 GSList *win_list_drives(vmi_instance_t vmi)

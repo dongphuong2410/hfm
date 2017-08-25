@@ -64,10 +64,9 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
     }
 
     const char *rekall_profile = config_get_str(config, "rekall_profile");
-    if (0 != constants_init(rekall_profile)) {
-        writelog(LV_ERROR, "Read symbols from Rekall failed");
-        goto error2;
-    }
+    win_fill_offsets(rekall_profile, handler->offsets);
+    win_fill_sizes(rekall_profile, handler->sizes);
+    constants_init(rekall_profile);
 
     /* Init LibVMI */
     if (SUCCESS != _init_vmi(handler)) {
