@@ -63,15 +63,15 @@ addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx)
     addr_t kpcr = 0, prcb = 0;
     if (ctx->hdlr->pm == VMI_PM_IA32E) {
         kpcr = ctx->regs->gs_base;
-        prcb = KPCR_PRCB;
+        prcb = ctx->hdlr->offsets[KPCR__PRCB];
     }
     else {
         kpcr = ctx->regs->fs_base;
-        prcb = KPCR_PRCB_DATA;
+        prcb = ctx->hdlr->offsets[KPCR__PRCB_DATA];
     }
-    addr_t thread = hfm_read_addr(vmi, ctx, kpcr + prcb + KPRCB_CURRENT_THREAD);
+    addr_t thread = hfm_read_addr(vmi, ctx, kpcr + prcb + ctx->hdlr->offsets[KPRCB__CURRENT_THREAD]);
     if (!thread) goto done;
-    process = hfm_read_addr(vmi, ctx, thread + KTHREAD_PROCESS);
+    process = hfm_read_addr(vmi, ctx, thread + ctx->hdlr->offsets[KTHREAD__PROCESS]);
 done:
     return process;
 }
@@ -82,11 +82,11 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
     addr_t handle_obj = 0;
     addr_t process = hfm_get_current_process(vmi, ctx);
     if (!process) goto done;
-    addr_t handletable = hfm_read_addr(vmi, ctx, process + EPROCESS_OBJECT_TABLE);
+    addr_t handletable = hfm_read_addr(vmi, ctx, process + ctx->hdlr->offsets[EPROCESS__OBJECT_TABLE]);
     if (!handletable) goto done;
-    addr_t tablecode = hfm_read_addr(vmi, ctx, handletable + HANDLE_TABLE_TABLE_CODE);
+    addr_t tablecode = hfm_read_addr(vmi, ctx, handletable + ctx->hdlr->offsets[HANDLE_TABLE__TABLE_CODE]);
     if (!tablecode) goto done;
-    uint32_t handlecount = hfm_read_32(vmi, ctx,handletable + HANDLE_TABLE_HANDLE_COUNT);
+    uint32_t handlecount = hfm_read_32(vmi, ctx,handletable + ctx->hdlr->offsets[HANDLE_TABLE__HANDLE_COUNT]);
     if (!handlecount) goto done;
     addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
     uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
@@ -94,19 +94,19 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
     reg_t handle_idx = handle / HANDLE_MULTIPLIER;
     switch (table_levels) {
         case 0:
-            handle_obj = hfm_read_addr(vmi, ctx, table_base + handle_idx * HANDLE_TABLE_ENTRY_SIZE);
+            handle_obj = hfm_read_addr(vmi, ctx, table_base + handle_idx * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY]);
             break;
         case 1:
         {
             addr_t table = 0;
             size_t psize = (ctx->hdlr->pm == VMI_PM_IA32E ? 8 : 4);
-            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;   //Number of handle entry in the lowest level table
+            uint32_t lowest_count = VMI_PS_4KB / ctx->hdlr->sizes[HANDLE_TABLE_ENTRY];   //Number of handle entry in the lowest level table
             uint32_t i = handle_idx % lowest_count;
             handle_idx -= i;
             uint32_t j = handle_idx / lowest_count;
             table = hfm_read_addr(vmi, ctx, table_base + j * psize);
             if (table) {
-                handle_obj = hfm_read_addr(vmi, ctx, table + i * HANDLE_TABLE_ENTRY_SIZE);
+                handle_obj = hfm_read_addr(vmi, ctx, table + i * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY]);
             }
             break;
         }
@@ -114,7 +114,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
         {
             addr_t table = 0, table2 = 0;
             size_t psize = (ctx->hdlr->pm == VMI_PM_IA32E ? 8 : 4);
-            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;
+            uint32_t lowest_count = VMI_PS_4KB / ctx->hdlr->sizes[HANDLE_TABLE_ENTRY];
             uint32_t mid_count = VMI_PS_4KB / psize;
             uint32_t i = handle_idx % lowest_count;
             handle_idx -= i;
@@ -125,7 +125,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
             if (table)
                 table2 = hfm_read_addr(vmi, ctx, table + k * psize);
             if (table2)
-                handle_obj = hfm_read_addr(vmi, ctx, table2 + i * HANDLE_TABLE_ENTRY_SIZE);
+                handle_obj = hfm_read_addr(vmi, ctx, table2 + i * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY]);
             break;
         }
     }
@@ -147,7 +147,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
                 handle_obj &= VMI_BIT_MASK(2,31);
             break;
     }
-    file_obj = handle_obj + OBJECT_HEADER_BODY;
+    file_obj = handle_obj + ctx->hdlr->offsets[OBJECT_HEADER__BODY];
 done:
     return file_obj;
 }
@@ -159,13 +159,13 @@ int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t fil
 
     /* Find the drive label (device name) from file object */
     char drivename[STR_BUFF] = "";
-    addr_t device_object = hfm_read_addr(vmi, ctx, file_object + FILE_OBJECT_DEVICE_OBJECT);
-    addr_t device_header = device_object - OBJECT_HEADER_BODY;
+    addr_t device_object = hfm_read_addr(vmi, ctx, file_object + ctx->hdlr->offsets[FILE_OBJECT__DEVICE_OBJECT]);
+    addr_t device_header = device_object - ctx->hdlr->offsets[OBJECT_HEADER__BODY];
     addr_t device_name_info_offset = 0;
 
-    device_name_info_offset += OBJECT_HEADER_NAME_INFO_SIZE;
+    device_name_info_offset += ctx->hdlr->sizes[OBJECT_HEADER_NAME_INFO];
     addr_t device_name_info_addr = device_header - device_name_info_offset;
-    hfm_read_unicode(vmi, ctx, device_name_info_addr + OBJECT_HEADER_NAME_INFO_NAME, drivename);
+    hfm_read_unicode(vmi, ctx, device_name_info_addr + ctx->hdlr->offsets[OBJECT_HEADER_NAME_INFO__NAME], drivename);
     drivename_len = strlen(drivename);
     GSList *it = NULL;
     for (it = ctx->hdlr->drives; it; it = it->next) {
@@ -179,7 +179,7 @@ int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t fil
 
     /* Find filepath from file object */
     char filepath[STR_BUFF] = "";
-    filepath_len = hfm_read_unicode(vmi, ctx, file_object + FILE_OBJECT_FILE_NAME, filepath);
+    filepath_len = hfm_read_unicode(vmi, ctx, file_object + ctx->hdlr->offsets[FILE_OBJECT__FILE_NAME], filepath);
 
     /* Return the full path read : path = drivename + filepath */
     snprintf(filename, STR_BUFF, "%s%s", drivename, filepath);
@@ -193,12 +193,12 @@ int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buff
     int ret = 0;
 
     //Read unicode string length
-    uint16_t length = hfm_read_16(vmi, ctx, addr + UNICODE_STRING_LENGTH);
+    uint16_t length = hfm_read_16(vmi, ctx, addr + ctx->hdlr->offsets[UNICODE_STRING__LENGTH]);
     if (0 == length || length > VMI_PS_4KB)
         goto done;
 
     //Read unicode string buffer address
-    addr_t buffer_addr = hfm_read_addr(vmi, ctx, addr + UNICODE_STRING_BUFFER);
+    addr_t buffer_addr = hfm_read_addr(vmi, ctx, addr + ctx->hdlr->offsets[UNICODE_STRING__BUFFER]);
     if (0 == buffer_addr)
         goto done;
 
@@ -231,14 +231,14 @@ int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object)
 {
     addr_t sop = 0;
     addr_t datasection = 0, sharedcachemap = 0, imagesection = 0;
-    sop = hfm_read_addr(vmi, ctx, object + FILE_OBJECT_SECTION_OBJECT_POINTER);
-    datasection = hfm_read_addr(vmi, ctx, sop + SECTION_OBJECT_POINTERS_DATA_SECTION_OBJECT);
+    sop = hfm_read_addr(vmi, ctx, object + ctx->hdlr->offsets[FILE_OBJECT__SECTION_OBJECT_POINTER]);
+    datasection = hfm_read_addr(vmi, ctx, sop + ctx->hdlr->offsets[SECTION_OBJECT_POINTERS__DATA_SECTION_OBJECT]);
     if (datasection) {
         _extract_ca_file(vmi, ctx, datasection);
     }
-    sharedcachemap = hfm_read_addr(vmi, ctx, sop + SECTION_OBJECT_POINTERS_SHARED_CACHE_MAP);
+    sharedcachemap = hfm_read_addr(vmi, ctx, sop + ctx->hdlr->offsets[SECTION_OBJECT_POINTERS__SHARED_CACHE_MAP]);
     //TODO: extraction from sharedcachedmap
-    imagesection = hfm_read_addr(vmi, ctx, sop + SECTION_OBJECT_POINTERS_IMAGE_SECTION_OBJECT);
+    imagesection = hfm_read_addr(vmi, ctx, sop + ctx->hdlr->offsets[SECTION_OBJECT_POINTERS__IMAGE_SECTION_OBJECT]);
     if (!imagesection)
         return 0;
     if (imagesection != datasection) {
@@ -253,7 +253,7 @@ vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
     if (!ctx->process_base) {
         ctx->process_base = hfm_get_current_process(vmi, ctx);
     }
-    ctx->access_ctx.addr = ctx->process_base + EPROCESS_UNIQUE_PROCESS_ID;
+    ctx->access_ctx.addr = ctx->process_base + ctx->hdlr->offsets[EPROCESS__UNIQUE_PROCESS_ID];
     if (VMI_SUCCESS != vmi_read_32(vmi, &ctx->access_ctx, &pid)) {
         writelog(LV_ERROR, "Failed to get the pid of process %p", ctx->process_base);
         pid = -1;
@@ -263,7 +263,7 @@ vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
 
 static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area)
 {
-    addr_t subsection = control_area + CONTROL_AREA_SIZE;
+    addr_t subsection = control_area + ctx->hdlr->sizes[CONTROL_AREA];
     addr_t segment = 0, test = 0, test2 = 0;
 
     uint8_t mmpte_size;
@@ -272,12 +272,12 @@ static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_
     else
         mmpte_size = 8;
     /* Check whether subsection points back to the control area */
-    segment = hfm_read_addr(vmi, ctx, control_area + CONTROL_AREA_SEGMENT);
-    test = hfm_read_addr(vmi, ctx, segment + SEGMENT_CONTROL_AREA);
+    segment = hfm_read_addr(vmi, ctx, control_area + ctx->hdlr->offsets[CONTROL_AREA__SEGMENT]);
+    test = hfm_read_addr(vmi, ctx, segment + ctx->hdlr->offsets[SEGMENT__CONTROL_AREA]);
     if (test != control_area)
         return;
-    test = hfm_read_64(vmi, ctx, segment + SEGMENT_SIZE_OF_SEGMENT);
-    test2 = hfm_read_32(vmi, ctx, segment + SEGMENT_TOTAL_NUMBER_OF_PTES);
+    test = hfm_read_64(vmi, ctx, segment + ctx->hdlr->offsets[SEGMENT__SIZE_OF_SEGMENT]);
+    test2 = hfm_read_32(vmi, ctx, segment + ctx->hdlr->offsets[SEGMENT__TOTAL_NUMBER_OF_PTES]);
     if (test != (test2 * 4096))
         return;
     char *file = NULL;
@@ -287,18 +287,18 @@ static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_
     while (subsection)
     {
         /* Check whether subsection points back to the control area */
-        test = hfm_read_addr(vmi, ctx, subsection + SUBSECTION_CONTROL_AREA);
+        test = hfm_read_addr(vmi, ctx, subsection + ctx->hdlr->offsets[SUBSECTION__CONTROL_AREA]);
         if (test != control_area)
             break;
         addr_t base = 0, start = 0;
         uint32_t ptes = 0;
-        base = hfm_read_addr(vmi, ctx, subsection + SUBSECTION_SUBSECTION_BASE);
+        base = hfm_read_addr(vmi, ctx, subsection + ctx->hdlr->offsets[SUBSECTION__SUBSECTION_BASE]);
         if (!(base & VMI_BIT_MASK(0,11)))
             break;
-        ptes = hfm_read_32(vmi, ctx, subsection + SUBSECTION_PTES_IN_SUBSECTION);
+        ptes = hfm_read_32(vmi, ctx, subsection + ctx->hdlr->offsets[SUBSECTION__PTES_IN_SUBSECTION]);
         if (ptes == 0)
             break;
-        start = hfm_read_32(vmi, ctx, subsection + SUBSECTION_STARTING_SECTOR);
+        start = hfm_read_32(vmi, ctx, subsection + ctx->hdlr->offsets[SUBSECTION__STARTING_SECTOR]);
         /* The offset into the file is stored implicitely
            based on the PTE's location within the subsection */
         addr_t subsection_offset = start * 0x200;
@@ -317,7 +317,7 @@ static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_
                     fwrite(page, 4096, 1, fp);
             }
         }
-        subsection = hfm_read_addr(vmi, ctx, subsection + SUBSECTION_NEXT_SUBSECTION);
+        subsection = hfm_read_addr(vmi, ctx, subsection + ctx->hdlr->offsets[SUBSECTION__NEXT_SUBSECTION]);
     }
     fclose(fp);
     free(file);

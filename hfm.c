@@ -66,7 +66,6 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
     const char *rekall_profile = config_get_str(config, "rekall_profile");
     win_fill_offsets(rekall_profile, handler->offsets);
     win_fill_sizes(rekall_profile, handler->sizes);
-    constants_init(rekall_profile);
 
     /* Init LibVMI */
     if (SUCCESS != _init_vmi(handler)) {
@@ -454,7 +453,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
         }
     }
     //Get all drive devices
-    handler->drives = win_list_drives(handler->vmi);
+    handler->drives = win_list_drives(handler);
 
     SETUP_INTERRUPT_EVENT(&handler->interrupt_event, 0, _int3_cb);
     handler->interrupt_event.data = handler;

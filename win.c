@@ -28,20 +28,21 @@ void win_fill_sizes(const char *rekall_profile, addr_t *sizes)
     }
 }
 
-GSList *win_list_drives(vmi_instance_t vmi)
+GSList *win_list_drives(vmhdlr_t *hdlr)
 {
     GSList *list = NULL;
     pid_t pid = 4;
+    vmi_instance_t vmi = hdlr->vmi;
     win_ver_t winver = vmi_get_winver(vmi);;
     page_mode_t pm = vmi_get_page_mode(vmi, 0);
     uint32_t psize = (pm == VMI_PM_IA32E ? 8 : 4);
 
-    addr_t process = win_get_process(vmi, pid);
+    addr_t process = win_get_process(hdlr, pid);
     addr_t handle_table = 0;
-    vmi_read_addr_va(vmi, process + EPROCESS_OBJECT_TABLE, pid, &handle_table);
+    vmi_read_addr_va(vmi, process + hdlr->offsets[EPROCESS__OBJECT_TABLE], pid, &handle_table);
 
     addr_t tablecode;
-    if (VMI_FAILURE == vmi_read_addr_va(vmi, handle_table + HANDLE_TABLE_TABLE_CODE, pid, &tablecode)) {
+    if (VMI_FAILURE == vmi_read_addr_va(vmi, handle_table + hdlr->offsets[HANDLE_TABLE__TABLE_CODE], pid, &tablecode)) {
         writelog(LV_ERROR, "Failed to read tablecode");
         goto done;
     }
@@ -53,10 +54,10 @@ GSList *win_list_drives(vmi_instance_t vmi)
         case 0:
         {
             int i;
-            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;
+            uint32_t lowest_count = VMI_PS_4KB / hdlr->sizes[HANDLE_TABLE_ENTRY];
             for (i = 0; i < lowest_count; i++) {
                 addr_t obj = 0;
-                vmi_read_addr_va(vmi, table_base + i * HANDLE_TABLE_ENTRY_SIZE + HANDLE_TABLE_ENTRY_OBJECT, pid, &obj);
+                vmi_read_addr_va(vmi, table_base + i * hdlr->sizes[HANDLE_TABLE_ENTRY] + hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT], pid, &obj);
                 if (obj) {
                     objs = g_slist_append(objs, (gpointer)_adjust_obj_addr(winver, pm, obj));
                 }
@@ -66,16 +67,16 @@ GSList *win_list_drives(vmi_instance_t vmi)
         case 1:
         {
             addr_t table = 0;
-            uint32_t lowest_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;
+            uint32_t lowest_count = VMI_PS_4KB / hdlr->sizes[HANDLE_TABLE_ENTRY];
             uint32_t table_no = VMI_PS_4KB / psize;
             int i, j;
             for (i = 0; i < table_no; i++) {
                 vmi_read_addr_va(vmi, table_base + i * psize, pid, &table);
                 if (table) {
                     for (j = 0; j < lowest_count; j++) {
-                        addr_t entry = table + j * HANDLE_TABLE_ENTRY_SIZE;
+                        addr_t entry = table + j * hdlr->sizes[HANDLE_TABLE_ENTRY];
                         addr_t obj = 0;
-                        vmi_read_addr_va(vmi, entry + HANDLE_TABLE_ENTRY_OBJECT, pid, &obj);
+                        vmi_read_addr_va(vmi, entry + hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT], pid, &obj);
                         if (obj) {
                             objs = g_slist_append(objs, (gpointer)_adjust_obj_addr(winver, pm, obj));
                         }
@@ -88,7 +89,7 @@ GSList *win_list_drives(vmi_instance_t vmi)
         {
             addr_t table = 0, table2 = 0;
             size_t psize = (pm == VMI_PM_IA32E ? 8 : 4);
-            uint32_t low_count = VMI_PS_4KB / HANDLE_TABLE_ENTRY_SIZE;
+            uint32_t low_count = VMI_PS_4KB / hdlr->sizes[HANDLE_TABLE_ENTRY];
             uint32_t mid_count = VMI_PS_4KB / psize;
             uint32_t i, j , k;
             uint32_t table_no = VMI_PS_4KB / psize;
@@ -99,9 +100,9 @@ GSList *win_list_drives(vmi_instance_t vmi)
                         vmi_read_addr_va(vmi, table + j * psize, pid, &table2);
                         if (table2) {
                             for (k = 0; k < low_count; k++) {
-                                addr_t entry = table2 + k * HANDLE_TABLE_ENTRY_SIZE;
+                                addr_t entry = table2 + k * hdlr->sizes[HANDLE_TABLE_ENTRY];
                                 addr_t obj = 0;
-                                vmi_read_addr_va(vmi, entry + HANDLE_TABLE_ENTRY_OBJECT, pid, &obj);
+                                vmi_read_addr_va(vmi, entry + hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT], pid, &obj);
                                 if (obj) {
                                     objs = g_slist_append(objs, (gpointer)_adjust_obj_addr(winver, pm, obj));
                                 }
@@ -119,17 +120,17 @@ GSList *win_list_drives(vmi_instance_t vmi)
         for (iterator = objs; iterator; iterator = iterator->next) {
             addr_t obj = (addr_t)iterator->data;
             uint8_t object_type = 0;
-            vmi_read_8_va(vmi, obj + OBJECT_HEADER_TYPE_INDEX, pid, &object_type);
+            vmi_read_8_va(vmi, obj + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &object_type);
             if (object_type == 3) {     //Directory
-                addr_t name_info = obj - OBJECT_HEADER_NAME_INFO_SIZE;
-                addr_t dirname = name_info + OBJECT_HEADER_NAME_INFO_NAME;
+                addr_t name_info = obj - hdlr->sizes[OBJECT_HEADER_NAME_INFO];
+                addr_t dirname = name_info + hdlr->offsets[OBJECT_HEADER_NAME_INFO__NAME];
                 unicode_string_t *us = vmi_read_unicode_str_va(vmi, dirname, pid);
                 unicode_string_t out = { .contents = NULL };
                 if (us) {
                     status_t status = vmi_convert_str_encoding(us, &out, "UTF-8");
                     if (VMI_SUCCESS == status) {
                         if (0 == strncmp(out.contents, "GLOBAL??", 8)) {
-                            global_dir = obj + OBJECT_HEADER_BODY;
+                            global_dir = obj + hdlr->offsets[OBJECT_HEADER__BODY];
                         }
                         g_free(out.contents);
                     }
@@ -143,8 +144,8 @@ GSList *win_list_drives(vmi_instance_t vmi)
     }
 
     if (global_dir) {
-        addr_t bucket_addr = global_dir + OBJECT_DIRECTORY_HASH_BUCKETS;
-        uint32_t bucket_size = OBJECT_DIRECTORY_LOCK / psize;
+        addr_t bucket_addr = global_dir + hdlr->offsets[OBJECT_DIRECTORY__HASH_BUCKETS];
+        uint32_t bucket_size = hdlr->offsets[OBJECT_DIRECTORY__LOCK] / psize;
         int i;
         addr_t dir_entry;
         for (i = 0; i < bucket_size; i++) {
@@ -152,20 +153,20 @@ GSList *win_list_drives(vmi_instance_t vmi)
             vmi_read_addr_va(vmi, bucket_addr + psize * i, pid, &dir_entry);
             while (dir_entry) {
                 addr_t obj = 0;
-                vmi_read_addr_va(vmi, dir_entry + OBJECT_DIRECTORY_ENTRY_OBJECT, pid, &obj);
+                vmi_read_addr_va(vmi, dir_entry + hdlr->offsets[OBJECT_DIRECTORY_ENTRY__OBJECT], pid, &obj);
                 if (obj) {
                     //Check type of object,for SymbolicLink object
-                    addr_t obj_header = obj - OBJECT_HEADER_BODY;
+                    addr_t obj_header = obj - hdlr->offsets[OBJECT_HEADER__BODY];
                     uint8_t type_index = 0;
-                    vmi_read_8_va(vmi, obj_header + OBJECT_HEADER_TYPE_INDEX, pid, &type_index);
+                    vmi_read_8_va(vmi, obj_header + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &type_index);
                     if (type_index == 0x4) {             //SymbolicLink
                         uint32_t drive_index = 0;
-                        vmi_read_32_va(vmi, obj + OBJECT_SYMBOLIC_LINK_DOS_DEVICE_DRIVE_INDEX, pid, &drive_index);
+                        vmi_read_32_va(vmi, obj + hdlr->offsets[OBJECT_SYMBOLIC_LINK__DOS_DEVICE_DRIVE_INDEX], pid, &drive_index);
                         if (drive_index > 0) {
                             drive_t *drive = (drive_t *)calloc(1, sizeof(drive_t));
                             drive->index = drive_index;
                             sprintf(drive->dos_name, "%c:", 'A' + drive_index - 1);
-                            unicode_string_t *us = vmi_read_unicode_str_va(vmi, obj + OBJECT_SYMBOLIC_LINK_LINK_TARGET, pid);
+                            unicode_string_t *us = vmi_read_unicode_str_va(vmi, obj + hdlr->offsets[OBJECT_SYMBOLIC_LINK__LINK_TARGET], pid);
                             unicode_string_t out = { .contents = NULL };
                             if (us) {
                                 status_t status = vmi_convert_str_encoding(us, &out, "UTF-8");
@@ -184,7 +185,7 @@ GSList *win_list_drives(vmi_instance_t vmi)
                         }
                     }
                 }
-                vmi_read_addr_va(vmi, dir_entry + OBJECT_DIRECTORY_ENTRY_CHAIN_LINK, pid, &dir_entry);
+                vmi_read_addr_va(vmi, dir_entry + hdlr->offsets[OBJECT_DIRECTORY_ENTRY__CHAIN_LINK], pid, &dir_entry);
             }
         }
     }
@@ -192,8 +193,9 @@ done:
     return list;
 }
 
-addr_t win_get_process(vmi_instance_t vmi, pid_t pid)
+addr_t win_get_process(vmhdlr_t *hdlr, pid_t pid)
 {
+    vmi_instance_t vmi = hdlr->vmi;
     addr_t process_addr = 0;
     addr_t list_head = 0, next_list_entry = 0;
     addr_t current_process = 0;
@@ -204,7 +206,7 @@ addr_t win_get_process(vmi_instance_t vmi, pid_t pid)
     next_list_entry = list_head;
     /* Walk the task list */
     do {
-        current_process = next_list_entry - EPROCESS_ACTIVE_PROCESS_LINKS;
+        current_process = next_list_entry - hdlr->offsets[EPROCESS__ACTIVE_PROCESS_LINKS];
         if (VMI_FAILURE == vmi_read_addr_va(vmi, next_list_entry, pid, &next_list_entry)) {
             writelog(LV_ERROR, "Failed to read next pointer in loop");
             break;
@@ -213,7 +215,7 @@ addr_t win_get_process(vmi_instance_t vmi, pid_t pid)
             break;
         }
         pid_t cur_pid = 0;
-        if (VMI_SUCCESS == vmi_read_32_va(vmi, current_process + EPROCESS_UNIQUE_PROCESS_ID, pid, &cur_pid)) {
+        if (VMI_SUCCESS == vmi_read_32_va(vmi, current_process + hdlr->offsets[EPROCESS__UNIQUE_PROCESS_ID], pid, &cur_pid)) {
             if (cur_pid == pid) {
                 process_addr = current_process;
                 break;

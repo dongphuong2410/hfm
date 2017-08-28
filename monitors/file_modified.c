@@ -76,7 +76,7 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     params_t *params = (params_t *)context->trap->extra;
     int status = context->regs->rax;
-    uint64_t information = hfm_read_64(vmi, context, params->io_status_addr + IO_STATUS_BLOCK_INFORMATION);
+    uint64_t information = hfm_read_64(vmi, context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
     if (NT_SUCCESS(status)) {
         output_info_t output;
         output.pid = hfm_get_process_pid(vmi, context);

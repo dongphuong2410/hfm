@@ -58,7 +58,7 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
         hfm_read_filename_from_object(vmi, context, file_object, filename);
         int policy_id = filter_match(filter, filename);
         if (policy_id >= 0) {
-            uint8_t delete = hfm_read_8(vmi, context, fileinfo_addr + FILE_DISPOSITION_INFORMATION_DELETE_FILE);
+            uint8_t delete = hfm_read_8(vmi, context, fileinfo_addr + context->hdlr->offsets[FILE_DISPOSITION_INFORMATION__DELETE_FILE]);
             if (delete) {
                 output_info_t output;
                 output.pid = hfm_get_process_pid(vmi, context);
