@@ -37,14 +37,17 @@ int main(int argc, char **argv)
         printf("HANDLE_TABLE_ENTRY__OBJECT %lu\n", vmhdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT]);
         printf("OBJECT_HEADER__BODY %lu\n", vmhdlr->offsets[OBJECT_HEADER__BODY]);
         printf("OBJECT_HEADER__TYPE_INDEX %lu\n", vmhdlr->offsets[OBJECT_HEADER__TYPE_INDEX]);
+        printf("OBJECT_HEADER__TYPE %lu\n", vmhdlr->offsets[OBJECT_HEADER__TYPE]);
         printf("OBJECT_HEADER_NAME_INFO__NAME %lu\n", vmhdlr->offsets[OBJECT_HEADER_NAME_INFO__NAME]);
         printf("FILE_OBJECT__FILE_NAME %lu\n", vmhdlr->offsets[FILE_OBJECT__FILE_NAME]);
         printf("FILE_OBJECT__DEVICE_OBJECT %lu\n", vmhdlr->offsets[FILE_OBJECT__DEVICE_OBJECT]);
         printf("FILE_OBJECT__SECTION_OBJECT_POINTER %lu\n", vmhdlr->offsets[FILE_OBJECT__SECTION_OBJECT_POINTER]);
+        printf("OBJECT_TYPE__INDEX %lu\n", vmhdlr->offsets[OBJECT_TYPE__INDEX]);
         printf("EPROCESS__PEB %lu\n", vmhdlr->offsets[EPROCESS__PEB]);
         printf("EPROCESS__UNIQUE_PROCESS_ID %lu\n", vmhdlr->offsets[EPROCESS__UNIQUE_PROCESS_ID]);
         printf("EPROCESS__ACTIVE_PROCESS_LINKS %lu\n", vmhdlr->offsets[EPROCESS__ACTIVE_PROCESS_LINKS]);
         printf("EPROCESS__OBJECT_TABLE %lu\n", vmhdlr->offsets[EPROCESS__OBJECT_TABLE]);
+        printf("EPROCESS__IMAGE_FILE_NAME %lu\n", vmhdlr->offsets[EPROCESS__IMAGE_FILE_NAME]);
         printf("DRIVER_OBJECT__DRIVER_NAME %lu\n", vmhdlr->offsets[DRIVER_OBJECT__DRIVER_NAME]);
         printf("PEB__PROCESS_PARAMETERS %lu\n", vmhdlr->offsets[PEB__PROCESS_PARAMETERS]);
         printf("RTL_USER_PROCESS_PARAMETERS__IMAGE_PATH_NAME %lu\n", vmhdlr->offsets[RTL_USER_PROCESS_PARAMETERS__IMAGE_PATH_NAME]);

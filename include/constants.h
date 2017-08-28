@@ -54,4 +54,9 @@ enum {
     FILE_MODE_INFORMATION
 };
 
+typedef enum {
+    OBJECT_TYPE_UNKNOWN = 0,
+    OBJECT_TYPE_DIRECTORY,
+    OBJECT_TYPE_SYMBOLIC_LINK
+} object_t;
 #endif

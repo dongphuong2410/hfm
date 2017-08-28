@@ -28,18 +28,41 @@ void win_fill_sizes(const char *rekall_profile, addr_t *sizes)
     }
 }
 
+/**
+  * Drives information is in /GLOBAL?? directory
+  * In Windows 7, that directory is handled by System process
+  * In Windows Vista, that directory is handled by smss.exe process
+  */
 GSList *win_list_drives(vmhdlr_t *hdlr)
 {
     GSList *list = NULL;
     pid_t pid = 4;
     vmi_instance_t vmi = hdlr->vmi;
-    win_ver_t winver = vmi_get_winver(vmi);;
+    win_ver_t winver = vmi_get_winver(vmi);
     page_mode_t pm = vmi_get_page_mode(vmi, 0);
     uint32_t psize = (pm == VMI_PM_IA32E ? 8 : 4);
 
-    addr_t process = win_get_process(hdlr, pid);
+    addr_t process_addr = 0;
+    char *process_name = "";
+    if (hdlr->winver == VMI_OS_WINDOWS_7) {
+        process_name = "System";
+    }
+    else if (hdlr->winver == VMI_OS_WINDOWS_VISTA) {
+        process_name = "smss.exe";
+    }
+    GSList *processes = win_cur_processes(hdlr);
+    while (processes) {
+        process_t *p = (process_t *)processes->data;
+        if (0 == strncmp(p->name, process_name, STR_BUFF)) {
+            process_addr = p->addr;
+            break;
+        }
+        processes = processes->next;
+    }
+    g_slist_free_full(processes, free);
+
     addr_t handle_table = 0;
-    vmi_read_addr_va(vmi, process + hdlr->offsets[EPROCESS__OBJECT_TABLE], pid, &handle_table);
+    vmi_read_addr_va(vmi, process_addr + hdlr->offsets[EPROCESS__OBJECT_TABLE], pid, &handle_table);
 
     addr_t tablecode;
     if (VMI_FAILURE == vmi_read_addr_va(vmi, handle_table + hdlr->offsets[HANDLE_TABLE__TABLE_CODE], pid, &tablecode)) {
@@ -119,9 +142,8 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
         GSList *iterator = NULL;
         for (iterator = objs; iterator; iterator = iterator->next) {
             addr_t obj = (addr_t)iterator->data;
-            uint8_t object_type = 0;
-            vmi_read_8_va(vmi, obj + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &object_type);
-            if (object_type == 3) {     //Directory
+            uint8_t object_type = win_get_object_type(hdlr, pid, obj);
+            if (object_type == OBJECT_TYPE_DIRECTORY) {
                 addr_t name_info = obj - hdlr->sizes[OBJECT_HEADER_NAME_INFO];
                 addr_t dirname = name_info + hdlr->offsets[OBJECT_HEADER_NAME_INFO__NAME];
                 unicode_string_t *us = vmi_read_unicode_str_va(vmi, dirname, pid);
@@ -157,9 +179,8 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
                 if (obj) {
                     //Check type of object,for SymbolicLink object
                     addr_t obj_header = obj - hdlr->offsets[OBJECT_HEADER__BODY];
-                    uint8_t type_index = 0;
-                    vmi_read_8_va(vmi, obj_header + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &type_index);
-                    if (type_index == 0x4) {             //SymbolicLink
+                    uint8_t type_index = win_get_object_type(hdlr, pid, obj_header);
+                    if (type_index == OBJECT_TYPE_SYMBOLIC_LINK) {
                         uint32_t drive_index = 0;
                         vmi_read_32_va(vmi, obj + hdlr->offsets[OBJECT_SYMBOLIC_LINK__DOS_DEVICE_DRIVE_INDEX], pid, &drive_index);
                         if (drive_index > 0) {
@@ -193,10 +214,10 @@ done:
     return list;
 }
 
-addr_t win_get_process(vmhdlr_t *hdlr, pid_t pid)
+GSList *win_cur_processes(vmhdlr_t *hdlr)
 {
     vmi_instance_t vmi = hdlr->vmi;
-    addr_t process_addr = 0;
+    GSList *list = NULL;
     addr_t list_head = 0, next_list_entry = 0;
     addr_t current_process = 0;
     if (VMI_FAILURE == vmi_read_addr_ksym(vmi, "PsActiveProcessHead", &list_head)) {
@@ -207,23 +228,28 @@ addr_t win_get_process(vmhdlr_t *hdlr, pid_t pid)
     /* Walk the task list */
     do {
         current_process = next_list_entry - hdlr->offsets[EPROCESS__ACTIVE_PROCESS_LINKS];
-        if (VMI_FAILURE == vmi_read_addr_va(vmi, next_list_entry, pid, &next_list_entry)) {
+        if (VMI_FAILURE == vmi_read_addr_va(vmi, next_list_entry, 0, &next_list_entry)) {
             writelog(LV_ERROR, "Failed to read next pointer in loop");
             break;
         }
         if (next_list_entry == list_head) {
             break;
         }
-        pid_t cur_pid = 0;
-        if (VMI_SUCCESS == vmi_read_32_va(vmi, current_process + hdlr->offsets[EPROCESS__UNIQUE_PROCESS_ID], pid, &cur_pid)) {
-            if (cur_pid == pid) {
-                process_addr = current_process;
-                break;
+        pid_t pid = 0;
+        if (VMI_SUCCESS == vmi_read_32_va(vmi, current_process + hdlr->offsets[EPROCESS__UNIQUE_PROCESS_ID], 0, &pid)) {
+            process_t *process = (process_t *)calloc(1, sizeof(process_t));
+            process->pid = pid;
+            process->addr = current_process;
+            char *str = vmi_read_str_va(vmi, current_process + hdlr->offsets[EPROCESS__IMAGE_FILE_NAME], 0);
+            if (str) {
+                strncpy(process->name, str, STR_BUFF);
+                free(str);
             }
+            list = g_slist_append(list, process);
         }
     } while (1);
 done:
-    return process_addr;
+    return list;
 }
 
 addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj)
@@ -246,4 +272,36 @@ addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj)
                 addr = addr & VMI_BIT_MASK(2,31);
     }
     return addr;
+}
+
+object_t win_get_object_type(vmhdlr_t *hdlr, pid_t pid, addr_t object_header)
+{
+    uint8_t type_index = 0;
+    if (VMI_OS_WINDOWS_7 == hdlr->winver) {
+        if (VMI_SUCCESS != vmi_read_8_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &type_index)) {
+            writelog(LV_ERROR, "Error read object type");
+            goto done;
+        }
+        if (type_index == 0x3)
+            return OBJECT_TYPE_DIRECTORY;
+        else if (type_index == 0x4)
+            return OBJECT_TYPE_SYMBOLIC_LINK;
+    }
+    else if (VMI_OS_WINDOWS_VISTA == hdlr->winver) {
+        addr_t type = 0;
+        if (VMI_SUCCESS != vmi_read_addr_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE], pid, &type)) {
+            writelog(LV_ERROR, "Error read object type");
+            goto done;
+        }
+        if (VMI_SUCCESS != vmi_read_8_va(hdlr->vmi, type + hdlr->offsets[OBJECT_TYPE__INDEX], pid, &type_index)) {
+            writelog(LV_ERROR, "Error read object type index");
+            goto done;
+        }
+        if (type_index == 0x2)
+            return OBJECT_TYPE_DIRECTORY;
+        else if (type_index == 0x3)
+            return OBJECT_TYPE_SYMBOLIC_LINK;
+    }
+done:
+    return OBJECT_TYPE_UNKNOWN;
 }
