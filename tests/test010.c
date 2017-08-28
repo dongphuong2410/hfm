@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 {
     GSList *it = NULL;
     vmhdlr_t *vmhdlr;
-    log_init(LV_DEBUG, LOG_CONSOLE);
+    log_init(LV_ERROR, LOG_CONSOLE);
 
     config = config_init("win7_64.cfg");
     vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
