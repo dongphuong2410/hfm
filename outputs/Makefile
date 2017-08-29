@@ -5,7 +5,9 @@ LDFLAGS=
 
 OBJECTS=output_format.o es.o console.o csv.o
 
-all: $(OBJECTS)
+all: libout.a
+
+libout.a: $(OBJECTS)
 	ar rcs libout.a $^
 
 %.o:%.c

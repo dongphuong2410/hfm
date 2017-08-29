@@ -5,7 +5,9 @@ LDFLAGS=glib-2.0
 #OBJECTS=monitor.o file_created.o file_deleted.o hidden_changed.o permission_changed.o owner_changed.o
 OBJECTS=monitor.o file_created.o file_deleted.o file_modified.o hidden_changed.o permission_changed.o owner_changed.o
 
-all: $(OBJECTS)
+all: libmon.a
+
+libmon.a: $(OBJECTS)
 	ar rcs libmon.a $^
 
 %.o:%.c
