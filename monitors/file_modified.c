@@ -90,7 +90,6 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
         output.extpath[0] = '\0';
         out_write(handler->out, &output);
-        printf("[MODIFY] %s information %lu \n", params->filename, information);
     }
     free(params);
 done:
