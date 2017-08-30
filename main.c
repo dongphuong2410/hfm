@@ -187,7 +187,7 @@ static void _set_policies(vmhdlr_t *handler, GSList *policies)
     //mon_add_policy(handler, test);
 
     test->type = MON_MODIFY_CONTENT;
-    est->id = 30;
+    test->id = 30;
     mon_add_policy(handler, test);
     free(test);
 }

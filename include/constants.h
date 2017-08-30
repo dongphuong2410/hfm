@@ -26,6 +26,7 @@ addr_t OBJECT_HEADER_CREATOR_INFO_SIZE;
 
 #include "rekall.h"
 
+
 enum {
     FILE_CREATED = 0,
     FILE_OPENED,

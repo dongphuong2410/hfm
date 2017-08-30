@@ -3,6 +3,7 @@ html/
 **/*.swp    
 **/*.swo
 **/*.o
+**/.deps
 hfm
 tests/*.out
 tests/tmp
