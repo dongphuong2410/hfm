@@ -26,6 +26,7 @@ typedef struct _output_info {
     int vmid;
     int policy_id;
     int action;
+    char data[PATH_MAX_LEN];
     char filepath[PATH_MAX_LEN];
     char extpath[PATH_MAX_LEN];
 } output_info_t;

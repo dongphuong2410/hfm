@@ -18,6 +18,7 @@ _OBJECT_HEADER_NAME_INFO Name : 8
 _FILE_OBJECT FileName : 88
 _FILE_OBJECT DeviceObject : 8
 _FILE_OBJECT SectionObjectPointer : 40
+_FILE_BASIC_INFORMATION FileAttributes : 32
 _OBJECT_TYPE Index : 40
 _EPROCESS Peb : 824
 _EPROCESS UniqueProcessId : 384
@@ -74,6 +75,7 @@ _OBJECT_HEADER_NAME_INFO Name : 4
 _FILE_OBJECT FileName : 48
 _FILE_OBJECT DeviceObject : 4
 _FILE_OBJECT SectionObjectPointer : 20
+_FILE_BASIC_INFORMATION FileAttributes : 32
 _OBJECT_TYPE Index : 20
 _EPROCESS Peb : 424
 _EPROCESS UniqueProcessId : 180
@@ -130,6 +132,7 @@ _OBJECT_HEADER_NAME_INFO Name : 4
 _FILE_OBJECT FileName : 48
 _FILE_OBJECT DeviceObject : 4
 _FILE_OBJECT SectionObjectPointer : 20
+_FILE_BASIC_INFORMATION FileAttributes : 32
 _OBJECT_TYPE Index : 20
 _EPROCESS Peb : 392
 _EPROCESS UniqueProcessId : 156
