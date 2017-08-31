@@ -131,6 +131,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
     }
     switch (ctx->hdlr->winver) {
         case VMI_OS_WINDOWS_7:
+        case VMI_OS_WINDOWS_VISTA:
             handle_obj &= ~EX_FAST_REF_MASK;
             break;
         case VMI_OS_WINDOWS_8:

@@ -257,6 +257,7 @@ addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj)
     addr_t addr = obj;
     switch (winver) {
         case VMI_OS_WINDOWS_7:
+        case VMI_OS_WINDOWS_VISTA:
             addr &= (~EX_FAST_REF_MASK);
             break;
         case VMI_OS_WINDOWS_8:
