@@ -1,10 +1,20 @@
-#include "file_deleted.h"
+#include "attr_changed.h"
 #include "file_filter.h"
 #include "context.h"
 #include "private.h"
 #include "hfm.h"
 #include "constants.h"
 
+#define ATTR_READ_ONLY              0x1
+#define ATTR_HIDDEN                 0x2
+#define ATTR_SYSTEM                 0x4
+#define ATTR_DIRECTORY              0x10
+#define ATTR_ARCHIVE                0x20
+#define ATTR_NORMAL                 0x80
+#define ATTR_TEMPORARY              0x100
+#define ATTR_SPARSE_FILE            0x200
+#define ATTR_SYMBOLIC_LINK          0x400
+#define ATTR_ENCRYPTED              0x4000
 
 static filter_t *filter = NULL;
 
@@ -18,7 +28,12 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context);
   */
 static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
 
-hfm_status_t file_deleted_add_policy(vmhdlr_t *hdlr, policy_t *policy)
+/**
+  * Translate Windows file attributes to string
+  */
+static void _attr_to_str(uint32_t attr, char *buff);
+
+hfm_status_t attr_changed_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
     if (!filter) {
         //Init plugin
@@ -29,11 +44,7 @@ hfm_status_t file_deleted_add_policy(vmhdlr_t *hdlr, policy_t *policy)
     filter_add(filter, policy->path, policy->id);
     return SUCCESS;
 }
-/**
-  * - Read FileInformationClass, check if class is FILE_DISPOSITION_INFORMATION
-  * - Read FILE_DISPOSITION_INFORMATION struct for DeleteFile field
-  * - Read FileHandle, searching for FILE_OBJECT, read FileName from FILE_OBJECT
-  */
+
 static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
 {
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
@@ -52,14 +63,14 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
         fileinfo_addr = hfm_read_32(vmi, context, context->regs->rsp + 3 * sizeof(uint32_t));
         fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(uint32_t));
     }
-    if (FILE_DISPOSITION_INFORMATION == fileinfo_class) {
-        char filename[STR_BUFF] = "";
-        addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
-        hfm_read_filename_from_object(vmi, context, file_object, filename);
-        int policy_id = filter_match(filter, filename);
-        if (policy_id >= 0) {
-            uint8_t delete = hfm_read_8(vmi, context, fileinfo_addr + context->hdlr->offsets[FILE_DISPOSITION_INFORMATION__DELETE_FILE]);
-            if (delete) {
+    if (FILE_BASIC_INFORMATION == fileinfo_class) {
+        uint32_t file_attributes = hfm_read_32(vmi, context, fileinfo_addr + handler->offsets[FILE_BASIC_INFORMATION__FILE_ATTRIBUTES]);
+        if (file_attributes != 0) {
+            char filename[STR_BUFF] = "";
+            addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
+            hfm_read_filename_from_object(vmi, context, file_object, filename);
+            int policy_id = filter_match(filter, filename);
+            if (policy_id >= 0) {
                 output_info_t output;
                 output.pid = hfm_get_process_pid(vmi, context);
                 struct timeval now;
@@ -67,14 +78,12 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
                 output.time_sec = now.tv_sec;
                 output.time_usec = now.tv_usec;
                 output.vmid = handler->domid;
-                output.action = MON_DELETE;
+                output.action = MON_CHANGE_ATTR;
                 output.policy_id = policy_id;
                 strncpy(output.filepath, filename, PATH_MAX_LEN);
+                _attr_to_str(file_attributes, output.data);
                 output.extpath[0] = '\0';
                 out_write(handler->out, &output);
-                char extpath[STR_BUFF];
-                printf("%u_%u.file", output.time_sec, output.time_usec);
-                hfm_extract_file(vmi, context, file_object);
             }
         }
     }
@@ -87,4 +96,24 @@ done:
 static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
 {
     return NULL;
+}
+
+static void _attr_to_str(uint32_t attr, char *buff)
+{
+    int pos = 0;
+    if (attr == ATTR_NORMAL) {
+        buff[pos++] = 'N';
+    }
+    else {
+        if (attr & ATTR_READ_ONLY) buff[pos++] = 'R';
+        if (attr & ATTR_HIDDEN) buff[pos++] = 'H';
+        if (attr & ATTR_SYSTEM) buff[pos++] = 'S';
+        if (attr & ATTR_DIRECTORY) buff[pos++] = 'D';
+        if (attr & ATTR_ARCHIVE) buff[pos++] = 'A';
+        if (attr & ATTR_TEMPORARY) buff[pos++] = 'T';
+        if (attr & ATTR_SPARSE_FILE) buff[pos++] = 'P';
+        if (attr & ATTR_SYMBOLIC_LINK) buff[pos++] = 'L';
+        if (attr & ATTR_ENCRYPTED) buff[pos++] = 'E';
+    }
+    buff[pos] = '\0';
 }

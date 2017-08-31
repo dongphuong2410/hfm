@@ -9,6 +9,7 @@
 
 typedef struct params_t {
     char filename[STR_BUFF];
+    addr_t file_object;
     addr_t io_status_addr;
     int policy_id;
 } params_t;
@@ -65,6 +66,7 @@ static void *writefile_cb(vmhdlr_t *handler, context_t *context)
         strncpy(params->filename, filename, len);
         params->io_status_addr = io_status_addr;
         params->policy_id = policy_id;
+        params->file_object = file_object;
     }
 done:
     hfm_release_vmi(handler);
@@ -90,6 +92,9 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
         output.extpath[0] = '\0';
         out_write(handler->out, &output);
+        char extpath[STR_BUFF];
+        printf("%u_%u.file", output.time_sec, output.time_usec);
+        hfm_extract_file(vmi, context, params->file_object);
     }
     free(params);
 done:
