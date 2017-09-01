@@ -4,7 +4,7 @@ CC=gcc
 CFLAGS=-ggdb -O0 -I../include -I../outputs -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
 LDFLAGS=glib-2.0
 
-OBJECTS=monitor.o file_created.o file_deleted.o file_modified.o owner_changed.o attr_changed.o
+OBJECTS=monitor.o file_created.o file_deleted.o file_modified.o owner_changed.o attr_changed.o file_filter.o fnmatch.o
 
 all: libmon.a
 
