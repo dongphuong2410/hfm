@@ -24,8 +24,8 @@ addr_t OBJECT_HEADER_CREATOR_INFO_SIZE;
 #define OB_INFOMASK_NAME                0x02
 #define OB_INFOMASK_CREATOR_INFO        0x01
 
-#include "rekall.h"
-
+#define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
+#define STR_BUFF 1024
 
 enum {
     FILE_CREATED = 0,

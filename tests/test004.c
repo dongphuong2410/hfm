@@ -5,6 +5,7 @@
 #include "log.h"
 #include "output_format.h"
 #include "config.h"
+#include "policy.h"
 
 config_t *config;
 

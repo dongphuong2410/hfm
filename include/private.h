@@ -16,6 +16,7 @@
 
 #include "output_format.h"
 #include "win_offsets.h"
+#include "constants.h"
 
 #define ghashtable_foreach(table, i, key, val) \
           g_hash_table_iter_init(&i, table); \
@@ -23,12 +24,6 @@
 
 
 #define VM_MAX 10
-#define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
-#define STR_BUFF 1024
-
-#define POLICY_OPTIONS_DIR 0x01             /** Policy options flag : this is directory */
-#define POLICY_OPTIONS_RECURSIVE 0x02       /** Policy options flag : allow recursive */
-#define POLICY_OPTIONS_EXTRACT 0x04       /** Policy options flag : allow file extracting */
 
 #define DEFAULT_CONFIG "hfm.cfg"
 
@@ -47,15 +42,6 @@ typedef enum {
 } hfm_status_t;
 
 /**
-  * @brief Policy severity
-  */
-typedef enum {
-    SEVERITY_INVALID,
-    WARNING,
-    CRITICAL
-} severity_t;
-
-/**
   * @brief Trap types
   */
 typedef enum {
@@ -72,30 +58,6 @@ typedef enum {
     ADDR_VA,    /** < Virtual Address */
     ADDR_RVA    /** < Relative virtual address */
 } addr_type_t;
-
-/**
-  * @brief monitoring plugin id
-  */
-typedef enum {
-    MON_INVALID,
-    MON_CREATE,
-    MON_DELETE,
-    MON_MODIFY_CONTENT,
-    MON_MODIFY_LOGFILE,
-    MON_CHANGE_ATTR,
-    MON_CHANGE_ATTR_READONLY,
-    MON_CHANGE_ATTR_PERMISSION,
-    MON_CHANGE_ATTR_OWNERSHIP,
-    MON_CHANGE_ATTR_HIDDEN
-} monitor_t;
-
-typedef struct _policy {
-    int id;
-    char path[PATH_MAX_LEN];
-    monitor_t type;
-    uint8_t options;
-    severity_t severity;
-} policy_t;
 
 typedef struct _xen_interface {
     xc_interface *xc;
