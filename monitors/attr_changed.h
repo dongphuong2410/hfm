@@ -9,6 +9,7 @@
 #define __HFM_MONITOR_ATTR_CHANGED_H__
 
 #include "private.h"
+#include "policy.h"
 
 /**
   * @brief Implement of abstract function mon_add_policy for attr_changed plugin_

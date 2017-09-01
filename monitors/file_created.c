@@ -6,7 +6,6 @@
 #include "file_created.h"
 #include "hfm.h"
 #include "log.h"
-#include "rekall.h"
 #include "constants.h"
 #include "context.h"
 #include "file_filter.h"

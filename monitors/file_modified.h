@@ -9,6 +9,7 @@
 #define __HFM_MONITOR_FILE_MODIFIED_H__
 
 #include "private.h"
+#include "policy.h"
 
 /**
   * @brief Implement of abstract function mon_add_policy for file_modified plugin
