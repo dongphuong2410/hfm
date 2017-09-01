@@ -6,6 +6,9 @@
 #include "private.h"
 #include "hfm.h"
 #include "constants.h"
+#include "config.h"
+
+extern config_t *config;
 
 typedef struct params_t {
     char filename[STR_BUFF];
@@ -90,11 +93,10 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.action = MON_MODIFY_CONTENT;
         output.policy_id = params->policy_id;
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
-        output.extpath[0] = '\0';
+        char *dir = config_get_str(config, "extract_base");
+        sprintf(output.extpath, "%s%s/%u_%u.file", dir ? dir : "", context->hdlr->name,  output.time_sec, output.time_usec);
+        hfm_extract_file(vmi, context, params->file_object, output.extpath);
         out_write(handler->out, &output);
-        char extpath[STR_BUFF];
-        printf("%u_%u.file", output.time_sec, output.time_usec);
-        hfm_extract_file(vmi, context, params->file_object);
     }
     free(params);
 done:

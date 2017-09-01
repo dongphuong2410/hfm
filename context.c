@@ -9,7 +9,7 @@
 #include "log.h"
 #include "win.h"
 
-static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area);
+static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area, char *path);
 
 addr_t hfm_read_addr(vmi_instance_t vmi, context_t *ctx, addr_t addr)
 {
@@ -228,14 +228,14 @@ done:
     return ret;
 }
 
-int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object)
+int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object, char *path)
 {
     addr_t sop = 0;
     addr_t datasection = 0, sharedcachemap = 0, imagesection = 0;
     sop = hfm_read_addr(vmi, ctx, object + ctx->hdlr->offsets[FILE_OBJECT__SECTION_OBJECT_POINTER]);
     datasection = hfm_read_addr(vmi, ctx, sop + ctx->hdlr->offsets[SECTION_OBJECT_POINTERS__DATA_SECTION_OBJECT]);
     if (datasection) {
-        _extract_ca_file(vmi, ctx, datasection);
+        _extract_ca_file(vmi, ctx, datasection, path);
     }
     sharedcachemap = hfm_read_addr(vmi, ctx, sop + ctx->hdlr->offsets[SECTION_OBJECT_POINTERS__SHARED_CACHE_MAP]);
     //TODO: extraction from sharedcachedmap
@@ -243,7 +243,7 @@ int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object)
     if (!imagesection)
         return 0;
     if (imagesection != datasection) {
-        _extract_ca_file(vmi, ctx, imagesection);
+        _extract_ca_file(vmi, ctx, imagesection, path);
     }
     return 0;
 }
@@ -262,7 +262,7 @@ vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
     return pid;
 }
 
-static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area)
+static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area, char *path)
 {
     addr_t subsection = control_area + ctx->hdlr->sizes[CONTROL_AREA];
     addr_t segment = 0, test = 0, test2 = 0;
@@ -281,10 +281,11 @@ static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_
     test2 = hfm_read_32(vmi, ctx, segment + ctx->hdlr->offsets[SEGMENT__TOTAL_NUMBER_OF_PTES]);
     if (test != (test2 * 4096))
         return;
-    char *file = NULL;
-    if (asprintf(&file, "file.0x%lx.mm", control_area) < 0)
+    FILE *fp = fopen(path, "w");
+    if (!fp) {
+        writelog(LV_ERROR, "Cannot create new file %s. Please check extract_base in config file again", path);
         return;
-    FILE *fp = fopen(file, "w");
+    }
     while (subsection)
     {
         /* Check whether subsection points back to the control area */
@@ -321,5 +322,4 @@ static void _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_
         subsection = hfm_read_addr(vmi, ctx, subsection + ctx->hdlr->offsets[SUBSECTION__NEXT_SUBSECTION]);
     }
     fclose(fp);
-    free(file);
 }

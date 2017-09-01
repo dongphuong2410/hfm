@@ -87,9 +87,10 @@ int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t obj
   * @param vmi Vmi instance
   * @param ctx context
   * @param object File object address
+  * @param path Path
   * @return Length of filename extracted
   */
-int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object);
+int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object, char *path);
 
 /**
   * @brief Read and convert a unicode string at address
