@@ -17,6 +17,7 @@
 #include "output_format.h"
 #include "win_offsets.h"
 #include "constants.h"
+#include "xen_helper.h"
 
 #define ghashtable_foreach(table, i, key, val) \
           g_hash_table_iter_init(&i, table); \
@@ -58,12 +59,6 @@ typedef enum {
     ADDR_VA,    /** < Virtual Address */
     ADDR_RVA    /** < Relative virtual address */
 } addr_type_t;
-
-typedef struct _xen_interface {
-    xc_interface *xc;
-    libxl_ctx *xl_ctx;
-    domid_t domID;
-} xen_interface_t;
 
 typedef struct _vmhdlr {
     xen_interface_t *xen;

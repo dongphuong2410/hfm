@@ -9,7 +9,12 @@
 
 #include <xenctrl.h>
 #include <libxl_utils.h>
-#include "private.h"
+
+typedef struct _xen_interface {
+    xc_interface *xc;
+    libxl_ctx *xl_ctx;
+    domid_t domID;
+} xen_interface_t;
 
 xen_interface_t *xen_init_interface(const char *name);
 void xen_free_interface(xen_interface_t *xen);

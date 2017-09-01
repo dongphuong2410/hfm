@@ -6,9 +6,6 @@
 
 #include "policy.h"
 #include "log.h"
-//#include "private.h"
-
-#define MAX_LEN 1024
 
 char * _trim_left(char *str);
 severity_t _lookup_severity(const char *str);
@@ -30,9 +27,9 @@ GSList *get_policies(const char *policy_file)
     }
 
     GSList *list = NULL;
-    char buff[MAX_LEN];
+    char buff[STR_BUFF];
     int linecnt = 0;
-    while (fgets(buff, MAX_LEN, fp)) {
+    while (fgets(buff, STR_BUFF, fp)) {
         linecnt++;
         char *line = _trim_left(buff);
         if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')         //Ignore comment or empty line
