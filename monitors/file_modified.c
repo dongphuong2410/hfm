@@ -95,7 +95,10 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
         char *dir = config_get_str(config, "extract_base");
         sprintf(output.extpath, "%s%s/%u_%u.file", dir ? dir : "", context->hdlr->name,  output.time_sec, output.time_usec);
-        hfm_extract_file(vmi, context, params->file_object, output.extpath);
+        int extracted = hfm_extract_file(vmi, context, params->file_object, output.extpath);
+        if (extracted == 0) {
+            output.extpath[0] = '\0';
+        }
         out_write(handler->out, &output);
     }
     free(params);

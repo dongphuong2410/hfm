@@ -88,7 +88,7 @@ int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t obj
   * @param ctx context
   * @param object File object address
   * @param path Path
-  * @return Length of filename extracted
+  * @return Number of file extracted
   */
 int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object, char *path);
 
