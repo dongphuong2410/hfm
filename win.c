@@ -44,11 +44,12 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
 
     addr_t process_addr = 0;
     char *process_name = "";
-    if (hdlr->winver == VMI_OS_WINDOWS_7) {
-        process_name = "System";
-    }
-    else if (hdlr->winver == VMI_OS_WINDOWS_VISTA) {
+    if (hdlr->winver == VMI_OS_WINDOWS_VISTA
+            || hdlr->winver == VMI_OS_WINDOWS_XP) {
         process_name = "smss.exe";
+    }
+    else {
+        process_name = "System";
     }
     GSList *processes = win_cur_processes(hdlr);
     while (processes) {
@@ -288,7 +289,8 @@ object_t win_get_object_type(vmhdlr_t *hdlr, pid_t pid, addr_t object_header)
         else if (type_index == 0x4)
             return OBJECT_TYPE_SYMBOLIC_LINK;
     }
-    else if (VMI_OS_WINDOWS_VISTA == hdlr->winver) {
+    else if (VMI_OS_WINDOWS_VISTA == hdlr->winver
+            || VMI_OS_WINDOWS_XP == hdlr->winver) {
         addr_t type = 0;
         if (VMI_SUCCESS != vmi_read_addr_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE], pid, &type)) {
             writelog(LV_ERROR, "Error read object type");
