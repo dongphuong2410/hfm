@@ -66,4 +66,38 @@ int main(int argc, char **argv)
         config_close(config);
     }
     free(vmhdlr);
+
+    config = config_init("server2003.cfg");
+    vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
+    strncpy(vmhdlr->name, "server2003", STR_BUFF);
+    if (FAIL == hfm_init(vmhdlr)) {
+        writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+    }
+    else {
+        for (it = vmhdlr->drives; it; it = it->next) {
+            drive_t *drive = (drive_t *)it->data;
+            printf("%s\n", drive->win_name);
+            printf("%s\n", drive->dos_name);
+        }
+        hfm_close(vmhdlr);
+        config_close(config);
+    }
+    free(vmhdlr);
+
+    config = config_init("server2008.cfg");
+    vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
+    strncpy(vmhdlr->name, "server2008", STR_BUFF);
+    if (FAIL == hfm_init(vmhdlr)) {
+        writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+    }
+    else {
+        for (it = vmhdlr->drives; it; it = it->next) {
+            drive_t *drive = (drive_t *)it->data;
+            printf("%s\n", drive->win_name);
+            printf("%s\n", drive->dos_name);
+        }
+        hfm_close(vmhdlr);
+        config_close(config);
+    }
+    free(vmhdlr);
 }
