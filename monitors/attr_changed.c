@@ -1,4 +1,4 @@
-#include "attr_changed.h"
+#include "monitor.h"
 #include "file_filter.h"
 #include "context.h"
 #include "private.h"
@@ -116,4 +116,9 @@ static void _attr_to_str(uint32_t attr, char *buff)
         if (attr & ATTR_ENCRYPTED) buff[pos++] = 'E';
     }
     buff[pos] = '\0';
+}
+
+void attr_changed_close(void)
+{
+    if (filter) filter_close(filter);
 }

@@ -1,4 +1,4 @@
-#include "file_deleted.h"
+#include "monitor.h"
 #include "file_filter.h"
 #include "context.h"
 #include "private.h"
@@ -91,4 +91,9 @@ done:
 static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
 {
     return NULL;
+}
+
+void file_deleted_close(void)
+{
+    if (filter) filter_close(filter);
 }

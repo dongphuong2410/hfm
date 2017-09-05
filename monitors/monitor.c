@@ -1,7 +1,4 @@
-#include "file_created.h"
-#include "file_deleted.h"
-#include "file_modified.h"
-#include "attr_changed.h"
+#include "monitor.h"
 #include "libmon.h"
 #include "private.h"
 #include "config.h"
@@ -51,4 +48,7 @@ hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 void mon_close()
 {
     file_created_close();
+    file_deleted_close();
+    file_modified_close();
+    attr_changed_close();
 }

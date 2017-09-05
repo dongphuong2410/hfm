@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "file_modified.h"
 #include "file_filter.h"
+#include "monitor.h"
 #include "context.h"
 #include "private.h"
 #include "hfm.h"
@@ -106,4 +106,9 @@ done:
     hfm_release_vmi(handler);
     return NULL;
     return NULL;
+}
+
+void file_modified_close(void)
+{
+    if (filter) filter_close(filter);
 }
