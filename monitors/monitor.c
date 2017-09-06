@@ -29,15 +29,12 @@ hfm_status_t mon_add_policy(vmhdlr_t *hdlr, policy_t *policy)
         case MON_CHANGE_ATTR:
             attr_changed_add_policy(hdlr, policy);
             break;
+        case MON_CHANGE_ACCESS:
+            access_changed_add_policy(hdlr, policy);
+            break;
         case MON_MODIFY_LOGFILE:
             break;
-        case MON_CHANGE_ATTR_READONLY:
-            break;
-        case MON_CHANGE_ATTR_PERMISSION:
-            break;
         case MON_CHANGE_ATTR_OWNERSHIP:
-            break;
-        case MON_CHANGE_ATTR_HIDDEN:
             break;
         default:
             break;
@@ -51,4 +48,5 @@ void mon_close()
     file_deleted_close();
     file_modified_close();
     attr_changed_close();
+    access_changed_close();
 }

@@ -66,6 +66,20 @@ hfm_status_t attr_changed_add_policy(vmhdlr_t *hdlr, policy_t *policy);
   */
 void attr_changed_close(void);
 
+/**
+  * @brief Implement of abstract function mon_add_policy for access_changed plugin_
+  *
+  * @param hdlr vmhdlr pointer
+  * @param policy Pointer to policy
+  * @return FAIL or success
+  */
+hfm_status_t access_changed_add_policy(vmhdlr_t *hdlr, policy_t *policy);
+
+/**
+  * @brief Close
+  */
+void access_changed_close(void);
+
 
 #endif
 
