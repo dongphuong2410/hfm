@@ -1,2 +1,2 @@
-time_sec : 15000145, time_usec : 1234, pid : 1120, vmid : 20, policy_id : 30, action : 2, filepath : /bin/lib/abc.so, extpath : /home/phuong/abc.so
-15000145,1234,1120,20,30,2,/bin/lib/abc.so,/home/phuong/abc.so
+time_sec : 15000145, time_usec : 1234, pid : 1120, vmid : 20, policy_id : 30, action : 2, filepath : /bin/lib/abc.so, extpath : /home/phuong/abc.so, data : Custom data
+15000145,1234,1120,20,30,2,/bin/lib/abc.so,/home/phuong/abc.so,Custom data

@@ -22,6 +22,7 @@ int main(int argc, char *argv)
     info.action = MON_DELETE;
     strcpy(info.filepath, "/bin/lib/abc.so");
     strcpy(info.extpath, "/home/phuong/abc.so");
+    strcpy(info.data, "Custom data");
 
     output_t *out = out_init(OUT_CONSOLE);
     out_write(out, &info);
