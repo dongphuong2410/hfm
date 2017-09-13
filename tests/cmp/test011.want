@@ -8,6 +8,8 @@ _KPCR Prcb : 384
 _KPCR PrcbData : 0
 _KPRCB CurrentThread : 8
 _KTHREAD Process : 528
+_KTHREAD ApcState : 80
+_KAPC_STATE Process : 32
 _HANDLE_TABLE HandleCount : 88
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
@@ -70,6 +72,8 @@ _KPCR Prcb : 32
 _KPCR PrcbData : 288
 _KPRCB CurrentThread : 4
 _KTHREAD Process : 336
+_KTHREAD ApcState : 64
+_KAPC_STATE Process : 16
 _HANDLE_TABLE HandleCount : 48
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
@@ -132,6 +136,8 @@ _KPCR Prcb : 32
 _KPCR PrcbData : 288
 _KPRCB CurrentThread : 4
 _KTHREAD Process : 324
+_KTHREAD ApcState : 56
+_KAPC_STATE Process : 16
 _HANDLE_TABLE HandleCount : 48
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
@@ -194,6 +200,8 @@ _KPCR Prcb : 32
 _KPCR PrcbData : 288
 _KPRCB CurrentThread : 4
 _KTHREAD Process : 296
+_KTHREAD ApcState : 40
+_KAPC_STATE Process : 16
 _HANDLE_TABLE HandleCount : 60
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
@@ -256,6 +264,8 @@ _KPCR Prcb : 384
 _KPCR PrcbData : 0
 _KPRCB CurrentThread : 8
 _KTHREAD Process : 528
+_KTHREAD ApcState : 80
+_KAPC_STATE Process : 32
 _HANDLE_TABLE HandleCount : 88
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
