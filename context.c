@@ -75,7 +75,12 @@ addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx)
     }
     addr_t thread = hfm_read_addr(vmi, ctx, kpcr + prcb + ctx->hdlr->offsets[KPRCB__CURRENT_THREAD]);
     if (!thread) goto done;
-    process = hfm_read_addr(vmi, ctx, thread + ctx->hdlr->offsets[KTHREAD__PROCESS]);
+    if (ctx->hdlr->winver == VMI_OS_WINDOWS_XP) {
+        process = hfm_read_addr(vmi, ctx, thread + ctx->hdlr->offsets[KTHREAD__APC_STATE] + ctx->hdlr->offsets[KAPC_STATE__PROCESS]);
+    }
+    else {
+        process = hfm_read_addr(vmi, ctx, thread + ctx->hdlr->offsets[KTHREAD__PROCESS]);
+    }
 done:
     return process;
 }

@@ -78,6 +78,7 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
                 if (extracted == 0) {
                     output.extpath[0] = '\0';
                 }
+                output.data[0] = '\0';
                 out_write(handler->out, &output);
             }
         }
