@@ -168,7 +168,6 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     int status = (int)hfm_read_32(vmi, context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__STATUS]);
     int ret_status = context->regs->rax;
 
-    printf("File %s\n", params->filename);
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
         output_info_t output;
         output.pid = hfm_get_process_pid(vmi, context);

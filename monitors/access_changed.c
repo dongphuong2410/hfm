@@ -195,5 +195,4 @@ static void _extract_sid(context_t *context, addr_t sid_addr, char *sid)
 
     //Finish extract SID
     sid[pos-1] = '\0';  //Remove the last '-' character
-    printf("%s\n", sid);
 }
