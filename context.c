@@ -101,9 +101,16 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
     uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
 
     reg_t handle_idx = handle / HANDLE_MULTIPLIER;
+    addr_t object_offset = 0;
+    if (ctx->hdlr->winver == VMI_OS_WINDOWS_8) {
+        addr_t object_offset = ctx->hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT_POINTER_BITS];
+    }
+    else {
+        addr_t object_offset = ctx->hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT];
+    }
     switch (table_levels) {
         case 0:
-            handle_obj = hfm_read_addr(vmi, ctx, table_base + handle_idx * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY]);
+            handle_obj = hfm_read_addr(vmi, ctx, table_base + handle_idx * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY] + object_offset);
             break;
         case 1:
         {
@@ -115,7 +122,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
             uint32_t j = handle_idx / lowest_count;
             table = hfm_read_addr(vmi, ctx, table_base + j * psize);
             if (table) {
-                handle_obj = hfm_read_addr(vmi, ctx, table + i * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY]);
+                handle_obj = hfm_read_addr(vmi, ctx, table + i * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY] + object_offset);
             }
             break;
         }
@@ -134,7 +141,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
             if (table)
                 table2 = hfm_read_addr(vmi, ctx, table + k * psize);
             if (table2)
-                handle_obj = hfm_read_addr(vmi, ctx, table2 + i * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY]);
+                handle_obj = hfm_read_addr(vmi, ctx, table2 + i * ctx->hdlr->sizes[HANDLE_TABLE_ENTRY] + object_offset);
             break;
         }
     }
@@ -145,7 +152,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
             break;
         case VMI_OS_WINDOWS_8:
             if (ctx->hdlr->pm == VMI_PM_IA32E)
-                handle_obj = ((handle_obj & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFFE00000000000;
+                handle_obj = (((handle_obj  & VMI_BIT_MASK(19,63)) >> 20) << 4) | 0xFFFF000000000000;
             else
                 handle_obj &= VMI_BIT_MASK(2,31);
             break;

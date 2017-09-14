@@ -13,6 +13,7 @@ _KAPC_STATE Process : 32
 _HANDLE_TABLE HandleCount : 88
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
+_HANDLE_TABLE_ENTRY ObjectPointerBits : 0
 _OBJECT_HEADER Body : 48
 _OBJECT_HEADER TypeIndex : 24
 _OBJECT_HEADER Type : 0
@@ -77,6 +78,7 @@ _KAPC_STATE Process : 16
 _HANDLE_TABLE HandleCount : 48
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
+_HANDLE_TABLE_ENTRY ObjectPointerBits : 0
 _OBJECT_HEADER Body : 24
 _OBJECT_HEADER TypeIndex : 12
 _OBJECT_HEADER Type : 0
@@ -141,6 +143,7 @@ _KAPC_STATE Process : 16
 _HANDLE_TABLE HandleCount : 48
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
+_HANDLE_TABLE_ENTRY ObjectPointerBits : 0
 _OBJECT_HEADER Body : 24
 _OBJECT_HEADER TypeIndex : 0
 _OBJECT_HEADER Type : 8
@@ -205,6 +208,7 @@ _KAPC_STATE Process : 16
 _HANDLE_TABLE HandleCount : 60
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
+_HANDLE_TABLE_ENTRY ObjectPointerBits : 0
 _OBJECT_HEADER Body : 24
 _OBJECT_HEADER TypeIndex : 0
 _OBJECT_HEADER Type : 8
@@ -269,6 +273,7 @@ _KAPC_STATE Process : 32
 _HANDLE_TABLE HandleCount : 88
 _HANDLE_TABLE TableCode : 0
 _HANDLE_TABLE_ENTRY Object : 0
+_HANDLE_TABLE_ENTRY ObjectPointerBits : 0
 _OBJECT_HEADER Body : 48
 _OBJECT_HEADER TypeIndex : 24
 _OBJECT_HEADER Type : 0

@@ -74,6 +74,13 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
     GSList *objs = NULL;
     addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
     uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
+    addr_t object_offset = 0;
+    if (hdlr->winver == VMI_OS_WINDOWS_8) {
+        addr_t object_offset = hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT_POINTER_BITS];
+    }
+    else {
+        addr_t object_offset = hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT];
+    }
     switch (table_levels) {
         case 0:
         {
@@ -81,7 +88,7 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
             uint32_t lowest_count = VMI_PS_4KB / hdlr->sizes[HANDLE_TABLE_ENTRY];
             for (i = 0; i < lowest_count; i++) {
                 addr_t obj = 0;
-                vmi_read_addr_va(vmi, table_base + i * hdlr->sizes[HANDLE_TABLE_ENTRY] + hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT], pid, &obj);
+                vmi_read_addr_va(vmi, table_base + i * hdlr->sizes[HANDLE_TABLE_ENTRY] + object_offset, pid, &obj);
                 if (obj) {
                     objs = g_slist_append(objs, (gpointer)_adjust_obj_addr(winver, pm, obj));
                 }
@@ -100,7 +107,7 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
                     for (j = 0; j < lowest_count; j++) {
                         addr_t entry = table + j * hdlr->sizes[HANDLE_TABLE_ENTRY];
                         addr_t obj = 0;
-                        vmi_read_addr_va(vmi, entry + hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT], pid, &obj);
+                        vmi_read_addr_va(vmi, entry + object_offset, pid, &obj);
                         if (obj) {
                             objs = g_slist_append(objs, (gpointer)_adjust_obj_addr(winver, pm, obj));
                         }
@@ -126,7 +133,7 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
                             for (k = 0; k < low_count; k++) {
                                 addr_t entry = table2 + k * hdlr->sizes[HANDLE_TABLE_ENTRY];
                                 addr_t obj = 0;
-                                vmi_read_addr_va(vmi, entry + hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT], pid, &obj);
+                                vmi_read_addr_va(vmi, entry + object_offset, pid, &obj);
                                 if (obj) {
                                     objs = g_slist_append(objs, (gpointer)_adjust_obj_addr(winver, pm, obj));
                                 }
@@ -264,9 +271,10 @@ addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj)
             break;
         case VMI_OS_WINDOWS_8:
             if (pm == VMI_PM_IA32E)
-                addr = ((addr & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFFE00000000000;
+                addr = (((addr & VMI_BIT_MASK(19,63)) >> 20) << 4) | 0xFFFF000000000000;
             else
                 addr = addr & VMI_BIT_MASK(2,31);
+            break;
         default:
         case VMI_OS_WINDOWS_10:
             if (pm == VMI_PM_IA32E)
@@ -280,7 +288,8 @@ addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj)
 object_t win_get_object_type(vmhdlr_t *hdlr, pid_t pid, addr_t object_header)
 {
     uint8_t type_index = 0;
-    if (VMI_OS_WINDOWS_7 == hdlr->winver) {
+    if (VMI_OS_WINDOWS_7 == hdlr->winver
+            || VMI_OS_WINDOWS_8 == hdlr->winver ) {
         if (VMI_SUCCESS != vmi_read_8_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &type_index)) {
             writelog(LV_ERROR, "Error read object type");
             goto done;
