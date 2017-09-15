@@ -51,7 +51,7 @@ static void *writefile_cb(vmhdlr_t *handler, context_t *context)
 
     if (handler->pm == VMI_PM_IA32E) {
         handle = context->regs->rcx;
-        io_status_addr = hfm_read_addr(vmi, context, context->regs->rsp + 5 * sizeof(addr_t));
+        io_status_addr = hfm_read_addr(context, context->regs->rsp + 5 * sizeof(addr_t));
         buffer_length = hfm_read_32(vmi, context, context->regs->rsp + 7 * sizeof(addr_t));
     }
     else {

@@ -135,7 +135,7 @@ static inline void _set_security_info_text(context_t *context, uint32_t info, ad
             owner_addr = sd_addr + hfm_read_32(context->hdlr->vmi, context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR_RELATIVE__OWNER]);
         }
         else {
-            owner_addr = hfm_read_addr(context->hdlr->vmi, context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__OWNER]);
+            owner_addr = hfm_read_addr(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__OWNER]);
         }
         _extract_sid(context, owner_addr, detail);
         pos += sprintf(buff + pos, "%s : %s", "Owner Changed;", detail);
@@ -148,7 +148,7 @@ static inline void _set_security_info_text(context_t *context, uint32_t info, ad
             group_addr = sd_addr + hfm_read_32(context->hdlr->vmi, context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR_RELATIVE__GROUP]);
         }
         else {
-            group_addr = hfm_read_addr(context->hdlr->vmi, context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__GROUP]);
+            group_addr = hfm_read_addr(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__GROUP]);
         }
         _extract_sid(context, group_addr, detail);
         pos += sprintf(buff + pos, "%s : %s", "Group Changed;", detail);

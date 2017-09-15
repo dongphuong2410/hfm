@@ -6,12 +6,11 @@
 
 /**
   * @brief Read an address at a virtual addr
-  * @param vmi vmi instance
   * @param ctx context
   * @param addr virtual address
   * @return address, return 0 if operation fail
   */
-addr_t hfm_read_addr(vmi_instance_t vmi, context_t *ctx, addr_t addr);
+addr_t hfm_read_addr(context_t *ctx, addr_t addr);
 
 /**
   * @brief Read an 64 bit integer at a virtual addr

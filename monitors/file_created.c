@@ -118,7 +118,7 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
     }
 
     uint64_t rootdir_addr = hfm_read_64(vmi, context, objattr_addr + context->hdlr->offsets[OBJECT_ATTRIBUTES__ROOT_DIRECTORY]);
-    addr_t objectname_addr = hfm_read_addr(vmi, context, objattr_addr + context->hdlr->offsets[OBJECT_ATTRIBUTES__OBJECT_NAME]);
+    addr_t objectname_addr = hfm_read_addr(context, objattr_addr + context->hdlr->offsets[OBJECT_ATTRIBUTES__OBJECT_NAME]);
     char filepath[STR_BUFF] = "";
     int pathlen = 0;
 
@@ -265,9 +265,9 @@ int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
     int len = 0;
     addr_t process = hfm_get_current_process(vmi, context);
     if (!process) goto done;
-    addr_t peb = hfm_read_addr(vmi, context, process + context->hdlr->offsets[EPROCESS__PEB]);
+    addr_t peb = hfm_read_addr(context, process + context->hdlr->offsets[EPROCESS__PEB]);
     if (!peb) goto done;
-    addr_t process_parameters = hfm_read_addr(vmi, context, peb + context->hdlr->offsets[PEB__PROCESS_PARAMETERS]);
+    addr_t process_parameters = hfm_read_addr(context, peb + context->hdlr->offsets[PEB__PROCESS_PARAMETERS]);
     if (!process_parameters) goto done;
     len = 1;
     addr_t imagepath = process_parameters + context->hdlr->offsets[RTL_USER_PROCESS_PARAMETERS__IMAGE_PATH_NAME];
