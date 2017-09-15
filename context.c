@@ -23,42 +23,42 @@ addr_t hfm_read_addr(context_t *ctx, addr_t addr)
     return ret;
 }
 
-uint64_t hfm_read_64(vmi_instance_t vmi, context_t *ctx, addr_t addr)
+uint64_t hfm_read_64(context_t *ctx, addr_t addr)
 {
     uint64_t ret = 0;
     ctx->access_ctx.addr = addr;
-    vmi_read_64(vmi, &ctx->access_ctx, &ret);
+    vmi_read_64(ctx->hdlr->vmi, &ctx->access_ctx, &ret);
     return ret;
 }
 
-uint32_t hfm_read_32(vmi_instance_t vmi, context_t *ctx, addr_t addr)
+uint32_t hfm_read_32(context_t *ctx, addr_t addr)
 {
     uint32_t ret = 0;
     ctx->access_ctx.addr = addr;
-    vmi_read_32(vmi, &ctx->access_ctx, &ret);
+    vmi_read_32(ctx->hdlr->vmi, &ctx->access_ctx, &ret);
     return ret;
 }
 
-uint16_t hfm_read_16(vmi_instance_t vmi, context_t *ctx, addr_t addr)
+uint16_t hfm_read_16(context_t *ctx, addr_t addr)
 {
     uint16_t ret = 0;
     ctx->access_ctx.addr = addr;
-    vmi_read_16(vmi, &ctx->access_ctx, &ret);
+    vmi_read_16(ctx->hdlr->vmi, &ctx->access_ctx, &ret);
     return ret;
 }
 
-uint8_t hfm_read_8(vmi_instance_t vmi, context_t *ctx, addr_t addr)
+uint8_t hfm_read_8(context_t *ctx, addr_t addr)
 {
     uint8_t ret = 0;
     ctx->access_ctx.addr = addr;
-    vmi_read_8(vmi, &ctx->access_ctx, &ret);
+    vmi_read_8(ctx->hdlr->vmi, &ctx->access_ctx, &ret);
     return ret;
 }
 
-size_t hfm_read(vmi_instance_t vmi, context_t *ctx, addr_t addr, void *buf, size_t count)
+size_t hfm_read(context_t *ctx, addr_t addr, void *buf, size_t count)
 {
     ctx->access_ctx.addr = addr;
-    return vmi_read(vmi, &ctx->access_ctx, buf, count);
+    return vmi_read(ctx->hdlr->vmi, &ctx->access_ctx, buf, count);
 }
 
 addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx)
@@ -95,7 +95,7 @@ addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
     if (!handletable) goto done;
     addr_t tablecode = hfm_read_addr(ctx, handletable + ctx->hdlr->offsets[HANDLE_TABLE__TABLE_CODE]);
     if (!tablecode) goto done;
-    uint32_t handlecount = hfm_read_32(vmi, ctx,handletable + ctx->hdlr->offsets[HANDLE_TABLE__HANDLE_COUNT]);
+    uint32_t handlecount = hfm_read_32(ctx,handletable + ctx->hdlr->offsets[HANDLE_TABLE__HANDLE_COUNT]);
     if (!handlecount) goto done;
     addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
     uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
@@ -210,7 +210,7 @@ int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buff
     int ret = 0;
 
     //Read unicode string length
-    uint16_t length = hfm_read_16(vmi, ctx, addr + ctx->hdlr->offsets[UNICODE_STRING__LENGTH]);
+    uint16_t length = hfm_read_16(ctx, addr + ctx->hdlr->offsets[UNICODE_STRING__LENGTH]);
     if (0 == length || length > VMI_PS_4KB)
         goto done;
 
@@ -224,7 +224,7 @@ int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buff
     str.length = length;
     str.encoding = "UTF-16";
 
-    if (length != hfm_read(vmi, ctx, buffer_addr, str.contents, length)) {
+    if (length != hfm_read(ctx, buffer_addr, str.contents, length)) {
         g_free(str.contents);
         goto done;
     }
@@ -294,8 +294,8 @@ static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_a
     test = hfm_read_addr(ctx, segment + ctx->hdlr->offsets[SEGMENT__CONTROL_AREA]);
     if (test != control_area)
         return -1;
-    test = hfm_read_64(vmi, ctx, segment + ctx->hdlr->offsets[SEGMENT__SIZE_OF_SEGMENT]);
-    test2 = hfm_read_32(vmi, ctx, segment + ctx->hdlr->offsets[SEGMENT__TOTAL_NUMBER_OF_PTES]);
+    test = hfm_read_64(ctx, segment + ctx->hdlr->offsets[SEGMENT__SIZE_OF_SEGMENT]);
+    test2 = hfm_read_32(ctx, segment + ctx->hdlr->offsets[SEGMENT__TOTAL_NUMBER_OF_PTES]);
     if (test != (test2 * 4096))
         return -1;
     FILE *fp = fopen(path, "w");
@@ -314,10 +314,10 @@ static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_a
         base = hfm_read_addr(ctx, subsection + ctx->hdlr->offsets[SUBSECTION__SUBSECTION_BASE]);
         if (!(base & VMI_BIT_MASK(0,11)))
             break;
-        ptes = hfm_read_32(vmi, ctx, subsection + ctx->hdlr->offsets[SUBSECTION__PTES_IN_SUBSECTION]);
+        ptes = hfm_read_32(ctx, subsection + ctx->hdlr->offsets[SUBSECTION__PTES_IN_SUBSECTION]);
         if (ptes == 0)
             break;
-        start = hfm_read_32(vmi, ctx, subsection + ctx->hdlr->offsets[SUBSECTION__STARTING_SECTOR]);
+        start = hfm_read_32(ctx, subsection + ctx->hdlr->offsets[SUBSECTION__STARTING_SECTOR]);
         /* The offset into the file is stored implicitely
            based on the PTE's location within the subsection */
         addr_t subsection_offset = start * 0x200;
@@ -326,7 +326,7 @@ static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_a
             addr_t pteoffset = base + mmpte_size * ptecount;
             addr_t fileoffset = subsection_offset + ptecount * 0x1000;
             addr_t pte = 0;
-            if (mmpte_size != hfm_read(vmi, ctx, pteoffset, &pte, mmpte_size))
+            if (mmpte_size != hfm_read(ctx, pteoffset, &pte, mmpte_size))
                 break;
             if (ENTRY_PRESENT(1, pte)) {
                 uint8_t page[4096];

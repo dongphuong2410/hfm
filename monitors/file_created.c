@@ -117,7 +117,7 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         vmi_read_32_va(vmi, context->regs->rsp + sizeof(uint32_t) * 8, 0, &create);
     }
 
-    uint64_t rootdir_addr = hfm_read_64(vmi, context, objattr_addr + context->hdlr->offsets[OBJECT_ATTRIBUTES__ROOT_DIRECTORY]);
+    uint64_t rootdir_addr = hfm_read_64(context, objattr_addr + context->hdlr->offsets[OBJECT_ATTRIBUTES__ROOT_DIRECTORY]);
     addr_t objectname_addr = hfm_read_addr(context, objattr_addr + context->hdlr->offsets[OBJECT_ATTRIBUTES__OBJECT_NAME]);
     char filepath[STR_BUFF] = "";
     int pathlen = 0;
@@ -164,8 +164,8 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
 {
     params_t *params = (params_t *)context->trap->extra;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
-    uint64_t information = hfm_read_64(vmi, context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
-    int status = (int)hfm_read_32(vmi, context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__STATUS]);
+    uint64_t information = hfm_read_64(context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
+    int status = (int)hfm_read_32(context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__STATUS]);
     int ret_status = context->regs->rax;
 
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
@@ -219,24 +219,24 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
     if (handler->pm == VMI_PM_IA32E) {
         iostatus_addr = context->regs->rdx;
         fileinfo_addr = context->regs->r8;
-        fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(addr_t));
+        fileinfo_class = hfm_read_32(context, context->regs->rsp + 5 * sizeof(addr_t));
     }
     else {
-        iostatus_addr = hfm_read_32(vmi, context, context->regs->rsp + 2 * sizeof(uint32_t));
-        fileinfo_addr = hfm_read_32(vmi, context, context->regs->rsp + 3 * sizeof(uint32_t));
-        fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(uint32_t));
+        iostatus_addr = hfm_read_32(context, context->regs->rsp + 2 * sizeof(uint32_t));
+        fileinfo_addr = hfm_read_32(context, context->regs->rsp + 3 * sizeof(uint32_t));
+        fileinfo_class = hfm_read_32(context, context->regs->rsp + 5 * sizeof(uint32_t));
     }
     if (FILE_RENAME_INFORMATION == fileinfo_class) {
         //Read FileName length
         addr_t filename_length_addr = fileinfo_addr + context->hdlr->offsets[FILE_RENAME_INFORMATION__FILE_NAME_LENGTH];
         addr_t filename_addr = fileinfo_addr + context->hdlr->offsets[FILE_RENAME_INFORMATION__FILE_NAME];
-        uint32_t filename_length = hfm_read_32(vmi, context, filename_length_addr);
+        uint32_t filename_length = hfm_read_32(context, filename_length_addr);
         if (filename_length > 0) {
             unicode_string_t str;
             str.length = filename_length;
             str.encoding = "UTF-16";
             str.contents = (unsigned char *)g_malloc0(filename_length);
-            if (filename_length != hfm_read(vmi, context, filename_addr, str.contents, filename_length)) {
+            if (filename_length != hfm_read(context, filename_addr, str.contents, filename_length)) {
                 free(str.contents);
                 goto done;
             }

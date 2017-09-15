@@ -52,12 +52,12 @@ static void *writefile_cb(vmhdlr_t *handler, context_t *context)
     if (handler->pm == VMI_PM_IA32E) {
         handle = context->regs->rcx;
         io_status_addr = hfm_read_addr(context, context->regs->rsp + 5 * sizeof(addr_t));
-        buffer_length = hfm_read_32(vmi, context, context->regs->rsp + 7 * sizeof(addr_t));
+        buffer_length = hfm_read_32(context, context->regs->rsp + 7 * sizeof(addr_t));
     }
     else {
-        handle = hfm_read_32(vmi, context, context->regs->rsp + 1 * sizeof(uint32_t));
-        io_status_addr = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(uint32_t));
-        buffer_length = hfm_read_32(vmi, context, context->regs->rsp + 7 * sizeof(uint32_t));
+        handle = hfm_read_32(context, context->regs->rsp + 1 * sizeof(uint32_t));
+        io_status_addr = hfm_read_32(context, context->regs->rsp + 5 * sizeof(uint32_t));
+        buffer_length = hfm_read_32(context, context->regs->rsp + 7 * sizeof(uint32_t));
     }
 
     char filename[STR_BUFF] = "";
@@ -81,7 +81,7 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     params_t *params = (params_t *)context->trap->extra;
     int status = context->regs->rax;
-    uint64_t information = hfm_read_64(vmi, context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
+    uint64_t information = hfm_read_64(context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
     if (NT_SUCCESS(status)) {
         output_info_t output;
         output.pid = hfm_get_process_pid(vmi, context);

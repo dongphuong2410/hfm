@@ -47,12 +47,12 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
     if (handler->pm == VMI_PM_IA32E) {
         handle = context->regs->rcx;
         fileinfo_addr = context->regs->r8;
-        fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(addr_t));
+        fileinfo_class = hfm_read_32(context, context->regs->rsp + 5 * sizeof(addr_t));
     }
     else {
-        handle = hfm_read_32(vmi, context, context->regs->rsp + 1 * sizeof(uint32_t));
-        fileinfo_addr = hfm_read_32(vmi, context, context->regs->rsp + 3 * sizeof(uint32_t));
-        fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(uint32_t));
+        handle = hfm_read_32(context, context->regs->rsp + 1 * sizeof(uint32_t));
+        fileinfo_addr = hfm_read_32(context, context->regs->rsp + 3 * sizeof(uint32_t));
+        fileinfo_class = hfm_read_32(context, context->regs->rsp + 5 * sizeof(uint32_t));
     }
     if (FILE_DISPOSITION_INFORMATION == fileinfo_class) {
         char filename[STR_BUFF] = "";
@@ -60,7 +60,7 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
         hfm_read_filename_from_object(vmi, context, file_object, filename);
         int policy_id = filter_match(filter, filename);
         if (policy_id >= 0) {
-            uint8_t delete = hfm_read_8(vmi, context, fileinfo_addr + context->hdlr->offsets[FILE_DISPOSITION_INFORMATION__DELETE_FILE]);
+            uint8_t delete = hfm_read_8(context, fileinfo_addr + context->hdlr->offsets[FILE_DISPOSITION_INFORMATION__DELETE_FILE]);
             if (delete) {
                 output_info_t output;
                 output.pid = hfm_get_process_pid(vmi, context);

@@ -14,46 +14,41 @@ addr_t hfm_read_addr(context_t *ctx, addr_t addr);
 
 /**
   * @brief Read an 64 bit integer at a virtual addr
-  * @param vmi vmi instance
   * @param ctx context
   * @param addr virtual address
   */
-uint64_t hfm_read_64(vmi_instance_t vmi, context_t *ctx, addr_t addr);
+uint64_t hfm_read_64(context_t *ctx, addr_t addr);
 
 /**
   * @brief Read an 32 bit integer at a virtual addr
-  * @param vmi vmi instance
   * @param ctx context
   * @param addr virtual address
   */
-uint32_t hfm_read_32(vmi_instance_t vmi, context_t *ctx, addr_t addr);
+uint32_t hfm_read_32(context_t *ctx, addr_t addr);
 
 /**
   * @brief Read an 16 bit integer at a virtual addr
-  * @param vmi vmi instance
   * @param ctx context
   * @param addr virtual address
   */
-uint16_t hfm_read_16(vmi_instance_t vmi, context_t *ctx, addr_t addr);
+uint16_t hfm_read_16(context_t *ctx, addr_t addr);
 
 /**
   * @brief Read an 8 bit integer at a virtual addr
-  * @param vmi vmi instance
   * @param ctx context
   * @param addr virtual address
   */
-uint8_t hfm_read_8(vmi_instance_t vmi, context_t *ctx, addr_t addr);
+uint8_t hfm_read_8(context_t *ctx, addr_t addr);
 
 /**
   * @brief Read buffer at a virtual addr
-  * @param vmi vmi instance
   * @param ctx context
   * @param addr virtual address
   * @param buf Buffer address
   * @param count Number of bytes to read
   * @return Number of bytes read
   */
-size_t hfm_read(vmi_instance_t vmi, context_t *ctx, addr_t addr, void *buf, size_t count);
+size_t hfm_read(context_t *ctx, addr_t addr, void *buf, size_t count);
 
 /**
   * @brief Get current process address

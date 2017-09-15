@@ -56,15 +56,15 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
     if (handler->pm == VMI_PM_IA32E) {
         handle = context->regs->rcx;
         fileinfo_addr = context->regs->r8;
-        fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(addr_t));
+        fileinfo_class = hfm_read_32(context, context->regs->rsp + 5 * sizeof(addr_t));
     }
     else {
-        handle = hfm_read_32(vmi, context, context->regs->rsp + 1 * sizeof(uint32_t));
-        fileinfo_addr = hfm_read_32(vmi, context, context->regs->rsp + 3 * sizeof(uint32_t));
-        fileinfo_class = hfm_read_32(vmi, context, context->regs->rsp + 5 * sizeof(uint32_t));
+        handle = hfm_read_32(context, context->regs->rsp + 1 * sizeof(uint32_t));
+        fileinfo_addr = hfm_read_32(context, context->regs->rsp + 3 * sizeof(uint32_t));
+        fileinfo_class = hfm_read_32(context, context->regs->rsp + 5 * sizeof(uint32_t));
     }
     if (FILE_BASIC_INFORMATION == fileinfo_class) {
-        uint32_t file_attributes = hfm_read_32(vmi, context, fileinfo_addr + handler->offsets[FILE_BASIC_INFORMATION__FILE_ATTRIBUTES]);
+        uint32_t file_attributes = hfm_read_32(context, fileinfo_addr + handler->offsets[FILE_BASIC_INFORMATION__FILE_ATTRIBUTES]);
         char filename[STR_BUFF] = "";
         addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
         hfm_read_filename_from_object(vmi, context, file_object, filename);

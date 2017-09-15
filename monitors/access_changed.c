@@ -73,9 +73,9 @@ static void *setsecurity_cb(vmhdlr_t *handler, context_t *context)
         security_desc_addr = context->regs->r8;
     }
     else {
-        handle = hfm_read_32(vmi, context, context->regs->rsp + 1 * sizeof(uint32_t));
-        security_info = hfm_read_32(vmi, context, context->regs->rsp + 2 * sizeof(uint32_t));
-        security_desc_addr = hfm_read_32(vmi, context, context->regs->rsp + 3 * sizeof(uint32_t));
+        handle = hfm_read_32(context, context->regs->rsp + 1 * sizeof(uint32_t));
+        security_info = hfm_read_32(context, context->regs->rsp + 2 * sizeof(uint32_t));
+        security_desc_addr = hfm_read_32(context, context->regs->rsp + 3 * sizeof(uint32_t));
     }
     char filename[STR_BUFF] = "";
     addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
@@ -129,10 +129,10 @@ static inline void _set_security_info_text(context_t *context, uint32_t info, ad
     char detail[STR_BUFF] = "";
     if (info & OWNER_SECURITY_INFORMATION) {
         uint16_t control = 0;
-        control = hfm_read_16(context->hdlr->vmi, context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__CONTROL]);
+        control = hfm_read_16(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__CONTROL]);
         addr_t owner_addr = 0;
         if (control & SE_SELF_RELATIVE) {
-            owner_addr = sd_addr + hfm_read_32(context->hdlr->vmi, context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR_RELATIVE__OWNER]);
+            owner_addr = sd_addr + hfm_read_32(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR_RELATIVE__OWNER]);
         }
         else {
             owner_addr = hfm_read_addr(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__OWNER]);
@@ -142,10 +142,10 @@ static inline void _set_security_info_text(context_t *context, uint32_t info, ad
     }
     if (info & GROUP_SECURITY_INFORMATION) {
         uint16_t control = 0;
-        control = hfm_read_16(context->hdlr->vmi, context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__CONTROL]);
+        control = hfm_read_16(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__CONTROL]);
         addr_t group_addr = 0;
         if (control & SE_SELF_RELATIVE) {
-            group_addr = sd_addr + hfm_read_32(context->hdlr->vmi, context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR_RELATIVE__GROUP]);
+            group_addr = sd_addr + hfm_read_32(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR_RELATIVE__GROUP]);
         }
         else {
             group_addr = hfm_read_addr(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__GROUP]);
@@ -170,7 +170,7 @@ static void _extract_sid(context_t *context, addr_t sid_addr, char *sid)
     int pos = 0;
 
     //First byte
-    uint8_t first_byte = hfm_read_8(context->hdlr->vmi, context, sid_addr + 0);
+    uint8_t first_byte = hfm_read_8(context, sid_addr + 0);
     if (first_byte >= 0 && first_byte <= 9)
         pos += sprintf(sid, "S-%c-", first_byte + '0');
     else {
@@ -181,15 +181,15 @@ static void _extract_sid(context_t *context, addr_t sid_addr, char *sid)
     uint64_t authority = 0;
     uint8_t bytes[6];
     for (i = 0; i < 6; i++) {
-        bytes[i] = hfm_read_8(context->hdlr->vmi, context, sid_addr + 2 + i);
+        bytes[i] = hfm_read_8(context, sid_addr + 2 + i);
         authority += (((uint64_t)bytes[i]) << (5 - i)*8);
     }
     pos += sprintf(sid + pos, "%lu-", authority);
 
     //Sub authorities
-    uint8_t sub_auth_no = hfm_read_8(context->hdlr->vmi, context, sid_addr + 1);
+    uint8_t sub_auth_no = hfm_read_8(context, sid_addr + 1);
     for (i = 0; i < sub_auth_no; i++) {
-        uint32_t sub_auth = hfm_read_32(context->hdlr->vmi, context, sid_addr + 8 + 4 * i);
+        uint32_t sub_auth = hfm_read_32(context, sid_addr + 8 + 4 * i);
         pos += sprintf(sid + pos, "%u-", sub_auth);
     }
 
