@@ -53,7 +53,7 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
   * Get current directory of process
   * @return Length of path
   */
-int _read_process_path(vmi_instance_t vmi, context_t *context, char *path);
+static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path);
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -180,6 +180,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.policy_id = params->policy_id;
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
         output.extpath[0] = '\0';
+        output.data[0] = '\0';
         out_write(handler->out, &output);
     }
     free(params);
@@ -260,7 +261,7 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
     return NULL;
 }
 
-int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
+static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
 {
     int len = 0;
     addr_t process = hfm_get_current_process(vmi, context);
