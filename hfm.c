@@ -452,6 +452,8 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
             goto error2;
         }
     }
+    //Read ObHeaderCookie
+    handler->cookie = win_ob_header_cookie(handler);
     //Get all drive devices
     handler->drives = win_list_drives(handler);
 

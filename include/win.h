@@ -40,6 +40,13 @@ void win_fill_sizes(const char *rekall_profile, addr_t *sizes);
 GSList *win_cur_processes(vmhdlr_t *hdlr);
 
 /**
+  * @brief Read ObHeaderCookie
+  * @param[in] hdlr vmhdlr_t
+  * @return ObHeaderCookie
+  */
+uint8_t win_ob_header_cookie(vmhdlr_t *hdlr);
+
+/**
   * @brief Get the object type from object_header
   * @param[in] hdlr vmhdlr_t
   * @param[in] pid Pid

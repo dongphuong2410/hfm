@@ -75,7 +75,8 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
     addr_t table_base = tablecode & ~EX_FAST_REF_MASK;
     uint32_t table_levels = tablecode & EX_FAST_REF_MASK;
     addr_t object_offset = 0;
-    if (hdlr->winver == VMI_OS_WINDOWS_8) {
+    if (hdlr->winver == VMI_OS_WINDOWS_8
+            || hdlr->winver == VMI_OS_WINDOWS_10) {
         addr_t object_offset = hdlr->offsets[HANDLE_TABLE_ENTRY__OBJECT_POINTER_BITS];
     }
     else {
@@ -260,6 +261,16 @@ done:
     return list;
 }
 
+uint8_t win_ob_header_cookie(vmhdlr_t *hdlr)
+{
+    vmi_instance_t vmi = hdlr->vmi;
+    uint8_t cookie = 0;
+    if (VMI_FAILURE == vmi_read_8_ksym(vmi, "ObHeaderCookie", &cookie)) {
+        writelog(LV_ERROR, "Failed to read ObHeaderCookie");
+    }
+    return cookie;
+}
+
 addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj)
 {
     addr_t addr = obj;
@@ -278,7 +289,7 @@ addr_t _adjust_obj_addr(win_ver_t winver, page_mode_t pm, addr_t obj)
         default:
         case VMI_OS_WINDOWS_10:
             if (pm == VMI_PM_IA32E)
-                addr = ((addr & VMI_BIT_MASK(19,63)) >> 16) | 0xFFFF000000000000;
+                addr = (((addr & VMI_BIT_MASK(19,63)) >> 20) << 4 ) | 0xFFFF000000000000;
             else
                 addr = addr & VMI_BIT_MASK(2,31);
     }
@@ -289,7 +300,7 @@ object_t win_get_object_type(vmhdlr_t *hdlr, pid_t pid, addr_t object_header)
 {
     uint8_t type_index = 0;
     if (VMI_OS_WINDOWS_7 == hdlr->winver
-            || VMI_OS_WINDOWS_8 == hdlr->winver ) {
+            || VMI_OS_WINDOWS_8 == hdlr->winver) {
         if (VMI_SUCCESS != vmi_read_8_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &type_index)) {
             writelog(LV_ERROR, "Error read object type");
             goto done;
@@ -297,6 +308,17 @@ object_t win_get_object_type(vmhdlr_t *hdlr, pid_t pid, addr_t object_header)
         if (type_index == 0x3)
             return OBJECT_TYPE_DIRECTORY;
         else if (type_index == 0x4)
+            return OBJECT_TYPE_SYMBOLIC_LINK;
+    }
+    else if (VMI_OS_WINDOWS_10 == hdlr->winver) {
+        if (VMI_SUCCESS != vmi_read_8_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &type_index)) {
+            writelog(LV_ERROR, "Error read object type");
+            goto done;
+        }
+        uint8_t index = (((object_header + 0x30) >> 8) ^ type_index ^ hdlr->cookie) & 0xFF;
+        if (index == 0x3)
+            return OBJECT_TYPE_DIRECTORY;
+        else if (index == 0x4)
             return OBJECT_TYPE_SYMBOLIC_LINK;
     }
     else if (VMI_OS_WINDOWS_VISTA == hdlr->winver

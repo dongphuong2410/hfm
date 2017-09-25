@@ -82,6 +82,7 @@ typedef struct _vmhdlr {
     vmi_event_t *step_event[16];
 
     GSList *drives;
+    uint8_t cookie;
     addr_t offsets[WIN_OFFSETS_MAX];
     addr_t sizes[WIN_SIZES_MAX];
 } vmhdlr_t;
