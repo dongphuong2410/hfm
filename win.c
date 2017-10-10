@@ -44,7 +44,11 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
 
     addr_t process_addr = 0;
     char *process_name = "";
-    if (hdlr->winver == VMI_OS_WINDOWS_VISTA
+    if (hdlr->winver == VMI_OS_WINDOWS_UNKNOWN) {
+        writelog(LV_ERROR, "Unknow Windows version");
+        goto done;
+    }
+    else if (hdlr->winver == VMI_OS_WINDOWS_VISTA
             || hdlr->winver == VMI_OS_WINDOWS_XP) {
         process_name = "smss.exe";
     }
