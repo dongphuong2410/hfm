@@ -270,7 +270,8 @@ uint8_t win_ob_header_cookie(vmhdlr_t *hdlr)
     vmi_instance_t vmi = hdlr->vmi;
     uint8_t cookie = 0;
     if (VMI_FAILURE == vmi_read_8_ksym(vmi, "ObHeaderCookie", &cookie)) {
-        writelog(LV_ERROR, "Failed to read ObHeaderCookie");
+        //Only Windows10 has ObHeaderCookie
+        //writelog(LV_DEBUG, "Failed to read ObHeaderCookie");
     }
     return cookie;
 }
