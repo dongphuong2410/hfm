@@ -12,8 +12,9 @@ int util_checkdup(const char *file1, const char *file2);
 /**
   * @brief Create symbolic Link file
   * @param filename Filename
+  * @param slname Symbolic link name
   * @return 1 if create symbolick link success
   */
-int util_create_symbol_link(const char *filename);
+int util_create_symlink(const char *filename, const char *slname);
 
 #endif

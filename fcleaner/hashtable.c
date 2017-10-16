@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "hashtable.h"
 
@@ -10,6 +11,7 @@ typedef struct _node_t {
     char key[KEY_LENGTH];
     void *data;
     struct _node_t *next;
+    double expiry;
 } node_t;
 
 struct _hashtable_t {
@@ -20,6 +22,8 @@ struct _hashtable_t {
 
 static unsigned long _hash(const char *str);
 static void _free_node(node_t *node);
+
+/* TODO implement expiry mechanism for hashtable */
 
 hashtable_t *hsh_init(size_t size, size_t expired)
 {
@@ -52,6 +56,11 @@ int hsh_put(hashtable_t *tbl, const char *key, void *data)
     }
     strncpy(newnode->key, key, KEY_LENGTH);
     newnode->data = data;
+    if (tbl->expired > 0) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        newnode->expiry = tv.tv_sec + tbl->expired;
+    }
 
     unsigned long index = _hash(key) % tbl->size;
     if (!tbl->arr[index]) {
@@ -126,6 +135,11 @@ int hsh_replace(hashtable_t *tbl, const char *key, void *newdata)
         if (strcmp(ptr->key, key) == 0) {
             free(ptr->data);
             ptr->data = newdata;
+            if (tbl->expired > 0) {
+                struct timeval tv;
+                gettimeofday(&tv, NULL);
+                ptr->expiry = tv.tv_sec + tbl->expired;
+            }
             return 0;
         }
         ptr = ptr->next;

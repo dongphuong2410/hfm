@@ -15,7 +15,7 @@ filewatch_t *filewatch_init(const char *path);
   * @param fw Filewatch pointer
   * @param on_recv Callback function pointer
   */
-void filewatch_set_cb(filewatch_t *fw, void (*on_recv)(const char *path, const char *real_path));
+void filewatch_set_cb(filewatch_t *fw, void (*on_recv)(const char *line));
 
 /**
   * @brief Start the filewatch

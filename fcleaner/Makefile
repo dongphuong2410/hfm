@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-ggdb -O0
-LDFLAGS=
+LDFLAGS=-lssl -lcrypto -lpthread
 
 all: fcleaner
 
