@@ -603,6 +603,40 @@ void hfm_release_vmi(vmhdlr_t *handler)
 
 int hfm_restart_vmi(void *data)
 {
-    return 0;
+    vmhdlr_t *hdlr = (vmhdlr_t *)data;
+
+    /* Restart xen interface */
+    xen_free_interface(hdlr->xen);
+    if ((hdlr->xen = xen_init_interface(hdlr->name)) == NULL) {
+        writelog(LV_ERROR, "Failed to init XEN after machine restart");
+        return -1;
+    }
+    printf("Reinit XEN\n");
+
+    /* Init vmi again */
+    if (VMI_FAILURE == vmi_init(&hdlr->vmi, VMI_XEN, hdlr->name, VMI_INIT_DOMAINNAME | VMI_INIT_EVENTS, NULL, NULL)) {
+        writelog(LV_ERROR, "Failed to init LibVMI after machine restart");
+        return -1;
+    }
+    char *rekall_profile = config_get_str(config, "rekall_profile");
+    GHashTable *vmicfg = g_hash_table_new(g_str_hash, g_str_equal);
+    g_hash_table_insert(vmicfg, "rekall_profile", rekall_profile);
+    g_hash_table_insert(vmicfg, "os_type", "Windows");
+    uint64_t flags = VMI_PM_INITFLAG_TRANSITION_PAGES;
+    if (VMI_PM_UNKNOWN == vmi_init_paging(hdlr->vmi, flags)) {
+        g_hash_table_destroy(vmicfg);
+        writelog(LV_ERROR, "Failed to init LibVMI paging after machine restart");
+        return -1;
+    }
+    os_t os = vmi_init_os(hdlr->vmi, VMI_CONFIG_GHASHTABLE, vmicfg, NULL);
+    if (os != VMI_OS_WINDOWS) {
+        g_hash_table_destroy(vmicfg);
+        writelog(LV_ERROR, "Failed to init LibVMI library after machine restart");
+        return -1;
+    }
+    g_hash_table_destroy(vmicfg);
+    printf("Reinit LibVMI\n");
+
+    return -1;
 }
 

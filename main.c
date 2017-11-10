@@ -96,8 +96,9 @@ int main(int argc, char **argv)
     }
 
     for (i = 0; i < vmnum; i++) {
-        wv_add_vm(wv, &vms[i]->vmi, hfm_restart_vmi, NULL);
+        wv_add_vm(wv, &vms[i]->vmi, hfm_restart_vmi, vms[i]);
     }
+    wv_start(wv);
     //Start monitoring threads for each vm
     for (i = 0; i < vmnum; i++) {
         threads[i] = g_thread_new(vms[i]->name, (GThreadFunc)_monitor_vm, vms[i]);

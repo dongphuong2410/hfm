@@ -192,8 +192,11 @@ void *_monitor_fc(void *param)
         for (int i = 0; i < wv->size; i++) {
             state = _get_vm_state(wv->hdlr[i]);
             if (state == STATE_RESTARTED) {
-                wv->hdlr[i]->restart_cb(wv->hdlr[i]->int_data);
-                wv->hdlr[i]->okay = 1;
+                if (!wv->hdlr[i]->restart_cb(wv->hdlr[i]->int_data)) {
+                    wv->hdlr[i]->okay = 1;
+                }
+                //wv->hdlr[i]->restart_cb(wv->hdlr[i]->int_data);
+                //wv->hdlr[i]->okay = 1;
             }
         }
         sleep(3);
