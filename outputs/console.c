@@ -3,6 +3,7 @@
 
 void out_console_init(void)
 {
+    //TODO: store the VM name
 }
 
 void out_console_write(output_t *output, output_info_t *info)

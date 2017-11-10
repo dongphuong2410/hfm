@@ -48,4 +48,10 @@ vmi_instance_t hfm_lock_and_get_vmi(vmhdlr_t *handler);
   */
 void hfm_release_vmi(vmhdlr_t *handler);
 
+/**
+  * @brief Function will be called when VM restart
+  * @param data
+  */
+int hfm_restart_vmi(void *data);
+
 #endif

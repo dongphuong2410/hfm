@@ -81,6 +81,8 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
         goto error4;
     }
+    //TODO: Move output plugin to the outside (main.c),
+    //Each vm should have one output seperatedly
     /* Init output plugin */
     char *output = config_get_str(config, "output");
     if (0 == strncmp(output, "csv", STR_BUFF)) {
@@ -134,7 +136,7 @@ void hfm_close(vmhdlr_t *handler)
 
 void hfm_listen(vmhdlr_t *handler)
 {
-    vmi_events_listen(handler->vmi, 500);
+    status_t status = vmi_events_listen(handler->vmi, 500);
 }
 
 hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, cb_t sys_cb, cb_t ret_cb)
@@ -598,3 +600,9 @@ void hfm_release_vmi(vmhdlr_t *handler)
 {
     g_mutex_unlock(&handler->vmi_lock);
 }
+
+int hfm_restart_vmi(void *data)
+{
+    return 0;
+}
+

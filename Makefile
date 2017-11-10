@@ -2,7 +2,7 @@ DEPDIR=.deps
 $(shell mkdir -p $(DEPDIR) > /dev/null)
 CC=gcc
 CFLAGS=-ggdb -O0 -I./include -I./monitors -I./outputs -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include 
-LDFLAGS=-lvmi -lglib-2.0 -lxenctrl -lxentoollog -lxenlight -ljson-c -lm
+LDFLAGS=-lvmi -lglib-2.0 -lxenctrl -lxentoollog -lxenlight -ljson-c -lm -lpthread
 DEPFLAGS=-MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
 
 POSTCOMPILE=@mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
@@ -11,7 +11,7 @@ STATICLIB=./monitors/libmon.a ./outputs/libout.a
 
 SUBDIRS = monitors outputs tests
 
-SRC= main.c log.c config.c policy.c hfm.c xen_helper.c trapmngr.c rekall.c context.c win.c util.c
+SRC= main.c log.c config.c policy.c hfm.c xen_helper.c trapmngr.c rekall.c context.c win.c multiwatch.c
 
 CFLAGS+= -DLOG_LEVEL=LV_WARN
 .PHONY : all $(SUBDIRS) clean

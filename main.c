@@ -10,6 +10,7 @@
 #include "private.h"
 #include "policy.h"
 #include "libmon.h"
+#include "multiwatch.h"
 
 /**
   * Read configuration from command line
@@ -61,6 +62,7 @@ int main(int argc, char **argv)
     }
 
     //Init logging module
+    //TODO: seperate log files for each VMs thread
     if (config_get_str(config, "log_file"))
         log_init(LOG_LEVEL, LOG_TEXTFILE, config_get_str(config, "log_file"));
     else
@@ -78,6 +80,7 @@ int main(int argc, char **argv)
     }
 
     //Init vm lists
+    watcher_t *wv = wv_init(10);
     if (!config_get_str(config, "vmlist")) {
         writelog(LV_FATAL, "No vmlist specified");
         goto done;
@@ -92,6 +95,9 @@ int main(int argc, char **argv)
         _set_policies(vms[i], policies);
     }
 
+    for (i = 0; i < vmnum; i++) {
+        wv_add_vm(wv, &vms[i]->vmi, hfm_restart_vmi, NULL);
+    }
     //Start monitoring threads for each vm
     for (i = 0; i < vmnum; i++) {
         threads[i] = g_thread_new(vms[i]->name, (GThreadFunc)_monitor_vm, vms[i]);
@@ -105,6 +111,7 @@ done:
     log_close();
     config_close(config);
     mon_close();
+    wv_close(wv);
     return 0;
 }
 
@@ -174,30 +181,31 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
     return cnt;
 }
 
+//TODO: read policies from policies list
 static void _set_policies(vmhdlr_t *handler, GSList *policies)
 {
     policy_t *test = (policy_t *)calloc(1, sizeof(policy_t));
     strcpy(test->path, "C:/meo/*");
 
-    //test->type = MON_DELETE;
-    //test->id = 10;
-    //mon_add_policy(handler, test);
-
-    test->type = MON_CREATE;
-    test->id = 20;
+    test->type = MON_DELETE;
+    test->id = 10;
     mon_add_policy(handler, test);
+
+    //test->type = MON_CREATE;
+    //test->id = 20;
+    //mon_add_policy(handler, test);
 
     test->type = MON_MODIFY_CONTENT;
     test->id = 30;
     mon_add_policy(handler, test);
 
-    test->type = MON_CHANGE_ATTR;
-    test->id = 40;
-    mon_add_policy(handler, test);
+    //test->type = MON_CHANGE_ATTR;
+    //test->id = 40;
+    //mon_add_policy(handler, test);
 
-    test->type = MON_CHANGE_ACCESS;
-    test->id = 50;
-    mon_add_policy(handler, test);
+    //test->type = MON_CHANGE_ACCESS;
+    //test->id = 50;
+    //mon_add_policy(handler, test);
 
     free(test);
 }
