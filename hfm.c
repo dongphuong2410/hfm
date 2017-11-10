@@ -637,6 +637,26 @@ int hfm_restart_vmi(void *data)
     g_hash_table_destroy(vmicfg);
     printf("Reinit LibVMI\n");
 
+    /* Register events again */
+    int i;
+    for (i = 0; i < hdlr->vcpus && i < 16; i++) {
+        SETUP_SINGLESTEP_EVENT(hdlr->step_event[i], 1u << i, _singlestep_cb, 0);
+        if (VMI_FAILURE == vmi_register_event(hdlr->vmi, hdlr->step_event[i])) {
+            writelog(LV_ERROR, "Failed to register singlestep for vCPU on %s", hdlr->name);
+            return -1;
+        }
+    }
+    SETUP_INTERRUPT_EVENT(&hdlr->interrupt_event, 0, _int3_cb);
+    if (VMI_FAILURE == vmi_register_event(hdlr->vmi, &hdlr->interrupt_event)) {
+        writelog(LV_ERROR, "Failed to register interrupt event on %s", hdlr->name);
+        return -1;
+    }
+    SETUP_MEM_EVENT(&hdlr->mem_event, ~0ULL, VMI_MEMACCESS_RWX, _pre_mem_cb, 1);
+    if (VMI_FAILURE == vmi_register_event(hdlr->vmi, &hdlr->mem_event)) {
+        writelog(LV_ERROR, "Failed to register generic mem event on %s", hdlr->name);
+        return -1;
+    }
+    printf("Finish register events\n");
     return -1;
 }
 
