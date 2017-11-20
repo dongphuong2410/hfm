@@ -182,7 +182,10 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
 
 void file_deleted_close(void)
 {
-    if (filter) filter_close(filter);
+    if (filter) {
+        filter_close(filter);
+        filter = NULL;
+    }
 }
 
 static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)

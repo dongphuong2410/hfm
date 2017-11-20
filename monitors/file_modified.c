@@ -110,5 +110,8 @@ done:
 
 void file_modified_close(void)
 {
-    if (filter) filter_close(filter);
+    if (filter) {
+        filter_close(filter);
+        filter = NULL;
+    }
 }

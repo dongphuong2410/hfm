@@ -127,5 +127,8 @@ static void _attr_to_str(uint32_t attr, char *buff)
 
 void attr_changed_close(void)
 {
-    if (filter) filter_close(filter);
+    if (filter) {
+        filter_close(filter);
+        filter = NULL;
+    }
 }

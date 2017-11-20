@@ -71,7 +71,10 @@ hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 
 void file_created_close(void)
 {
-    if (filter) filter_close(filter);
+    if (filter) {
+        filter_close(filter);
+        filter = NULL;
+    }
 }
 /**
   * Callback when NtCreateFile or NtOpenFile,.. is called

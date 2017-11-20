@@ -674,6 +674,7 @@ int hfm_restart_vmi(void *data)
     }
     printf("Finish init trap manager\n");
     //* Set policies */
+    mon_close();
     hfm_set_policies(hdlr, hdlr->policies);
     printf("Finish set policies\n");
 

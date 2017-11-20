@@ -120,7 +120,10 @@ done:
 
 void access_changed_close(void)
 {
-    if (filter) filter_close(filter);
+    if (filter) {
+        filter_close(filter);
+        filter = NULL;
+    }
 }
 
 static inline void _set_security_info_text(context_t *context, uint32_t info, addr_t sd_addr, char *buff)
