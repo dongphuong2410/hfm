@@ -87,6 +87,11 @@ typedef struct _vmhdlr {
     addr_t offsets[WIN_OFFSETS_MAX];
     addr_t sizes[WIN_SIZES_MAX];
     GSList *policies;
+    uint8_t file_created_init;
+    uint8_t file_deleted_init;
+    uint8_t file_modified_init;
+    uint8_t attr_changed_init;
+    uint8_t access_changed_init;
 } vmhdlr_t;
 
 typedef struct context_t context_t;

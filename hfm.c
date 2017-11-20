@@ -674,7 +674,11 @@ int hfm_restart_vmi(void *data)
     }
     printf("Finish init trap manager\n");
     //* Set policies */
-    mon_close();
+    hdlr->file_created_init = 0;
+    hdlr->file_deleted_init = 0;
+    hdlr->file_modified_init = 0;
+    hdlr->attr_changed_init = 0;
+    hdlr->access_changed_init = 0;
     hfm_set_policies(hdlr, hdlr->policies);
     printf("Finish set policies\n");
 

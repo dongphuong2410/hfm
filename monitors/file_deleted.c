@@ -31,8 +31,9 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
 hfm_status_t file_deleted_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
     if (!filter) {
-        //Init plugin
         filter = filter_init();
+    }
+    if (!hdlr->file_deleted_init) {
         if (hdlr->winver == VMI_OS_WINDOWS_8) {
             //TODO: Monitor NtCreateFile will trigger as soon as the user create "DELETE" command, but it does not mean file will be deleted right at that time
             hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, NULL);
@@ -42,6 +43,7 @@ hfm_status_t file_deleted_add_policy(vmhdlr_t *hdlr, policy_t *policy)
             hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
             hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
         }
+        hdlr->file_deleted_init = 1;
     }
     filter_add(filter, policy->path, policy->id);
     return SUCCESS;

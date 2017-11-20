@@ -60,10 +60,13 @@ hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
     if (!filter) {
         //Init the plugin
         filter = filter_init();
+    }
+    if (!hdlr->file_created_init) {
         hfm_monitor_syscall(hdlr, "NtOpenFile", createfile_cb, createfile_ret_cb);
         hfm_monitor_syscall(hdlr, "NtCreateFile", createfile_cb, createfile_ret_cb);
         hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
         hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
+        hdlr->file_created_init = 1;
     }
     filter_add(filter, policy->path, policy->id);
     return SUCCESS;

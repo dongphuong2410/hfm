@@ -36,10 +36,12 @@ static void _attr_to_str(uint32_t attr, char *buff);
 hfm_status_t attr_changed_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
     if (!filter) {
-        //Init plugin
         filter = filter_init();
+    }
+    if (!hdlr->attr_changed_init) {
         hfm_monitor_syscall(hdlr, "NtSetInformationFile", setinformation_cb, setinformation_ret_cb);
         hfm_monitor_syscall(hdlr, "ZwSetInformationFile", setinformation_cb, setinformation_ret_cb);
+        hdlr->attr_changed_init = 1;
     }
     filter_add(filter, policy->path, policy->id);
     return SUCCESS;

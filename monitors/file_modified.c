@@ -32,10 +32,12 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context);
 hfm_status_t file_modified_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
     if (!filter) {
-        //Init plugin
         filter = filter_init();
+    }
+    if (!hdlr->file_modified_init) {
         hfm_monitor_syscall(hdlr, "NtWriteFile", writefile_cb, writefile_ret_cb);
         hfm_monitor_syscall(hdlr, "ZwWriteFile", writefile_cb, writefile_ret_cb);
+        hdlr->file_modified_init = 1;
     }
     filter_add(filter, policy->path, policy->id);
     return SUCCESS;
