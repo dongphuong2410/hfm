@@ -659,23 +659,23 @@ int hfm_restart_vmi(void *data)
         return -1;
     }
     printf("Finish register events\n");
-    ///* Create altp2m view */
-    //if (SUCCESS != _setup_altp2m(hdlr)) {
-    //    writelog(LV_ERROR, "Failed to re-init altp2m view");
-    //    return -1;
-    //}
-    //printf("Finish setup_altp2m\n");
-    ///* Init trap manager */
-    //tm_destroy(hdlr->trap_manager);
-    //hdlr->trap_manager = tm_init();
-    //if (hdlr->trap_manager == NULL) {
-    //    writelog(LV_ERROR, "Failed to re-init trap manager");
-    //    return -1;
-    //}
-    //printf("Finish init trap manager\n");
-    ///* Set policies */
-    //hfm_set_policies(hdlr, hdlr->policies);
-    //printf("Finish set policies\n");
+    /* Create altp2m view */
+    if (SUCCESS != _setup_altp2m(hdlr)) {
+        writelog(LV_ERROR, "Failed to re-init altp2m view");
+        return -1;
+    }
+    printf("Finish setup_altp2m\n");
+    /* Init trap manager */
+    tm_destroy(hdlr->trap_manager);
+    hdlr->trap_manager = tm_init();
+    if (hdlr->trap_manager == NULL) {
+        writelog(LV_ERROR, "Failed to re-init trap manager");
+        return -1;
+    }
+    printf("Finish init trap manager\n");
+    //* Set policies */
+    hfm_set_policies(hdlr, hdlr->policies);
+    printf("Finish set policies\n");
 
     return 0;
 }
