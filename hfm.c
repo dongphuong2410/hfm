@@ -620,64 +620,64 @@ int hfm_restart_vmi(void *data)
         writelog(LV_ERROR, "Failed to init LibVMI after machine restart");
         return -1;
     }
-    char *rekall_profile = config_get_str(config, "rekall_profile");
-    GHashTable *vmicfg = g_hash_table_new(g_str_hash, g_str_equal);
-    g_hash_table_insert(vmicfg, "rekall_profile", rekall_profile);
-    g_hash_table_insert(vmicfg, "os_type", "Windows");
-    uint64_t flags = VMI_PM_INITFLAG_TRANSITION_PAGES;
-    if (VMI_PM_UNKNOWN == vmi_init_paging(hdlr->vmi, flags)) {
-        g_hash_table_destroy(vmicfg);
-        writelog(LV_ERROR, "Failed to init LibVMI paging after machine restart");
-        return -1;
-    }
-    os_t os = vmi_init_os(hdlr->vmi, VMI_CONFIG_GHASHTABLE, vmicfg, NULL);
-    if (os != VMI_OS_WINDOWS) {
-        g_hash_table_destroy(vmicfg);
-        writelog(LV_ERROR, "Failed to init LibVMI library after machine restart");
-        return -1;
-    }
-    g_hash_table_destroy(vmicfg);
-    printf("Reinit LibVMI\n");
+    //char *rekall_profile = config_get_str(config, "rekall_profile");
+    //GHashTable *vmicfg = g_hash_table_new(g_str_hash, g_str_equal);
+    //g_hash_table_insert(vmicfg, "rekall_profile", rekall_profile);
+    //g_hash_table_insert(vmicfg, "os_type", "Windows");
+    //uint64_t flags = VMI_PM_INITFLAG_TRANSITION_PAGES;
+    //if (VMI_PM_UNKNOWN == vmi_init_paging(hdlr->vmi, flags)) {
+    //    g_hash_table_destroy(vmicfg);
+    //    writelog(LV_ERROR, "Failed to init LibVMI paging after machine restart");
+    //    return -1;
+    //}
+    //os_t os = vmi_init_os(hdlr->vmi, VMI_CONFIG_GHASHTABLE, vmicfg, NULL);
+    //if (os != VMI_OS_WINDOWS) {
+    //    g_hash_table_destroy(vmicfg);
+    //    writelog(LV_ERROR, "Failed to init LibVMI library after machine restart");
+    //    return -1;
+    //}
+    //g_hash_table_destroy(vmicfg);
+    //printf("Reinit LibVMI\n");
 
-    /* Register events again */
-    int i;
-    for (i = 0; i < hdlr->vcpus && i < 16; i++) {
-        SETUP_SINGLESTEP_EVENT(hdlr->step_event[i], 1u << i, _singlestep_cb, 0);
-        if (VMI_FAILURE == vmi_register_event(hdlr->vmi, hdlr->step_event[i])) {
-            writelog(LV_ERROR, "Failed to register singlestep for vCPU on %s", hdlr->name);
-            return -1;
-        }
-    }
-    SETUP_INTERRUPT_EVENT(&hdlr->interrupt_event, 0, _int3_cb);
-    if (VMI_FAILURE == vmi_register_event(hdlr->vmi, &hdlr->interrupt_event)) {
-        writelog(LV_ERROR, "Failed to register interrupt event on %s", hdlr->name);
-        return -1;
-    }
-    SETUP_MEM_EVENT(&hdlr->mem_event, ~0ULL, VMI_MEMACCESS_RWX, _pre_mem_cb, 1);
-    if (VMI_FAILURE == vmi_register_event(hdlr->vmi, &hdlr->mem_event)) {
-        writelog(LV_ERROR, "Failed to register generic mem event on %s", hdlr->name);
-        return -1;
-    }
-    printf("Finish register events\n");
-    /* Create altp2m view */
-    if (SUCCESS != _setup_altp2m(hdlr)) {
-        writelog(LV_ERROR, "Failed to re-init altp2m view");
-        return -1;
-    }
-    printf("Finish setup_altp2m\n");
-    /* Init trap manager */
-    tm_destroy(hdlr->trap_manager);
-    hdlr->trap_manager = tm_init();
-    if (hdlr->trap_manager == NULL) {
-        writelog(LV_ERROR, "Failed to re-init trap manager");
-        return -1;
-    }
-    printf("Finish init trap manager\n");
-    /* Set policies */
-    hfm_set_policies(hdlr, hdlr->policies);
-    printf("Finish set policies\n");
+    ///* Register events again */
+    //int i;
+    //for (i = 0; i < hdlr->vcpus && i < 16; i++) {
+    //    SETUP_SINGLESTEP_EVENT(hdlr->step_event[i], 1u << i, _singlestep_cb, 0);
+    //    if (VMI_FAILURE == vmi_register_event(hdlr->vmi, hdlr->step_event[i])) {
+    //        writelog(LV_ERROR, "Failed to register singlestep for vCPU on %s", hdlr->name);
+    //        return -1;
+    //    }
+    //}
+    //SETUP_INTERRUPT_EVENT(&hdlr->interrupt_event, 0, _int3_cb);
+    //if (VMI_FAILURE == vmi_register_event(hdlr->vmi, &hdlr->interrupt_event)) {
+    //    writelog(LV_ERROR, "Failed to register interrupt event on %s", hdlr->name);
+    //    return -1;
+    //}
+    //SETUP_MEM_EVENT(&hdlr->mem_event, ~0ULL, VMI_MEMACCESS_RWX, _pre_mem_cb, 1);
+    //if (VMI_FAILURE == vmi_register_event(hdlr->vmi, &hdlr->mem_event)) {
+    //    writelog(LV_ERROR, "Failed to register generic mem event on %s", hdlr->name);
+    //    return -1;
+    //}
+    //printf("Finish register events\n");
+    ///* Create altp2m view */
+    //if (SUCCESS != _setup_altp2m(hdlr)) {
+    //    writelog(LV_ERROR, "Failed to re-init altp2m view");
+    //    return -1;
+    //}
+    //printf("Finish setup_altp2m\n");
+    ///* Init trap manager */
+    //tm_destroy(hdlr->trap_manager);
+    //hdlr->trap_manager = tm_init();
+    //if (hdlr->trap_manager == NULL) {
+    //    writelog(LV_ERROR, "Failed to re-init trap manager");
+    //    return -1;
+    //}
+    //printf("Finish init trap manager\n");
+    ///* Set policies */
+    //hfm_set_policies(hdlr, hdlr->policies);
+    //printf("Finish set policies\n");
 
-    return -1;
+    return 0;
 }
 
 //TODO: read policies from policies list

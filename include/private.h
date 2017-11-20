@@ -18,6 +18,7 @@
 #include "win_offsets.h"
 #include "constants.h"
 #include "xen_helper.h"
+#include "multiwatch.h"
 
 #define ghashtable_foreach(table, i, key, val) \
           g_hash_table_iter_init(&i, table); \

@@ -28,6 +28,7 @@ static void _monitor_vm(vmhdlr_t *vm);
 
 config_t *config;           /* config handler */
 vmhdlr_t *vms[VM_MAX];                /* List of vm handler */
+watcher_t *wv;
 int vmnum;
 
 static struct sigaction act;
@@ -79,7 +80,7 @@ int main(int argc, char **argv)
     }
 
     //Init vm lists
-    watcher_t *wv = wv_init(10);
+    wv = wv_init(10);
     if (!config_get_str(config, "vmlist")) {
         writelog(LV_FATAL, "No vmlist specified");
         goto done;
@@ -185,7 +186,12 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
 static void _monitor_vm(vmhdlr_t *vm)
 {
     while (!vm->interrupted) {
-        hfm_listen(vm);
+        if (wv_vmi_okay(wv, &vm->vmi)) {
+            hfm_listen(vm);
+        }
+        else {
+            sleep(1);
+        }
     }
     /* release resources */
     hfm_close(vm);
