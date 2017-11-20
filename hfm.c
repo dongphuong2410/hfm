@@ -13,6 +13,8 @@
 #include "output_format.h"
 #include "win.h"
 #include "constants.h"
+#include "policy.h"
+#include "libmon.h"
 
 /**
 * hfm maintains two page tables (two views), first page table (ORIGINAL_IDX) maps the kernel
@@ -657,6 +659,53 @@ int hfm_restart_vmi(void *data)
         return -1;
     }
     printf("Finish register events\n");
+    /* Create altp2m view */
+    if (SUCCESS != _setup_altp2m(hdlr)) {
+        writelog(LV_ERROR, "Failed to re-init altp2m view");
+        return -1;
+    }
+    printf("Finish setup_altp2m\n");
+    /* Init trap manager */
+    tm_destroy(hdlr->trap_manager);
+    hdlr->trap_manager = tm_init();
+    if (hdlr->trap_manager == NULL) {
+        writelog(LV_ERROR, "Failed to re-init trap manager");
+        return -1;
+    }
+    printf("Finish init trap manager\n");
+    /* Set policies */
+    hfm_set_policies(hdlr, hdlr->policies);
+    printf("Finish set policies\n");
+
     return -1;
+}
+
+//TODO: read policies from policies list
+void hfm_set_policies(vmhdlr_t *handler, GSList *policies)
+{
+    policy_t *test = (policy_t *)calloc(1, sizeof(policy_t));
+    strcpy(test->path, "C:/meo/*");
+
+    test->type = MON_DELETE;
+    test->id = 10;
+    mon_add_policy(handler, test);
+
+    //test->type = MON_CREATE;
+    //test->id = 20;
+    //mon_add_policy(handler, test);
+
+    test->type = MON_MODIFY_CONTENT;
+    test->id = 30;
+    mon_add_policy(handler, test);
+
+    //test->type = MON_CHANGE_ATTR;
+    //test->id = 40;
+    //mon_add_policy(handler, test);
+
+    //test->type = MON_CHANGE_ACCESS;
+    //test->id = 50;
+    //mon_add_policy(handler, test);
+
+    free(test);
 }
 

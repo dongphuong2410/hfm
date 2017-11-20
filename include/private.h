@@ -85,6 +85,7 @@ typedef struct _vmhdlr {
     uint8_t cookie;
     addr_t offsets[WIN_OFFSETS_MAX];
     addr_t sizes[WIN_SIZES_MAX];
+    GSList *policies;
 } vmhdlr_t;
 
 typedef struct context_t context_t;

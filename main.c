@@ -24,7 +24,6 @@ static void usage(void);
   */
 static int _init_vms(const char *str_vmlist, vmhdlr_t **);
 
-static void _set_policies(vmhdlr_t *handler, GSList *policies);
 static void _monitor_vm(vmhdlr_t *vm);
 
 config_t *config;           /* config handler */
@@ -92,7 +91,8 @@ int main(int argc, char **argv)
     int i;
     //Set policies
     for (i = 0; i < vmnum; i++) {
-        _set_policies(vms[i], policies);
+        hfm_set_policies(vms[i], policies);
+        vms[i]->policies = policies;
     }
 
     for (i = 0; i < vmnum; i++) {
@@ -180,35 +180,6 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
         token = strtok(NULL, ",");
     }
     return cnt;
-}
-
-//TODO: read policies from policies list
-static void _set_policies(vmhdlr_t *handler, GSList *policies)
-{
-    policy_t *test = (policy_t *)calloc(1, sizeof(policy_t));
-    strcpy(test->path, "C:/meo/*");
-
-    test->type = MON_DELETE;
-    test->id = 10;
-    mon_add_policy(handler, test);
-
-    //test->type = MON_CREATE;
-    //test->id = 20;
-    //mon_add_policy(handler, test);
-
-    test->type = MON_MODIFY_CONTENT;
-    test->id = 30;
-    mon_add_policy(handler, test);
-
-    //test->type = MON_CHANGE_ATTR;
-    //test->id = 40;
-    //mon_add_policy(handler, test);
-
-    //test->type = MON_CHANGE_ACCESS;
-    //test->id = 50;
-    //mon_add_policy(handler, test);
-
-    free(test);
 }
 
 static void _monitor_vm(vmhdlr_t *vm)
