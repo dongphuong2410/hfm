@@ -60,7 +60,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
 {
     /* Init xen interface*/
     if ((handler->xen = xen_init_interface(handler->name)) == NULL) {
-        writelog(LV_ERROR, "Failed to init XEN on domain %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to init XEN on domain %s", handler->name);
         xen_free_interface(handler->xen);
         goto error1;
     }
@@ -80,7 +80,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
     /* Init trap manager */
     handler->trap_manager = tm_init();
     if (handler->trap_manager == NULL) {
-        writelog(LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to init trap manager on domain %s", handler->name);
         goto error4;
     }
     //TODO: Move output plugin to the outside (main.c),
@@ -115,7 +115,7 @@ error1:
 
 void hfm_close(vmhdlr_t *handler)
 {
-    writelog(LV_INFO, "Close LibVMI on domain %s", handler->name);
+    writelog(handler->logid, LV_INFO, "Close LibVMI on domain %s", handler->name);
     vmi_pause_vm(handler->vmi);
 
     /* Close output plugin */
@@ -150,13 +150,13 @@ hfm_status_t hfm_monitor_syscall(vmhdlr_t *handler, const char *func_name, cb_t 
     /* Translate syscall name into physical address */
     func_addr = vmi_translate_ksym2v(handler->vmi, func_name);
     if (0 == func_addr) {
-        writelog(LV_WARN, "Counldn't locate the address of kernel symbol '%s'", func_name);
+        writelog(handler->logid, LV_WARN, "Counldn't locate the address of kernel symbol '%s'", func_name);
         goto done;
     }
 
     addr_t pa = vmi_translate_kv2p(handler->vmi, func_addr);
     if (0 == pa) {
-        writelog(LV_DEBUG, "Virtual addr translation failed: %lx", func_addr);
+        writelog(handler->logid, LV_DEBUG, "Virtual addr translation failed: %lx", func_addr);
         goto done;
     }
     //Create a trap
@@ -182,7 +182,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
     /* Calculate pa of interrupt event */
     addr_t pa = (event->interrupt_event.gfn << 12)
                     + event->interrupt_event.offset + event->interrupt_event.insn_length - 1;
-    writelog(LV_DEBUG, "INT3 event vCPU %u pa %lx", event->vcpu_id, pa);
+    writelog(handler->logid, LV_DEBUG, "INT3 event vCPU %u pa %lx", event->vcpu_id, pa);
 
     /* Looking for traps registered at this pa */
     GSList *int3traps = tm_int3traps_at_pa(handler->trap_manager, pa);
@@ -191,7 +191,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
            but this event may have been triggered by one we just removed */
         uint8_t test = 0;
         if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
-            writelog(LV_ERROR, "Critical error in int3 callback, can't read page");
+            writelog(handler->logid, LV_ERROR, "Critical error in int3 callback, can't read page");
             handler->interrupted = -1;
             return 0;
         }
@@ -267,7 +267,7 @@ static event_response_t _pre_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
     //Generate data to pass to the _post_mem_cb
     memtrap_t *memw = tm_find_memtrap(handler->trap_manager, event->mem_event.gfn);
     if (!memw) {
-        writelog(LV_DEBUG, "Event has been cleared for GFN 0x%lx but we are still in view %u\n",
+        writelog(handler->logid, LV_DEBUG, "Event has been cleared for GFN 0x%lx but we are still in view %u\n",
                         event->mem_event.gfn, event->slat_id);
         return 0;
     }
@@ -295,15 +295,15 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
 
     //We need to copy the newly written page to the remapped gfn and reapply all traps
     if (pass->traps) {
-        writelog(LV_DEBUG, "Re-copying remapped gfn");
+        writelog(handler->logid, LV_DEBUG, "Re-copying remapped gfn");
         uint8_t backup[VMI_PS_4KB] = {0};
         if (VMI_FAILURE == vmi_read_pa(handler->vmi, pass->remapped->o<<12, &backup, VMI_PS_4KB)) {
-            writelog(LV_ERROR, "Critical error in re-copying remapped gfn\n");
+            writelog(handler->logid, LV_ERROR, "Critical error in re-copying remapped gfn\n");
             handler->interrupted = -1;
             return 0;
         }
         if (VMI_FAILURE == vmi_write_pa(handler->vmi, pass->remapped->r<<12, &backup, VMI_PS_4KB)) {
-            writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
+            writelog(handler->logid, LV_ERROR, "Critical error in re-copying remapped gfn");
             handler->interrupted = -1;
             return 0;
         }
@@ -312,7 +312,7 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
             uint64_t *pa = loop->data;
             uint8_t test = 0;
             if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, *pa, &test)) {
-                writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
+                writelog(handler->logid, LV_ERROR, "Critical error in re-copying remapped gfn");
                 handler->interrupted = -1;
                 return 0;
             }
@@ -322,7 +322,7 @@ static event_response_t _post_mem_cb(vmi_instance_t vmi, vmi_event_t *event)
             else {
                 tm_set_doubletrap(handler->trap_manager, *pa, 0);
                 if (VMI_FAILURE == vmi_write_8_pa(handler->vmi, (pass->remapped->r<<12) + (*pa & VMI_BIT_MASK(0,11)), &INT3_CHAR)) {
-                    writelog(LV_ERROR, "Critical error in re-copying remapped gfn");
+                    writelog(handler->logid, LV_ERROR, "Critical error in re-copying remapped gfn");
                     handler->interrupted = -1;
                     return 0;
                 }
@@ -386,7 +386,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, trap_t *trap)
         addr_t rpa = (remapped->r << PAGE_OFFSET_BITS) + pa % PAGESIZE;
         uint8_t test;
         if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &test)) {
-            writelog(LV_ERROR, "Failed to read 0%lx", pa);
+            writelog(handler->logid, LV_ERROR, "Failed to read 0%lx", pa);
             goto done;
         }
         if (test == INT3_CHAR) {
@@ -395,7 +395,7 @@ hfm_status_t _inject_trap(vmhdlr_t *handler, trap_t *trap)
         else {
             doubletrap = 0;
             if (VMI_SUCCESS != vmi_write_8_pa(handler->vmi, rpa, &INT3_CHAR)) {
-                writelog(LV_DEBUG, "Failed to write interrupt to shadow page");
+                writelog(handler->logid, LV_DEBUG, "Failed to write interrupt to shadow page");
                 goto done;
             }
         }
@@ -411,9 +411,9 @@ done:
 
 static hfm_status_t _init_vmi(vmhdlr_t *handler)
 {
-    writelog(LV_INFO, "Init VMI on domain %s", handler->name);
+    writelog(handler->logid, LV_INFO, "Init VMI on domain %s", handler->name);
     if (VMI_FAILURE == vmi_init(&handler->vmi, VMI_XEN, handler->name, VMI_INIT_DOMAINNAME | VMI_INIT_EVENTS, NULL, NULL)) {
-        writelog(LV_ERROR, "Failed to init LibVMI on domain %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to init LibVMI on domain %s", handler->name);
         goto error1;
     }
     char *rekall_profile = config_get_str(config, "rekall_profile");
@@ -423,13 +423,13 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     uint64_t flags = VMI_PM_INITFLAG_TRANSITION_PAGES;
     if (VMI_PM_UNKNOWN == vmi_init_paging(handler->vmi, flags)) {
         g_hash_table_destroy(vmicfg);
-        writelog(LV_ERROR, "Failed to init LibVMI paging on domain %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to init LibVMI paging on domain %s", handler->name);
         goto error2;
     }
     os_t os = vmi_init_os(handler->vmi, VMI_CONFIG_GHASHTABLE, vmicfg, NULL);
     if (os != VMI_OS_WINDOWS) {
         g_hash_table_destroy(vmicfg);
-        writelog(LV_ERROR, "Failed to init LibVMI library on domain %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to init LibVMI library on domain %s", handler->name);
         goto error2;
     }
     g_hash_table_destroy(vmicfg);
@@ -442,7 +442,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     //Get domid info
     libxl_name_to_domid(handler->xen->xl_ctx, handler->name, &handler->domid);
     if (!handler->domid || handler->domid == ~0U) {
-        writelog(LV_ERROR, "Domain is not running, failed to get domID from name %s!", handler->name);
+        writelog(handler->logid, LV_ERROR, "Domain is not running, failed to get domID from name %s!", handler->name);
         goto error2;
     }
     /* Register events */
@@ -452,7 +452,7 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
         SETUP_SINGLESTEP_EVENT(handler->step_event[i], 1u << i, _singlestep_cb, 0);
         handler->step_event[i]->data = handler;
         if (VMI_FAILURE == vmi_register_event(handler->vmi, handler->step_event[i])) {
-            writelog(LV_ERROR, "Failed to register singlestep for vCPU on %s", handler->name);
+            writelog(handler->logid, LV_ERROR, "Failed to register singlestep for vCPU on %s", handler->name);
             goto error2;
         }
     }
@@ -464,12 +464,12 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
     SETUP_INTERRUPT_EVENT(&handler->interrupt_event, 0, _int3_cb);
     handler->interrupt_event.data = handler;
     if (VMI_FAILURE == vmi_register_event(handler->vmi, &handler->interrupt_event)) {
-        writelog(LV_ERROR, "Failed to register interrupt event on %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to register interrupt event on %s", handler->name);
     }
     SETUP_MEM_EVENT(&handler->mem_event, ~0ULL, VMI_MEMACCESS_RWX, _pre_mem_cb, 1);
     handler->mem_event.data = handler;
     if (VMI_FAILURE == vmi_register_event(handler->vmi, &handler->mem_event)) {
-        writelog(LV_ERROR, "Failed to register generic mem event on %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to register generic mem event on %s", handler->name);
         goto error2;
     }
 
@@ -490,19 +490,19 @@ static void _close_vmi(vmhdlr_t *handler)
 static hfm_status_t _setup_altp2m(vmhdlr_t *handler) {
     status_t status = vmi_slat_set_domain_state(handler->vmi, 1);
     if (status != VMI_SUCCESS) {
-        writelog(LV_ERROR, "Failed to enable altp2m on domain %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to enable altp2m on domain %s", handler->name);
         goto error;
     }
 
     status = vmi_slat_create(handler->vmi, &handler->altp2m_idx);
     if (status != VMI_SUCCESS) {
-        writelog(LV_ERROR, "Failed to create altp2m view idx on domain %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to create altp2m view idx on domain %s", handler->name);
         goto error;
     }
 
     status = vmi_slat_switch(handler->vmi, handler->altp2m_idx);
     if (status != VMI_SUCCESS) {
-        writelog(LV_ERROR, "Failed to switch to altp2m idx view on domain %s", handler->name);
+        writelog(handler->logid, LV_ERROR, "Failed to switch to altp2m idx view on domain %s", handler->name);
         goto error;
     }
     return SUCCESS;
@@ -546,15 +546,15 @@ static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t frame)
     uint64_t proposed_memsize = handler->memsize + PAGESIZE;
     uint64_t remapped = xen_alloc_shadow_frame(handler->xen, proposed_memsize);
     if (remapped == 0) {
-        writelog(LV_DEBUG, "Extend memory failed for shadow page");
+        writelog(handler->logid, LV_DEBUG, "Extend memory failed for shadow page");
         goto error;
     }
-    writelog(LV_DEBUG, "Shadow page created at remapped frame %lx", remapped);
+    writelog(handler->logid, LV_DEBUG, "Shadow page created at remapped frame %lx", remapped);
     handler->memsize = proposed_memsize;    //Update current memsize after extend
 
     /* Change altp2m_idx view to map to new remapped address */
     if (VMI_SUCCESS != vmi_slat_change_gfn(handler->vmi, handler->altp2m_idx, frame, remapped)) {
-        writelog(LV_DEBUG, "Failed to update altp2m_idx view to new remapped address");
+        writelog(handler->logid, LV_DEBUG, "Failed to update altp2m_idx view to new remapped address");
         goto error;
     }
 
@@ -562,13 +562,13 @@ static uint64_t _create_shadow_page(vmhdlr_t *handler, uint64_t frame)
     uint8_t buff[PAGESIZE] = {0};
     size_t ret = vmi_read_pa(handler->vmi, frame << PAGE_OFFSET_BITS, buff, PAGESIZE);
     if (PAGESIZE != ret) {
-        writelog(LV_DEBUG, "Failed to read in syscall page");
+        writelog(handler->logid, LV_DEBUG, "Failed to read in syscall page");
         goto error;
     }
 
     ret = vmi_write_pa(handler->vmi, remapped << PAGE_OFFSET_BITS, buff, PAGESIZE);
     if (PAGESIZE != ret) {
-        writelog(LV_DEBUG, "Failed to write to remapped page");
+        writelog(handler->logid, LV_DEBUG, "Failed to write to remapped page");
         goto error;
     }
 
@@ -583,11 +583,11 @@ void _remove_int3(vmhdlr_t *handler, addr_t pa)
     remapped_t *remapped = tm_find_remapped(handler->trap_manager, gfn);
     uint8_t backup;
     if (VMI_FAILURE == vmi_read_8_pa(handler->vmi, pa, &backup)) {
-        writelog(LV_ERROR, "Critical error in removing int3");
+        writelog(handler->logid, LV_ERROR, "Critical error in removing int3");
         handler->interrupted = -1;
     }
     if (VMI_FAILURE == vmi_write_8_pa(handler->vmi, (remapped->r << PAGE_OFFSET_BITS) + (pa & VMI_BIT_MASK(0,11)), &backup)) {
-        writelog(LV_ERROR, "Critical error in removing int3");
+        writelog(handler->logid, LV_ERROR, "Critical error in removing int3");
         handler->interrupted = -1;
     }
 }
@@ -610,14 +610,14 @@ int hfm_restart_vmi(void *data)
     /* Restart xen interface */
     xen_free_interface(hdlr->xen);
     if ((hdlr->xen = xen_init_interface(hdlr->name)) == NULL) {
-        writelog(LV_ERROR, "Failed to init XEN after machine restart");
+        writelog(hdlr->logid, LV_ERROR, "Failed to init XEN after machine restart");
         return -1;
     }
     printf("Reinit XEN\n");
 
     /* Init vmi again */
     if (VMI_FAILURE == vmi_init(&hdlr->vmi, VMI_XEN, hdlr->name, VMI_INIT_DOMAINNAME | VMI_INIT_EVENTS, NULL, NULL)) {
-        writelog(LV_ERROR, "Failed to init LibVMI after machine restart");
+        writelog(hdlr->logid, LV_ERROR, "Failed to init LibVMI after machine restart");
         return -1;
     }
     char *rekall_profile = config_get_str(config, "rekall_profile");
@@ -627,13 +627,13 @@ int hfm_restart_vmi(void *data)
     uint64_t flags = VMI_PM_INITFLAG_TRANSITION_PAGES;
     if (VMI_PM_UNKNOWN == vmi_init_paging(hdlr->vmi, flags)) {
         g_hash_table_destroy(vmicfg);
-        writelog(LV_ERROR, "Failed to init LibVMI paging after machine restart");
+        writelog(hdlr->logid, LV_ERROR, "Failed to init LibVMI paging after machine restart");
         return -1;
     }
     os_t os = vmi_init_os(hdlr->vmi, VMI_CONFIG_GHASHTABLE, vmicfg, NULL);
     if (os != VMI_OS_WINDOWS) {
         g_hash_table_destroy(vmicfg);
-        writelog(LV_ERROR, "Failed to init LibVMI library after machine restart");
+        writelog(hdlr->logid, LV_ERROR, "Failed to init LibVMI library after machine restart");
         return -1;
     }
     g_hash_table_destroy(vmicfg);
@@ -644,24 +644,24 @@ int hfm_restart_vmi(void *data)
     for (i = 0; i < hdlr->vcpus && i < 16; i++) {
         SETUP_SINGLESTEP_EVENT(hdlr->step_event[i], 1u << i, _singlestep_cb, 0);
         if (VMI_FAILURE == vmi_register_event(hdlr->vmi, hdlr->step_event[i])) {
-            writelog(LV_ERROR, "Failed to register singlestep for vCPU on %s", hdlr->name);
+            writelog(hdlr->logid, LV_ERROR, "Failed to register singlestep for vCPU on %s", hdlr->name);
             return -1;
         }
     }
     SETUP_INTERRUPT_EVENT(&hdlr->interrupt_event, 0, _int3_cb);
     if (VMI_FAILURE == vmi_register_event(hdlr->vmi, &hdlr->interrupt_event)) {
-        writelog(LV_ERROR, "Failed to register interrupt event on %s", hdlr->name);
+        writelog(hdlr->logid, LV_ERROR, "Failed to register interrupt event on %s", hdlr->name);
         return -1;
     }
     SETUP_MEM_EVENT(&hdlr->mem_event, ~0ULL, VMI_MEMACCESS_RWX, _pre_mem_cb, 1);
     if (VMI_FAILURE == vmi_register_event(hdlr->vmi, &hdlr->mem_event)) {
-        writelog(LV_ERROR, "Failed to register generic mem event on %s", hdlr->name);
+        writelog(hdlr->logid, LV_ERROR, "Failed to register generic mem event on %s", hdlr->name);
         return -1;
     }
     printf("Finish register events\n");
     /* Create altp2m view */
     if (SUCCESS != _setup_altp2m(hdlr)) {
-        writelog(LV_ERROR, "Failed to re-init altp2m view");
+        writelog(hdlr->logid, LV_ERROR, "Failed to re-init altp2m view");
         return -1;
     }
     printf("Finish setup_altp2m\n");
@@ -669,7 +669,7 @@ int hfm_restart_vmi(void *data)
     tm_destroy(hdlr->trap_manager);
     hdlr->trap_manager = tm_init();
     if (hdlr->trap_manager == NULL) {
-        writelog(LV_ERROR, "Failed to re-init trap manager");
+        writelog(hdlr->logid, LV_ERROR, "Failed to re-init trap manager");
         return -1;
     }
     printf("Finish init trap manager\n");

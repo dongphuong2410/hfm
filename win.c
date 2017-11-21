@@ -45,7 +45,7 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
     addr_t process_addr = 0;
     char *process_name = "";
     if (hdlr->winver == VMI_OS_WINDOWS_UNKNOWN) {
-        writelog(LV_ERROR, "Unknow Windows version");
+        writelog(hdlr->logid, LV_ERROR, "Unknow Windows version");
         goto done;
     }
     else if (hdlr->winver == VMI_OS_WINDOWS_VISTA
@@ -71,7 +71,7 @@ GSList *win_list_drives(vmhdlr_t *hdlr)
 
     addr_t tablecode;
     if (VMI_FAILURE == vmi_read_addr_va(vmi, handle_table + hdlr->offsets[HANDLE_TABLE__TABLE_CODE], pid, &tablecode)) {
-        writelog(LV_ERROR, "Failed to read tablecode");
+        writelog(hdlr->logid, LV_ERROR, "Failed to read tablecode");
         goto done;
     }
 
@@ -234,7 +234,7 @@ GSList *win_cur_processes(vmhdlr_t *hdlr)
     addr_t list_head = 0, next_list_entry = 0;
     addr_t current_process = 0;
     if (VMI_FAILURE == vmi_read_addr_ksym(vmi, "PsActiveProcessHead", &list_head)) {
-        writelog(LV_ERROR, "Failed to find PsActiveProcessHead");
+        writelog(hdlr->logid, LV_ERROR, "Failed to find PsActiveProcessHead");
         goto done;
     }
     next_list_entry = list_head;
@@ -242,7 +242,7 @@ GSList *win_cur_processes(vmhdlr_t *hdlr)
     do {
         current_process = next_list_entry - hdlr->offsets[EPROCESS__ACTIVE_PROCESS_LINKS];
         if (VMI_FAILURE == vmi_read_addr_va(vmi, next_list_entry, 0, &next_list_entry)) {
-            writelog(LV_ERROR, "Failed to read next pointer in loop");
+            writelog(hdlr->logid, LV_ERROR, "Failed to read next pointer in loop");
             break;
         }
         if (next_list_entry == list_head) {
@@ -271,7 +271,7 @@ uint8_t win_ob_header_cookie(vmhdlr_t *hdlr)
     uint8_t cookie = 0;
     if (VMI_FAILURE == vmi_read_8_ksym(vmi, "ObHeaderCookie", &cookie)) {
         //Only Windows10 has ObHeaderCookie
-        //writelog(LV_DEBUG, "Failed to read ObHeaderCookie");
+        //writelog(hdlr->logid, LV_DEBUG, "Failed to read ObHeaderCookie");
     }
     return cookie;
 }
@@ -307,7 +307,7 @@ object_t win_get_object_type(vmhdlr_t *hdlr, pid_t pid, addr_t object_header)
     if (VMI_OS_WINDOWS_7 == hdlr->winver
             || VMI_OS_WINDOWS_8 == hdlr->winver) {
         if (VMI_SUCCESS != vmi_read_8_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &type_index)) {
-            writelog(LV_ERROR, "Error read object type");
+            writelog(hdlr->logid, LV_ERROR, "Error read object type");
             goto done;
         }
         if (type_index == 0x3)
@@ -317,7 +317,7 @@ object_t win_get_object_type(vmhdlr_t *hdlr, pid_t pid, addr_t object_header)
     }
     else if (VMI_OS_WINDOWS_10 == hdlr->winver) {
         if (VMI_SUCCESS != vmi_read_8_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE_INDEX], pid, &type_index)) {
-            writelog(LV_ERROR, "Error read object type");
+            writelog(hdlr->logid, LV_ERROR, "Error read object type");
             goto done;
         }
         uint8_t index = (((object_header + 0x30) >> 8) ^ type_index ^ hdlr->cookie) & 0xFF;
@@ -330,11 +330,11 @@ object_t win_get_object_type(vmhdlr_t *hdlr, pid_t pid, addr_t object_header)
             || VMI_OS_WINDOWS_XP == hdlr->winver) {
         addr_t type = 0;
         if (VMI_SUCCESS != vmi_read_addr_va(hdlr->vmi, object_header + hdlr->offsets[OBJECT_HEADER__TYPE], pid, &type)) {
-            writelog(LV_ERROR, "Error read object type");
+            writelog(hdlr->logid, LV_ERROR, "Error read object type");
             goto done;
         }
         if (VMI_SUCCESS != vmi_read_8_va(hdlr->vmi, type + hdlr->offsets[OBJECT_TYPE__INDEX], pid, &type_index)) {
-            writelog(LV_ERROR, "Error read object type index");
+            writelog(hdlr->logid, LV_ERROR, "Error read object type index");
             goto done;
         }
         if (type_index == 0x2)

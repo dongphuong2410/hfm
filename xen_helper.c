@@ -12,16 +12,16 @@ xen_interface_t *xen_init_interface(const char *name)
     xen_interface_t *xen = g_malloc0(sizeof(xen_interface_t));
     xen->xc = xc_interface_open(0, 0, 0);
     if (!xen->xc) {
-        writelog(LV_ERROR, "xc_interface_open() failed");
+        writelog(0, LV_ERROR, "xc_interface_open() failed");
         goto error;
     }
     if (libxl_ctx_alloc(&xen->xl_ctx, LIBXL_VERSION, 0, NULL)) {
-        writelog(LV_ERROR, "libxl_ctx_alloc() failed");
+        writelog(0, LV_ERROR, "libxl_ctx_alloc() failed");
         goto error;
     }
     libxl_name_to_domid(xen->xl_ctx, name, (uint32_t *)&xen->domID);
     if (!xen->domID || xen->domID == ~0U) {
-        writelog(LV_ERROR, "Failed to get domID from domain name %s", name);
+        writelog(0, LV_ERROR, "Failed to get domID from domain name %s", name);
         goto error;
     }
     goto done;
@@ -51,17 +51,17 @@ addr_t xen_alloc_shadow_frame(xen_interface_t *xen, uint64_t proposed_memsize)
     xen_pfn_t gfn = 0;
     rc = xc_domain_setmaxmem(xen->xc, xen->domID, proposed_memsize);
     if (rc < 0) {
-        writelog(LV_DEBUG, "Failed to increase memory size on guest to %lx", proposed_memsize);
+        writelog(0, LV_DEBUG, "Failed to increase memory size on guest to %lx", proposed_memsize);
         goto done;
     }
     rc = xc_domain_increase_reservation_exact(xen->xc, xen->domID, 1, 0, 0, &gfn);
     if (rc < 0) {
-        writelog(LV_DEBUG, "Failed to increase reservation on guest");
+        writelog(0, LV_DEBUG, "Failed to increase reservation on guest");
         goto done;
     }
     rc = xc_domain_populate_physmap_exact(xen->xc, xen->domID, 1, 0, 0, &gfn);
     if (rc < 0) {
-        writelog(LV_DEBUG, "Failed to populate GFN at 0x%lx", gfn);
+        writelog(0, LV_DEBUG, "Failed to populate GFN at 0x%lx", gfn);
         gfn = 0;
         goto done;
     }

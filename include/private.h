@@ -92,6 +92,7 @@ typedef struct _vmhdlr {
     uint8_t file_modified_init;
     uint8_t attr_changed_init;
     uint8_t access_changed_init;
+    int logid;
 } vmhdlr_t;
 
 typedef struct context_t context_t;

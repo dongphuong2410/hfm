@@ -62,27 +62,26 @@ int main(int argc, char **argv)
     }
 
     //Init logging module
-    //TODO: seperate log files for each VMs thread
-    if (config_get_str(config, "log_file"))
-        log_init(LOG_LEVEL, LOG_TEXTFILE, config_get_str(config, "log_file"));
+    if (config_get_str(config, "log-dir"))
+        log_init(LOG_LEVEL, LOG_TEXTFILE, config_get_str(config, "log-dir"));
     else
         log_init(LOG_LEVEL, LOG_CONSOLE);
 
     //Get policies
     if (!config_get_str(config, "policy_file")) {
-        writelog(LV_WARN, "No policy file specified");
+        writelog(0, LV_WARN, "No policy file specified");
     }
     else {
         policies = get_policies(config_get_str(config, "policy_file"));
         if (g_slist_length(policies) == 0) {
-            writelog(LV_WARN, "0 policy read");
+            writelog(0, LV_WARN, "0 policy read");
         }
     }
 
     //Init vm lists
     wv = wv_init(10);
     if (!config_get_str(config, "vmlist")) {
-        writelog(LV_FATAL, "No vmlist specified");
+        writelog(0, LV_FATAL, "No vmlist specified");
         goto done;
     }
     else {
@@ -166,13 +165,14 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
     char *token = strtok(s, ",");
     while (token) {
         if (cnt >= VM_MAX) {
-            writelog(LV_WARN, "Number of VMs exceed the quota (%d). Ignore the others", VM_MAX);
+            writelog(0, LV_WARN, "Number of VMs exceed the quota (%d). Ignore the others", VM_MAX);
             break;
         }
         vmhdlr_t *vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
         strncpy(vmhdlr->name, token, STR_BUFF);
+        vmhdlr->logid = log_add_entry(vmhdlr->name);
         if (FAIL == hfm_init(vmhdlr)) {
-            writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+            writelog(0, LV_ERROR, "Failed to init domain %s", vmhdlr->name);
             free(vmhdlr);
         }
         else {

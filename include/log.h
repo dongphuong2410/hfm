@@ -38,6 +38,12 @@ typedef enum {
   */
 void log_init(level_t level, logger_t logger, ...);
 
+/**
+  * @brief Add log entry for one VMs
+  * @param name VM name
+  * @return return log entry id if success, return -1 if error
+  */
+int log_add_entry(const char *name);
 
 /**
   * @brief Close logger, just need when logger is textfile type
@@ -46,9 +52,10 @@ void log_close(void);
 
 /**
   * @brief Function for writing log
+  * @param id Log entry id
   * @param level Log level
   * @param message String message or string message format
   */
-void writelog(level_t level, const char *message, ...);
+void writelog(unsigned int id, level_t level, const char *message, ...);
 
 #endif

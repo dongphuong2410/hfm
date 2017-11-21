@@ -238,7 +238,7 @@ int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buff
         goto done;
     }
     else {
-        writelog(LV_DEBUG, "Convert string encoding failed");
+        writelog(ctx->hdlr->logid, LV_DEBUG, "Convert string encoding failed");
     }
 done:
     return ret;
@@ -273,7 +273,7 @@ vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
     }
     ctx->access_ctx.addr = ctx->process_base + ctx->hdlr->offsets[EPROCESS__UNIQUE_PROCESS_ID];
     if (VMI_SUCCESS != vmi_read_32(vmi, &ctx->access_ctx, &pid)) {
-        writelog(LV_ERROR, "Failed to get the pid of process %p", ctx->process_base);
+        writelog(ctx->hdlr->logid, LV_ERROR, "Failed to get the pid of process %p", ctx->process_base);
         pid = -1;
     }
     return pid;
@@ -300,7 +300,7 @@ static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_a
         return -1;
     FILE *fp = fopen(path, "w");
     if (!fp) {
-        writelog(LV_ERROR, "Cannot create new file %s. Please check extract_base in config file again", path);
+        writelog(ctx->hdlr->logid, LV_ERROR, "Cannot create new file %s. Please check extract_base in config file again", path);
         return -1;
     }
     while (subsection)

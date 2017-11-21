@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
     strncpy(vmhdlr->name, "windows", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {
-        writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+        writelog(0, LV_ERROR, "Failed to init domain %s", vmhdlr->name);
     }
     else {
         int i;
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
     strncpy(vmhdlr->name, "windows7_32", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {
-        writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+        writelog(0, LV_ERROR, "Failed to init domain %s", vmhdlr->name);
     }
     else {
         int i;
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
     strncpy(vmhdlr->name, "vista32", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {
-        writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+        writelog(0, LV_ERROR, "Failed to init domain %s", vmhdlr->name);
     }
     else {
         int i;
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
     strncpy(vmhdlr->name, "server2003", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {
-        writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+        writelog(0, LV_ERROR, "Failed to init domain %s", vmhdlr->name);
     }
     else {
         int i;
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     vmhdlr = (vmhdlr_t *)calloc(1, sizeof(vmhdlr_t));
     strncpy(vmhdlr->name, "server2008", STR_BUFF);
     if (FAIL == hfm_init(vmhdlr)) {
-        writelog(LV_ERROR, "Failed to init domain %s", vmhdlr->name);
+        writelog(0, LV_ERROR, "Failed to init domain %s", vmhdlr->name);
     }
     else {
         int i;

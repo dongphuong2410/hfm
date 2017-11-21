@@ -22,7 +22,7 @@ GSList *get_policies(const char *policy_file)
 {
     FILE *fp = fopen(policy_file, "r");
     if (!fp) {
-        writelog(LV_ERROR, "Cannot read policy file");
+        writelog(0, LV_ERROR, "Cannot read policy file");
         goto done;
     }
 
@@ -48,7 +48,7 @@ GSList *get_policies(const char *policy_file)
             list = g_slist_append(list, new_policy);
         }
         else {
-            writelog(LV_WARN, "Invalid policy statement at line %d\n", linecnt);
+            writelog(0, LV_WARN, "Invalid policy statement at line %d\n", linecnt);
             free(new_policy);
         }
     }

@@ -13,7 +13,7 @@ SUBDIRS = monitors outputs tests
 
 SRC= main.c log.c config.c policy.c hfm.c xen_helper.c trapmngr.c rekall.c context.c win.c multiwatch.c
 
-CFLAGS+= -DLOG_LEVEL=LV_WARN
+CFLAGS+= -DLOG_LEVEL=LV_INFO
 .PHONY : all $(SUBDIRS) clean
 
 all: $(SUBDIRS) hfm

@@ -179,7 +179,7 @@ static void _extract_sid(context_t *context, addr_t sid_addr, char *sid)
     if (first_byte >= 0 && first_byte <= 9)
         pos += sprintf(sid, "S-%c-", first_byte + '0');
     else {
-        writelog(LV_DEBUG, "Invalid SID");
+        writelog(context->hdlr->logid, LV_DEBUG, "Invalid SID");
         return;
     }
     //Authority part

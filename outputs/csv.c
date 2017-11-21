@@ -9,7 +9,7 @@ void out_csv_init(output_t *output, const char *filepath)
 {
     output->fp = fopen(filepath, "a");
     if (output->fp == NULL) {
-         writelog(LV_FATAL, "Error open csv file %s", filepath);
+         writelog(0, LV_FATAL, "Error open csv file %s", filepath);
     }
 }
 
