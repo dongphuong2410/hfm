@@ -10,7 +10,7 @@
 
 output_t *out_init(output_type_t type, ...)
 {
-    output_t *hdlr = (output_t *)calloc(1, sizeof(output_t *));
+    output_t *hdlr = (output_t *)calloc(1, sizeof(output_t));
     hdlr->type = type;
     switch (type) {
         case OUT_CONSOLE:
@@ -42,5 +42,6 @@ void out_write(output_t *out, output_info_t *info)
 void out_close(output_t *out)
 {
     out->closefc(out);
+    free(out);
 }
 
