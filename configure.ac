@@ -3,12 +3,13 @@
 
 AC_PREREQ([2.69])
 AC_INIT([hfm], [1.0], [phuong.do@igloo.com])
-AM_INIT_AUTOMAKE(hfm, 2.69)
-AC_CONFIG_SRCDIR([trapmngr.c])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_SRCDIR([hfm.c])
+AM_INIT_AUTOMAKE([subdir-objects])
+#AC_CONFIG_HEADERS([hfm.h])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_RANLIB
 
 ## Checks for libraries.
 ## FIXME: Replace `main' with a function in `-lcrypto':
@@ -16,11 +17,11 @@ AC_PROG_CC
 ## FIXME: Replace `main' with a function in `-lm':
 #AC_CHECK_LIB([m], [main])
 ## FIXME: Replace `main' with a function in `-lpthread':
-#AC_CHECK_LIB([pthread], [main])
+AC_CHECK_LIB([pthread], [pthread_create])
 ## FIXME: Replace `main' with a function in `-lssl':
 #AC_CHECK_LIB([ssl], [main])
 ## FIXME: Replace `main' with a function in `-lvmi':
-#AC_CHECK_LIB([vmi], [main])
+AC_CHECK_LIB([vmi], [vmi_init])
 ## FIXME: Replace `main' with a function in `-lxenctrl':
 #AC_CHECK_LIB([xenctrl], [main])
 ## FIXME: Replace `main' with a function in `-lxenlight':

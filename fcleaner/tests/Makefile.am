@@ -1,7 +1,7 @@
-CFLAGS=-ggdb -O0
-LDFLAGS=
+AM_CFLAGS=-ggdb -O0
+AM_LDFLAGS=
 
-PROGRAMS = test_hashtable test_checkdup test_symlink test_filewatch
+bin_PROGRAMS = test_hashtable test_checkdup test_symlink test_filewatch
 
 test_hashtable_LDADD = -lssl -lcrypto
 test_symlink_LDADD = -lssl -lcrypto

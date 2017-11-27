@@ -12,6 +12,11 @@ autom4te.cache
 autoscan.log
 configure
 **/Makefile
+**/Makefile.in
+compile
+depcomp
+install-sh
+missing
 tests/*.out
 tests/tmp
 test001
