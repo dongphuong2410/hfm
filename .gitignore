@@ -5,6 +5,13 @@ html/
 **/*.o
 **/.deps
 hfm
+COPYING
+INSTALL
+aclocal.m4
+autom4te.cache
+autoscan.log
+configure
+**/Makefile
 tests/*.out
 tests/tmp
 test001
