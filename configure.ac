@@ -12,22 +12,13 @@ AC_PROG_CC
 AC_PROG_RANLIB
 
 ## Checks for libraries.
-## FIXME: Replace `main' with a function in `-lcrypto':
-#AC_CHECK_LIB([crypto], [main])
-## FIXME: Replace `main' with a function in `-lm':
-#AC_CHECK_LIB([m], [main])
-## FIXME: Replace `main' with a function in `-lpthread':
-AC_CHECK_LIB([pthread], [pthread_create])
-## FIXME: Replace `main' with a function in `-lssl':
-#AC_CHECK_LIB([ssl], [main])
-## FIXME: Replace `main' with a function in `-lvmi':
-AC_CHECK_LIB([vmi], [vmi_init])
-## FIXME: Replace `main' with a function in `-lxenctrl':
-#AC_CHECK_LIB([xenctrl], [main])
-## FIXME: Replace `main' with a function in `-lxenlight':
-#AC_CHECK_LIB([xenlight], [main])
-## FIXME: Replace `main' with a function in `-lxentoollog':
-#AC_CHECK_LIB([xentoollog], [main])
+AC_SEARCH_LIBS([pthread_create], [pthread])
+AC_SEARCH_LIBS([g_slist_alloc], [glib-2.0]) 
+AC_SEARCH_LIBS([xc_interface_open], [xenctrl]) 
+AC_SEARCH_LIBS([xtl_log], [xentoollog]) 
+AC_SEARCH_LIBS([xc_domain_memory_mapping], [xenlight]) 
+AC_SEARCH_LIBS([json_object_from_file], [json-c]) 
+AC_SEARCH_LIBS([sqrt], [m]) 
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h sys/time.h unistd.h])
