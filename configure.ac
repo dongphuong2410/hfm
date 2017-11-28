@@ -48,6 +48,13 @@ AC_ARG_ENABLE([debug],
     [debug="no"])
 AM_CONDITIONAL([DEBUG], [test x$debug = xyes])
 
+AC_ARG_VAR([LOG], [Log level : LV_FATAL, FV_ERROR, LV_WARN, LV_INFO, LV_DEBUG])
+AM_CONDITIONAL([LOG_LEVEL_SET], [test x$LOG = xLV_FATAL])
+AM_CONDITIONAL([LOG_LEVEL_SET], [test x$LOG = xLV_ERROR])
+AM_CONDITIONAL([LOG_LEVEL_SET], [test x$LOG = xLV_WARN])
+AM_CONDITIONAL([LOG_LEVEL_SET], [test x$LOG = xLV_INFO])
+AM_CONDITIONAL([LOG_LEVEL_SET], [test x$LOG = xLV_DEBUG])
+
 AC_CONFIG_FILES([Makefile
                  fcleaner/Makefile
                  fcleaner/tests/Makefile
