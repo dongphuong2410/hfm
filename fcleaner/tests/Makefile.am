@@ -1,5 +1,9 @@
-AM_CFLAGS=-ggdb -O0
-AM_LDFLAGS=
+AM_CFLAGS =
+AM_LDFLAGS =
+
+if DEBUG
+AM_CFLAGS += -ggdb -O0
+endif
 
 bin_PROGRAMS = test_hashtable test_checkdup test_symlink test_filewatch
 

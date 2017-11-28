@@ -40,6 +40,14 @@ AC_TYPE_UINT8_T
 # Checks for library functions.
 AC_CHECK_FUNCS([getcwd gettimeofday strdup strrchr strstr])
 
+# Enable debug
+AC_ARG_ENABLE([debug], 
+    [AS_HELP_STRING([--enable-debug],
+            [Enable verbose debug output to be compiled @<:@no@:>@])],
+    [debug="$enableval"],
+    [debug="no"])
+AM_CONDITIONAL([DEBUG], [test x$debug = xyes])
+
 AC_CONFIG_FILES([Makefile
                  fcleaner/Makefile
                  fcleaner/tests/Makefile
