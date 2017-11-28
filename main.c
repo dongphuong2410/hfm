@@ -30,6 +30,7 @@ config_t *config;           /* config handler */
 vmhdlr_t *vms[VM_MAX];                /* List of vm handler */
 watcher_t *wv;
 int vmnum;
+int auto_restart = 0;
 
 static struct sigaction act;
 static void close_handler(int sig) {
@@ -42,7 +43,7 @@ static void close_handler(int sig) {
 int main(int argc, char **argv)
 {
     GThread *threads[VM_MAX];
-    GSList *policies;           /* List of policies */
+    GSList *policies = NULL;           /* List of policies */
 
     //Signal handler
     act.sa_handler = close_handler;
@@ -55,6 +56,8 @@ int main(int argc, char **argv)
 
     //Read configuration
     config = _read_config(argc, argv);
+
+    auto_restart = config_get_int(config, "auto-restart");
 
     //Init monitoring modules
     if (mon_init()) {
@@ -79,7 +82,7 @@ int main(int argc, char **argv)
     }
 
     //Init vm lists
-    wv = wv_init(10);
+    if (auto_restart) wv = wv_init(10);
     if (!config_get_str(config, "vmlist")) {
         writelog(0, LV_FATAL, "No vmlist specified");
         goto done;
@@ -95,10 +98,14 @@ int main(int argc, char **argv)
         vms[i]->policies = policies;
     }
 
-    for (i = 0; i < vmnum; i++) {
-        wv_add_vm(wv, &vms[i]->vmi, hfm_restart_vmi, vms[i]);
+    if (auto_restart) {
+        for (i = 0; i < vmnum; i++) {
+            wv_add_vm(wv, &vms[i]->vmi, hfm_restart_vmi, vms[i]);
+        }
+        wv_start(wv);
+        printf("Start monitoring\n");
     }
-    wv_start(wv);
+
     //Start monitoring threads for each vm
     for (i = 0; i < vmnum; i++) {
         threads[i] = g_thread_new(vms[i]->name, (GThreadFunc)_monitor_vm, vms[i]);
@@ -112,7 +119,8 @@ done:
     log_close();
     config_close(config);
     mon_close();
-    wv_close(wv);
+    if (auto_restart)
+        wv_close(wv);
     return 0;
 }
 
@@ -186,12 +194,13 @@ int _init_vms(const char *str_vmlist, vmhdlr_t **vms)
 static void _monitor_vm(vmhdlr_t *vm)
 {
     while (!vm->interrupted) {
-        if (wv_vmi_okay(wv, &vm->vmi)) {
-            hfm_listen(vm);
+        if (auto_restart) {
+            if (!wv_vmi_okay(wv, &vm->vmi)) {
+                sleep(1);
+                continue;
+            }
         }
-        else {
-            sleep(1);
-        }
+        hfm_listen(vm);
     }
     /* release resources */
     hfm_close(vm);
