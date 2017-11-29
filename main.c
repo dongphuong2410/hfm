@@ -71,11 +71,11 @@ int main(int argc, char **argv)
         log_init(LOG_LEVEL, LOG_CONSOLE);
 
     //Get policies
-    if (!config_get_str(config, "policy_file")) {
+    if (!config_get_str(config, "policy-file")) {
         writelog(0, LV_WARN, "No policy file specified");
     }
     else {
-        policies = get_policies(config_get_str(config, "policy_file"));
+        policies = get_policies(config_get_str(config, "policy-file"));
         if (g_slist_length(policies) == 0) {
             writelog(0, LV_WARN, "0 policy read");
         }

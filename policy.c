@@ -103,20 +103,11 @@ monitor_t _lookup_action(const char *str)
     else if (!strcicmp(str, "MODIFY_CONTENT")) {
         return MON_MODIFY_CONTENT;
     }
-    else if (!strcicmp(str, "MODIFY_LOGFILE")) {
-        return MON_MODIFY_LOGFILE;
+    else if (!strcicmp(str, "CHANGE_ATTR")) {
+        return MON_CHANGE_ATTR;
     }
-    else if (!strcicmp(str, "CHANGE_ATTR_READONLY")) {
-        return MON_CHANGE_ATTR_READONLY;
-    }
-    else if (!strcicmp(str, "CHANGE_ATTR_PERMISSION")) {
-        return MON_CHANGE_ATTR_PERMISSION;
-    }
-    else if (!strcicmp(str, "CHANGE_ATTR_OWNERSHIP")) {
-        return MON_CHANGE_ATTR_OWNERSHIP;
-    }
-    else if (!strcicmp(str, "CHANGE_ATTR_HIDDEN")) {
-        return MON_CHANGE_ATTR_HIDDEN;
+    else if (!strcicmp(str, "CHANGE_ACCESS")) {
+        return MON_CHANGE_ACCESS;
     }
     return MON_INVALID;
 }
@@ -126,13 +117,7 @@ uint8_t _parse_options(char *str)
     uint8_t options = 0;
     char *opt = strtok(str, " \t\n\"");
     while (opt) {
-        if (!strcicmp(opt, "DIR")) {
-            options |= POLICY_OPTIONS_DIR;
-        }
-        else if (!strcicmp(opt, "RECURSIVE")) {
-            options |= POLICY_OPTIONS_RECURSIVE;
-        }
-        else if (!strcicmp(opt, "EXTRACT")) {
+        if (!strcicmp(opt, "EXTRACT")) {
             options |= POLICY_OPTIONS_EXTRACT;
         }
         opt = strtok(NULL, " \t\"\n");

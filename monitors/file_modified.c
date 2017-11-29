@@ -96,7 +96,7 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.policy_id = params->policy_id;
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
         output.extpath[0] = '\0';
-        if (config_get_str(config, "modified_extract")) {
+        if (config_get_int(config, "file-extract")) {
             char *dir = config_get_str(config, "extract_base");
             sprintf(output.extpath, "%s%s/%u_%u.file", dir ? dir : "", context->hdlr->name,  output.time_sec, output.time_usec);
             int extracted = hfm_extract_file(vmi, context, params->file_object, output.extpath);

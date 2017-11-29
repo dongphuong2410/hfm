@@ -689,32 +689,13 @@ int hfm_restart_vmi(void *data)
     return 0;
 }
 
-//TODO: read policies from policies list
 void hfm_set_policies(vmhdlr_t *handler, GSList *policies)
 {
-    policy_t *test = (policy_t *)calloc(1, sizeof(policy_t));
-    strcpy(test->path, "C:/meo/*");
-
-    test->type = MON_DELETE;
-    test->id = 10;
-    mon_add_policy(handler, test);
-
-    //test->type = MON_CREATE;
-    //test->id = 20;
-    //mon_add_policy(handler, test);
-
-    test->type = MON_MODIFY_CONTENT;
-    test->id = 30;
-    mon_add_policy(handler, test);
-
-    //test->type = MON_CHANGE_ATTR;
-    //test->id = 40;
-    //mon_add_policy(handler, test);
-
-    //test->type = MON_CHANGE_ACCESS;
-    //test->id = 50;
-    //mon_add_policy(handler, test);
-
-    free(test);
+    if (policies == NULL) return;
+    GSList *it = NULL;
+    for (it = policies; it; it = it->next) {
+        policy_t *pol = (policy_t *)(it->data);
+        mon_add_policy(handler, pol);
+    }
 }
 
