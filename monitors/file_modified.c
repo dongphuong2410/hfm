@@ -95,11 +95,11 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.action = MON_MODIFY_CONTENT;
         output.policy_id = params->policy_id;
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
-        char *dir = config_get_str(config, "extract_base");
-        sprintf(output.extpath, "%s%s/%u_%u.file", dir ? dir : "", context->hdlr->name,  output.time_sec, output.time_usec);
-        int extracted = hfm_extract_file(vmi, context, params->file_object, output.extpath);
-        if (extracted == 0) {
-            output.extpath[0] = '\0';
+        output.extpath[0] = '\0';
+        if (config_get_str(config, "modified_extract")) {
+            char *dir = config_get_str(config, "extract_base");
+            sprintf(output.extpath, "%s%s/%u_%u.file", dir ? dir : "", context->hdlr->name,  output.time_sec, output.time_usec);
+            int extracted = hfm_extract_file(vmi, context, params->file_object, output.extpath);
         }
         out_write(handler->out, &output);
     }
