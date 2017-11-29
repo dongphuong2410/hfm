@@ -57,8 +57,8 @@ int hfm_restart_vmi(void *data);
 /**
   * @brief Set policy
   * @param handler hdlr pointer
-  * @param policies List of policy
+  * @param policies Table of policy
   */
-void hfm_set_policies(vmhdlr_t *handler, GSList *policies);
+void hfm_set_policies(vmhdlr_t *handler, GHashTable *policies);
 
 #endif

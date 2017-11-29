@@ -689,11 +689,12 @@ int hfm_restart_vmi(void *data)
     return 0;
 }
 
-void hfm_set_policies(vmhdlr_t *handler, GSList *policies)
+void hfm_set_policies(vmhdlr_t *handler, GHashTable *policies)
 {
     if (policies == NULL) return;
-    GSList *it = NULL;
-    for (it = policies; it; it = it->next) {
+    GList *list = g_hash_table_get_values(policies);
+    GList *it = NULL;
+    for (it = list; it; it = it->next) {
         policy_t *pol = (policy_t *)(it->data);
         mon_add_policy(handler, pol);
     }

@@ -51,19 +51,19 @@ typedef struct _policy {
 } policy_t;
 
 /**
-  * @brief Parse policy file and return list of policies
+  * @brief Parse policy file and return table of policies
   *
   * @param policy_file Path of policy file
-  * @return List of policies (policy_t)
+  * @return Hashtable of policies (policy_t)
   */
-GSList *get_policies(const char *policy_file);
+GHashTable *get_policies(const char *policy_file);
 
 /**
   * @brief Free policy list after done with it
   *
-  * @param list List of policies obtained by calling get_policies
+  * @param policies List of policies obtained by calling get_policies
   */
-void free_policies(GSList *list);
+void free_policies(GHashTable *policies);
 
 
 #endif

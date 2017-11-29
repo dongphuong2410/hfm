@@ -43,7 +43,7 @@ static void close_handler(int sig) {
 int main(int argc, char **argv)
 {
     GThread *threads[VM_MAX];
-    GSList *policies = NULL;           /* List of policies */
+    GHashTable *policies = NULL;           /* List of policies */
 
     //Signal handler
     act.sa_handler = close_handler;
@@ -76,9 +76,6 @@ int main(int argc, char **argv)
     }
     else {
         policies = get_policies(config_get_str(config, "policy-file"));
-        if (g_slist_length(policies) == 0) {
-            writelog(0, LV_WARN, "0 policy read");
-        }
     }
 
     //Init vm lists

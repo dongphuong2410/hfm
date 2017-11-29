@@ -86,7 +86,7 @@ typedef struct _vmhdlr {
     uint8_t cookie;
     addr_t offsets[WIN_OFFSETS_MAX];
     addr_t sizes[WIN_SIZES_MAX];
-    GSList *policies;
+    GHashTable *policies;
     uint8_t file_created_init;
     uint8_t file_deleted_init;
     uint8_t file_modified_init;

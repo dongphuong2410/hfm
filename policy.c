@@ -11,14 +11,14 @@ char * _trim_left(char *str);
 severity_t _lookup_severity(const char *str);
 monitor_t _lookup_action(const char *str);
 uint8_t _parse_options(char *str);
-void _free_policy(policy_t *policy);
+void _free_policy(int *id, policy_t *policy, void *data);
 int _check_valid(policy_t *policy);
 
 /**
   * Parsing the policy file
   * Policy format : <id> <severity> <action> <filepath> OPTIONS="[RECURSIVE] [EXTRACT] [DIR]"
   */
-GSList *get_policies(const char *policy_file)
+GHashTable *get_policies(const char *policy_file)
 {
     FILE *fp = fopen(policy_file, "r");
     if (!fp) {
@@ -26,7 +26,7 @@ GSList *get_policies(const char *policy_file)
         goto done;
     }
 
-    GSList *list = NULL;
+    GHashTable *hashtable = g_hash_table_new(g_int_hash, g_int_equal);;
     char buff[STR_BUFF];
     int linecnt = 0;
     while (fgets(buff, STR_BUFF, fp)) {
@@ -45,7 +45,7 @@ GSList *get_policies(const char *policy_file)
             strcpy(new_policy->path, filepath);
         new_policy->options     = _parse_options(strtok(NULL, "\r\n"));
         if (_check_valid(new_policy)) {
-            list = g_slist_append(list, new_policy);
+            g_hash_table_insert(hashtable, &(new_policy->id), new_policy);
         }
         else {
             writelog(0, LV_WARN, "Invalid policy statement at line %d\n", linecnt);
@@ -54,13 +54,13 @@ GSList *get_policies(const char *policy_file)
     }
     fclose(fp);
 done:
-    return list;
+    return hashtable;
 }
 
-void free_policies(GSList *list)
+void free_policies(GHashTable *hashtable)
 {
-    g_slist_foreach(list, (GFunc)_free_policy, NULL);
-    g_slist_free(list);
+    g_hash_table_foreach(hashtable, (GHFunc)_free_policy, NULL);
+    g_hash_table_destroy(hashtable);
 }
 
 char * _trim_left(char *str)
@@ -125,7 +125,7 @@ uint8_t _parse_options(char *str)
     return options;
 }
 
-void _free_policy(policy_t *policy)
+void _free_policy(int *id, policy_t *policy, void *data)
 {
     free(policy);
 }
