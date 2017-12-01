@@ -65,7 +65,8 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         goto error1;
     }
 
-    const char *rekall_profile = config_get_str(config, "rekall_profile");
+    char rekall_profile[1024];
+    sprintf(rekall_profile, "%s/%s.json", config_get_str(config, "rekall-base"), handler->name);
     win_fill_offsets(rekall_profile, handler->offsets);
     win_fill_sizes(rekall_profile, handler->sizes);
 
@@ -420,7 +421,8 @@ static hfm_status_t _init_vmi(vmhdlr_t *handler)
         writelog(handler->logid, LV_ERROR, "Failed to init LibVMI on domain %s", handler->name);
         goto error1;
     }
-    char *rekall_profile = config_get_str(config, "rekall_profile");
+    char rekall_profile[STR_BUFF];
+    sprintf(rekall_profile, "%s/%s.json", config_get_str(config, "rekall-base"), handler->name);
     GHashTable *vmicfg = g_hash_table_new(g_str_hash, g_str_equal);
     g_hash_table_insert(vmicfg, "rekall_profile", rekall_profile);
     g_hash_table_insert(vmicfg, "os_type", "Windows");
@@ -624,7 +626,8 @@ int hfm_restart_vmi(void *data)
         writelog(hdlr->logid, LV_ERROR, "Failed to init LibVMI after machine restart");
         return -1;
     }
-    char *rekall_profile = config_get_str(config, "rekall_profile");
+    char rekall_profile[STR_BUFF];
+    sprintf(rekall_profile, "%s/%s.json", config_get_str(config, "rekall-base"), hdlr->name);
     GHashTable *vmicfg = g_hash_table_new(g_str_hash, g_str_equal);
     g_hash_table_insert(vmicfg, "rekall_profile", rekall_profile);
     g_hash_table_insert(vmicfg, "os_type", "Windows");
