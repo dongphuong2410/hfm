@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([hfm], [1.0], [phuong.do@igloo.com])
-AC_CONFIG_SRCDIR([hfm.c])
+AC_CONFIG_SRCDIR([src/hfm.c])
 AM_INIT_AUTOMAKE([subdir-objects])
 #AC_CONFIG_HEADERS([hfm.h])
 
@@ -56,9 +56,10 @@ AM_CONDITIONAL([LOG_LEVEL_SET], [test x$LOG = xLV_INFO])
 AM_CONDITIONAL([LOG_LEVEL_SET], [test x$LOG = xLV_DEBUG])
 
 AC_CONFIG_FILES([Makefile
-                 fcleaner/Makefile
-                 fcleaner/tests/Makefile
-                 monitors/Makefile
-                 outputs/Makefile
+                 src/Makefile
+                 src/fcleaner/Makefile
+                 src/fcleaner/tests/Makefile
+                 src/monitors/Makefile
+                 src/outputs/Makefile
                  tests/Makefile])
 AC_OUTPUT
