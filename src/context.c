@@ -300,7 +300,7 @@ static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_a
         return -1;
     FILE *fp = fopen(path, "w");
     if (!fp) {
-        writelog(ctx->hdlr->logid, LV_ERROR, "Cannot create new file %s. Please check extract_base in config file again", path);
+        writelog(ctx->hdlr->logid, LV_ERROR, "Cannot create new file %s. Please check hfm_base in config file again", path);
         return -1;
     }
     while (subsection)

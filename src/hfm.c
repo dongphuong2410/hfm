@@ -89,9 +89,9 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
     char *output = config_get_str(config, "output");
     if (0 == strncmp(output, "csv", STR_BUFF)) {
         char out_file[1024];
-        char *csv_path = config_get_str(config, "csv-path");
-        if (csv_path == NULL) csv_path = "./";
-        sprintf(out_file, "%s%s.out", csv_path, handler->name);
+        char *hfm_base = config_get_str(config, "csv-path");
+        if (hfm_base == NULL) hfm_base = "./";
+        sprintf(out_file, "%s/%s/%s.out", hfm_base, "output", handler->name);
         handler->out = out_init(OUT_CSV, out_file);
     }
     else if (0 == strncmp(output, "es", STR_BUFF)) {

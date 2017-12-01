@@ -93,10 +93,12 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
                 if (config_get_int(config, "file-extract")) {
                     policy_t *policy = g_hash_table_lookup(handler->policies, &policy_id);
                     if (policy->options & POLICY_OPTIONS_EXTRACT) {
-                        char *dir = config_get_str(config, "extract_base");
+                        char *basedir = config_get_str(config, "hfm-base");
+                        sprintf(output.extpath, "%s/%s/%s/%u_%u.file", basedir ? basedir : "", "extract", context->hdlr->name, output.time_sec, output.time_usec);
                         int extracted = hfm_extract_file(vmi, context, file_object, output.extpath);
-                        if (extracted)
-                            sprintf(output.extpath, "%s%s/%u_%u.file", dir ? dir : "", context->hdlr->name, output.time_sec, output.time_usec);
+                        if (!extracted) {
+                            output.extpath[0] = '\0';
+                        }
                     }
                 }
                 output.data[0] = '\0';

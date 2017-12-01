@@ -27,7 +27,7 @@
 
 #define VM_MAX 10
 
-#define DEFAULT_CONFIG "hfm.cfg"
+#define DEFAULT_CONFIG "/etc/hfm/hfm.cfg"
 
 #define PAGE_OFFSET_BITS 12
 #define PAGESIZE (1 << PAGE_OFFSET_BITS)
