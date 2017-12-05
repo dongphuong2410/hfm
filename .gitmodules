@@ -4,3 +4,6 @@
 [submodule "libvmi"]
 	path = libvmi
 	url = https://github.com/tklengyel/libvmi
+[submodule "thirdparty/clastic"]
+	path = thirdparty/clastic
+	url = https://dongphuong2410@github.com/dongphuong2410/clastic.git

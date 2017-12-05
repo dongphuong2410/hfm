@@ -15,7 +15,7 @@
   * @param url Elasticsearch database url
   * @param output Handler
   */
-void out_es_init(output_t *output, const char *url);
+void out_es_init(output_t *output, const char *url, const char *type);
 
 /**
   * @brief Write using es output

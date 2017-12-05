@@ -18,6 +18,7 @@ output_t *out_init(output_type_t type, ...)
             hdlr->closefc = out_console_close;
             break;
         case OUT_CSV:
+        {
             hdlr->writefc = out_csv_write;
             hdlr->closefc = out_csv_close;
             va_list args;
@@ -26,10 +27,19 @@ output_t *out_init(output_type_t type, ...)
             out_csv_init(hdlr, filepath);
             va_end(args);
             break;
+        }
         case OUT_ELASTICSEARCH:
+        {
             hdlr->writefc = out_es_write;
             hdlr->closefc = out_es_close;
+            va_list args;
+            va_start(args, type);
+            char *url = va_arg(args, char *);
+            char *type = va_arg(args, char *);
+            out_es_init(hdlr, url, type);
+            va_end(args);
             break;
+        }
     }
     return hdlr;
 }

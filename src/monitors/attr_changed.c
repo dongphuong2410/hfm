@@ -92,6 +92,7 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
                 strncpy(output.filepath, filename, PATH_MAX_LEN);
                 _attr_to_str(file_attributes, output.data);
                 output.extpath[0] = '\0';
+                output.data[0] = '\0';
                 out_write(handler->out, &output);
             }
         }

@@ -90,6 +90,7 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
                 output.policy_id = policy_id;
                 strncpy(output.filepath, filename, PATH_MAX_LEN);
                 output.extpath[0] = '\0';
+                output.data[0] = '\0';
                 if (config_get_int(config, "file-extract")) {
                     policy_t *policy = g_hash_table_lookup(handler->policies, &policy_id);
                     if (policy->options & POLICY_OPTIONS_EXTRACT) {

@@ -96,7 +96,7 @@ hfm_status_t hfm_init(vmhdlr_t *handler)
         handler->out = out_init(OUT_CSV, out_file);
     }
     else if (0 == strncmp(output, "es", STR_BUFF)) {
-        handler->out = out_init(OUT_ELASTICSEARCH, config_get_str(config, "output_es_url"));
+        handler->out = out_init(OUT_ELASTICSEARCH, config_get_str(config, "output_es_url"), handler->name);
     }
     else {
         handler->out = out_init(OUT_CONSOLE);

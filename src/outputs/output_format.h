@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <clastic.h>
 
 #define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
 
@@ -36,6 +37,8 @@ typedef struct _output {
     void (*writefc)(struct _output *output, output_info_t *info);
     void (*closefc)(struct _output *output);
     FILE *fp;
+    clastic_t *cls;
+    char es_type[1024];
 } output_t;
 
 /**
