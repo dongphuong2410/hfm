@@ -96,6 +96,7 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.policy_id = params->policy_id;
         strncpy(output.filepath, params->filename, PATH_MAX_LEN);
         output.extpath[0] = '\0';
+        output.data[0] = '\0';
         if (config_get_int(config, "file-extract")) {
             policy_t *policy = g_hash_table_lookup(handler->policies, &params->policy_id);
             if (policy->options & POLICY_OPTIONS_EXTRACT) {
