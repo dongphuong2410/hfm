@@ -22,6 +22,7 @@ missing
 src/.dirstamp
 test-driver
 tests/config_check
-tests/config_check.log
-tests/config_check.trs
+tests/log_check
+tests/*.log
+tests/*.trs
 tests/test-suite.log
