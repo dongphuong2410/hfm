@@ -23,6 +23,7 @@ src/.dirstamp
 test-driver
 tests/config_check
 tests/log_check
+tests/policy_check
 tests/*.log
 tests/*.trs
 tests/test-suite.log
