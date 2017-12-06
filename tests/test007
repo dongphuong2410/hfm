@@ -1,3 +1,0 @@
-#!/bin/bash
-# Only one remapped table created even if we set the traps at the same page
-sudo ./test107 | grep "Shadow page created" | wc -l
