@@ -27,3 +27,5 @@ tests/policy_check
 tests/*.log
 tests/*.trs
 tests/test-suite.log
+src/monitors/.dirstamp
+tests/filefilter_check
