@@ -265,11 +265,11 @@ int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object, char *pa
     return count;
 }
 
-vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
+vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr)
 {
     vmi_pid_t pid;
     if (!ctx->process_base) {
-        ctx->process_base = hfm_get_current_process(vmi, ctx);
+        ctx->process_base = process_addr;
     }
     ctx->access_ctx.addr = ctx->process_base + ctx->hdlr->offsets[EPROCESS__UNIQUE_PROCESS_ID];
     if (VMI_SUCCESS != vmi_read_32(vmi, &ctx->access_ctx, &pid)) {
@@ -277,6 +277,11 @@ vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx)
         pid = -1;
     }
     return pid;
+}
+
+void hfm_get_process_sid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr, char *out)
+{
+    out[0] = '\0';
 }
 
 static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area, char *path)

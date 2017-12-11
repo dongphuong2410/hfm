@@ -86,7 +86,8 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
     uint64_t information = hfm_read_64(context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
     if (NT_SUCCESS(status)) {
         output_info_t output;
-        output.pid = hfm_get_process_pid(vmi, context);
+        addr_t cur_process = hfm_get_current_process(vmi, context);
+        output.pid = hfm_get_process_pid(vmi, context, cur_process);
         struct timeval now;
         gettimeofday(&now, NULL);
         output.time_sec = now.tv_sec;

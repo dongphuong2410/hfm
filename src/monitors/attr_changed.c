@@ -81,7 +81,8 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
             int policy_id = filter_match(filter, filename);
             if (policy_id >= 0) {
                 output_info_t output;
-                output.pid = hfm_get_process_pid(vmi, context);
+                addr_t cur_process = hfm_get_current_process(vmi, context);
+                output.pid = hfm_get_process_pid(vmi, context, cur_process);
                 struct timeval now;
                 gettimeofday(&now, NULL);
                 output.time_sec = now.tv_sec;

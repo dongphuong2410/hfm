@@ -176,7 +176,8 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
 
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
         output_info_t output;
-        output.pid = hfm_get_process_pid(vmi, context);
+        addr_t cur_process = hfm_get_current_process(vmi, context);
+        output.pid = hfm_get_process_pid(vmi, context, cur_process);
         struct timeval now;
         gettimeofday(&now, NULL);
         output.time_sec = now.tv_sec;

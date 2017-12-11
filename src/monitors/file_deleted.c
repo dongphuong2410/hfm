@@ -80,7 +80,8 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
             uint8_t delete = hfm_read_8(context, fileinfo_addr + context->hdlr->offsets[FILE_DISPOSITION_INFORMATION__DELETE_FILE]);
             if (delete) {
                 output_info_t output;
-                output.pid = hfm_get_process_pid(vmi, context);
+                addr_t cur_process = hfm_get_current_process(vmi, context);
+                output.pid = hfm_get_process_pid(vmi, context, cur_process);
                 struct timeval now;
                 gettimeofday(&now, NULL);
                 output.time_sec = now.tv_sec;
@@ -164,7 +165,8 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         if (policy_match >= 0) {
             printf("DELETE\n");
             output_info_t output;
-            output.pid = hfm_get_process_pid(vmi, context);
+            addr_t cur_process = hfm_get_current_process(vmi, context);
+            output.pid = hfm_get_process_pid(vmi, context, cur_process);
             struct timeval now;
             gettimeofday(&now, NULL);
             output.time_sec = now.tv_sec;

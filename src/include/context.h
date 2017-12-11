@@ -97,11 +97,21 @@ int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object, char *pa
 int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buffer);
 
 /**
-  * @brief Get current process pid
+  * @brief Get process pid
   * @param vmi vmi instance
   * @param ctx context
+  * @param process_addr Process address
   * @return PID of process if operation succeeds, return -1 if fails
   */
-vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx);
+vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr);
 
+/**
+  * @brief Get process owner's SID
+  * @param vmi vmi instance
+  * @param ctx context
+  * @param process_addr Process address
+  * @param out Buffer to store the result
+  * 
+  */
+void hfm_get_process_sid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr, char *out);
 #endif
