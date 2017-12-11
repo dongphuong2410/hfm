@@ -5,6 +5,7 @@
 #include "hfm.h"
 #include "log.h"
 #include "constants.h"
+#include "monitor_util.h"
 
 #define OWNER_SECURITY_INFORMATION 0x00000001
 #define GROUP_SECURITY_INFORMATION 0x00000002
@@ -91,21 +92,7 @@ static void *setsecurity_ret_cb(vmhdlr_t *handler, context_t *context)
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     int ret_status = context->regs->rax;
     if (STATUS_SUCCESS == ret_status) {
-        output_info_t output;
-        addr_t cur_process = hfm_get_current_process(vmi, context);
-        output.pid = hfm_get_process_pid(vmi, context, cur_process);
-        hfm_get_process_sid(vmi, context, cur_process, output.sid);
-        struct timeval now;
-        gettimeofday(&now, NULL);
-        output.time_sec = now.tv_sec;
-        output.time_usec = now.tv_usec;
-        output.vmid = handler->domid;
-        output.action = MON_CHANGE_ACCESS;
-        output.policy_id = params->policy_id;
-        strncpy(output.filepath, params->filename, PATH_MAX_LEN);
-        strncpy(output.data, params->detail, STR_BUFF);
-        output.extpath[0] = '\0';
-        out_write(handler->out, &output);
+        send_output(vmi, context, MON_CHANGE_ACCESS, params->policy_id, params->filename, params->detail, 0);
     }
     free(params);
 done:

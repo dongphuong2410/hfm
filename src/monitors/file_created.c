@@ -9,7 +9,7 @@
 #include "constants.h"
 #include "context.h"
 #include "file_filter.h"
-#include "output_format.h"
+#include "monitor_util.h"
 
 /**
   * typedef struct _UNICODE_STRING {
@@ -175,23 +175,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     int ret_status = context->regs->rax;
 
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
-        output_info_t output;
-        addr_t cur_process = hfm_get_current_process(vmi, context);
-        output.pid = hfm_get_process_pid(vmi, context, cur_process);
-        hfm_get_process_sid(vmi, context, cur_process, output.sid);
-        struct timeval now;
-        gettimeofday(&now, NULL);
-        output.time_sec = now.tv_sec;
-        output.time_usec = now.tv_usec;
-        output.vmid = handler->domid;
-        output.action = MON_CREATE;
-        output.policy_id = params->policy_id;
-        strncpy(output.filepath, params->filename, PATH_MAX_LEN);
-        output.extpath[0] = '\0';
-        output.data[0] = '\0';
-        out_write(handler->out, &output);
-
-        send_output(vmi, context, MON_CREATE, params->policy_id, params->filename, "");
+        send_output(vmi, context, MON_CREATE, params->policy_id, params->filename, "", 0);
     }
     free(params);
 done:

@@ -4,6 +4,7 @@
 #include "private.h"
 #include "hfm.h"
 #include "constants.h"
+#include "monitor_util.h"
 
 #define ATTR_READ_ONLY              0x1
 #define ATTR_HIDDEN                 0x2
@@ -80,22 +81,7 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
             hfm_read_filename_from_object(vmi, context, file_object, filename);
             int policy_id = filter_match(filter, filename);
             if (policy_id >= 0) {
-                output_info_t output;
-                addr_t cur_process = hfm_get_current_process(vmi, context);
-                output.pid = hfm_get_process_pid(vmi, context, cur_process);
-                hfm_get_process_sid(vmi, context, cur_process, output.sid);
-                struct timeval now;
-                gettimeofday(&now, NULL);
-                output.time_sec = now.tv_sec;
-                output.time_usec = now.tv_usec;
-                output.vmid = handler->domid;
-                output.action = MON_CHANGE_ATTR;
-                output.policy_id = policy_id;
-                strncpy(output.filepath, filename, PATH_MAX_LEN);
-                _attr_to_str(file_attributes, output.data);
-                output.extpath[0] = '\0';
-                output.data[0] = '\0';
-                out_write(handler->out, &output);
+                send_output(vmi, context, MON_CHANGE_ATTR, policy_id, filename, "", 0);
             }
         }
     }

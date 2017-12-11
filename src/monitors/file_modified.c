@@ -7,6 +7,7 @@
 #include "hfm.h"
 #include "constants.h"
 #include "config.h"
+#include "monitor_util.h"
 
 extern config_t *config;
 
@@ -85,32 +86,7 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
     int status = context->regs->rax;
     uint64_t information = hfm_read_64(context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
     if (NT_SUCCESS(status)) {
-        output_info_t output;
-        addr_t cur_process = hfm_get_current_process(vmi, context);
-        output.pid = hfm_get_process_pid(vmi, context, cur_process);
-        hfm_get_process_sid(vmi, context, cur_process, output.sid);
-        struct timeval now;
-        gettimeofday(&now, NULL);
-        output.time_sec = now.tv_sec;
-        output.time_usec = now.tv_usec;
-        output.vmid = handler->domid;
-        output.action = MON_MODIFY_CONTENT;
-        output.policy_id = params->policy_id;
-        strncpy(output.filepath, params->filename, PATH_MAX_LEN);
-        output.extpath[0] = '\0';
-        output.data[0] = '\0';
-        if (config_get_int(config, "file-extract")) {
-            policy_t *policy = g_hash_table_lookup(handler->policies, &params->policy_id);
-            if (policy->options & POLICY_OPTIONS_EXTRACT) {
-                char *basedir = config_get_str(config, "hfm-base");
-                sprintf(output.extpath, "%s/%s/%s/%u_%u.file", basedir ? basedir : "", "extract", context->hdlr->name,  output.time_sec, output.time_usec);
-                int extracted = hfm_extract_file(vmi, context, params->file_object, output.extpath);
-                if (!extracted) {
-                    output.extpath[0] = '\0';
-                }
-            }
-        }
-        out_write(handler->out, &output);
+        send_output(vmi, context, MON_MODIFY_CONTENT, params->policy_id, params->filename, "", params->file_object);
     }
     free(params);
 done:

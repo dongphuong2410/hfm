@@ -5,6 +5,7 @@
 #include "hfm.h"
 #include "constants.h"
 #include "config.h"
+#include "monitor_util.h"
 
 #define DESIRED_ACCESS_DELETE       0x00010000
 #define FILE_DELETE_ON_CLOSE        0x00004000
@@ -79,33 +80,7 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
         if (policy_id >= 0) {
             uint8_t delete = hfm_read_8(context, fileinfo_addr + context->hdlr->offsets[FILE_DISPOSITION_INFORMATION__DELETE_FILE]);
             if (delete) {
-                output_info_t output;
-                addr_t cur_process = hfm_get_current_process(vmi, context);
-                output.pid = hfm_get_process_pid(vmi, context, cur_process);
-                hfm_get_process_sid(vmi, context, cur_process, output.sid);
-                struct timeval now;
-                gettimeofday(&now, NULL);
-                output.time_sec = now.tv_sec;
-                output.time_usec = now.tv_usec;
-                output.vmid = handler->domid;
-                output.action = MON_DELETE;
-                output.policy_id = policy_id;
-                strncpy(output.filepath, filename, PATH_MAX_LEN);
-                output.extpath[0] = '\0';
-                output.data[0] = '\0';
-                if (config_get_int(config, "file-extract")) {
-                    policy_t *policy = g_hash_table_lookup(handler->policies, &policy_id);
-                    if (policy->options & POLICY_OPTIONS_EXTRACT) {
-                        char *basedir = config_get_str(config, "hfm-base");
-                        sprintf(output.extpath, "%s/%s/%s/%u_%u.file", basedir ? basedir : "", "extract", context->hdlr->name, output.time_sec, output.time_usec);
-                        int extracted = hfm_extract_file(vmi, context, file_object, output.extpath);
-                        if (!extracted) {
-                            output.extpath[0] = '\0';
-                        }
-                    }
-                }
-                output.data[0] = '\0';
-                out_write(handler->out, &output);
+                send_output(vmi, context, MON_DELETE, policy_id, filename, "", file_object);
             }
         }
     }
@@ -164,22 +139,7 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         //Matching file path
         int policy_match = filter_match(filter, start_filepath);
         if (policy_match >= 0) {
-            printf("DELETE\n");
-            output_info_t output;
-            addr_t cur_process = hfm_get_current_process(vmi, context);
-            output.pid = hfm_get_process_pid(vmi, context, cur_process);
-            hfm_get_process_sid(vmi, context, cur_process, output.sid);
-            struct timeval now;
-            gettimeofday(&now, NULL);
-            output.time_sec = now.tv_sec;
-            output.time_usec = now.tv_usec;
-            output.vmid = handler->domid;
-            output.action = MON_CREATE;
-            output.policy_id = policy_match;
-            strncpy(output.filepath, start_filepath, PATH_MAX_LEN);
-            output.extpath[0] = '\0';
-            output.data[0] = '\0';
-            out_write(handler->out, &output);
+            send_output(vmi, context, MON_DELETE, policy_match, start_filepath, "", 0);
         }
     }
 done:
