@@ -32,22 +32,22 @@ static filter_t *filter = NULL;
 /**
   * Callback when the functions NtOpenFile, NtCreateFile, ZwOpenFile, ZwCreateFile is called
   */
-static void *createfile_cb(vmhdlr_t *handler, context_t *context);
+static void *createfile_cb(context_t *context);
 
 /**
   * Callback when the functions NtOpenFile, NtCreateFile, ZwOpenFile, ZwCreateFile is return
   */
-static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context);
+static void *createfile_ret_cb(context_t *context);
 
 /**
   * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is called
   */
-static void *setinformation_cb(vmhdlr_t *handler, context_t *context);
+static void *setinformation_cb(context_t *context);
 
 /**
   * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is returned
   */
-static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
+static void *setinformation_ret_cb(context_t *context);
 
 /**
   * Get current directory of process
@@ -101,8 +101,9 @@ void file_created_close(void)
   *     PVOID               SecurityQualityOfService
   * } OBJECT_ATTRIBUTES;
   */
-static void *createfile_cb(vmhdlr_t *handler, context_t *context)
+static void *createfile_cb(context_t *context)
 {
+    vmhdlr_t *handler = context->hdlr;
     addr_t objattr_addr = 0, io_status_addr = 0;
     uint32_t create = 0;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
@@ -166,8 +167,9 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
   *     ULONG_PTR Information;
   * } IO_STATUS_BLOCK;
   */
-static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
+static void *createfile_ret_cb(context_t *context)
 {
+    vmhdlr_t *handler = context->hdlr;
     params_t *params = (params_t *)context->trap->extra;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     uint64_t information = hfm_read_64(context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
@@ -203,8 +205,9 @@ done:
   * - Read FILE_RENAME_INFORMATION struct for new filename, transfered to setinformation_ret_cb
   * - Read the IoStatusBlock, transfered to setinformation_ret_cb
   */
-static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
+static void *setinformation_cb(context_t *context)
 {
+    vmhdlr_t *handler = context->hdlr;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     addr_t fileinfo_addr = 0;
     uint32_t fileinfo_class = 0;
@@ -250,7 +253,7 @@ done:
     hfm_release_vmi(handler);
 }
 
-static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
+static void *setinformation_ret_cb(context_t *context)
 {
     return NULL;
 }

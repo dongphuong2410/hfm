@@ -23,12 +23,12 @@ static filter_t *filter = NULL;
 /**
   * Callback when the functions NtWriteFile, ZtWriteFile is called
   */
-static void *writefile_cb(vmhdlr_t *handler, context_t *context);
+static void *writefile_cb(context_t *context);
 
 /**
   * Callback when the functions NtWriteFile, ZwWriteFile is returned
   */
-static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context);
+static void *writefile_ret_cb(context_t *context);
 
 hfm_status_t file_modified_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -44,8 +44,9 @@ hfm_status_t file_modified_add_policy(vmhdlr_t *hdlr, policy_t *policy)
     return SUCCESS;
 }
 
-static void *writefile_cb(vmhdlr_t *handler, context_t *context)
+static void *writefile_cb(context_t *context)
 {
+    vmhdlr_t *handler = context->hdlr;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     params_t *params = NULL;
     reg_t handle = 0;
@@ -79,8 +80,9 @@ done:
     return params;
 }
 
-static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
+static void *writefile_ret_cb(context_t *context)
 {
+    vmhdlr_t *handler = context->hdlr;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     params_t *params = (params_t *)context->trap->extra;
     int status = context->regs->rax;

@@ -97,7 +97,7 @@ typedef struct _vmhdlr {
 
 typedef struct context_t context_t;
 
-typedef void *(*cb_t)(vmhdlr_t *, context_t *);
+typedef void *(*cb_t)(context_t *);
 
 /**
   * @brief A trap to be injected to the VM

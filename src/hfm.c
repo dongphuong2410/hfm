@@ -225,7 +225,7 @@ static event_response_t _int3_cb(vmi_instance_t vmi, vmi_event_t *event)
         if (trap->cb) {
             context->trap = trap;
 
-            void *extra = trap->cb(handler, context);
+            void *extra = trap->cb(context);
             if (extra && trap->ret_cb) {
                 access_context_t ctx;
                 uint64_t ret;

@@ -22,12 +22,12 @@ static filter_t *filter = NULL;
 /**
   * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is called
   */
-static void *setinformation_cb(vmhdlr_t *handler, context_t *context);
+static void *setinformation_cb(context_t *context);
 
 /**
   * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is returned
   */
-static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
+static void *setinformation_ret_cb(context_t *context);
 
 /**
   * Translate Windows file attributes to string
@@ -48,8 +48,9 @@ hfm_status_t attr_changed_add_policy(vmhdlr_t *hdlr, policy_t *policy)
     return SUCCESS;
 }
 
-static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
+static void *setinformation_cb(context_t *context)
 {
+    vmhdlr_t *handler = context->hdlr;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     addr_t fileinfo_addr = 0;
     uint32_t fileinfo_class = 0;
@@ -88,7 +89,7 @@ done:
 }
 
 //Not used yet
-static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
+static void *setinformation_ret_cb(context_t *context)
 {
     return NULL;
 }

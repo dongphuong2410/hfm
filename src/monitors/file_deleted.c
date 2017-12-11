@@ -17,17 +17,17 @@ static int _read_process_path(context_t *context, char *path);
 /**
   * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is called
   */
-static void *setinformation_cb(vmhdlr_t *handler, context_t *context);
+static void *setinformation_cb(context_t *context);
 
 /**
   * Callback when the functions NtCreateFile, ZwCreateFile is called
   */
-static void *createfile_cb(vmhdlr_t *handler, context_t *context);
+static void *createfile_cb(context_t *context);
 
 /**
   * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is returned
   */
-static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
+static void *setinformation_ret_cb(context_t *context);
 
 hfm_status_t file_deleted_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -54,8 +54,9 @@ hfm_status_t file_deleted_add_policy(vmhdlr_t *hdlr, policy_t *policy)
   * - Read FILE_DISPOSITION_INFORMATION struct for DeleteFile field
   * - Read FileHandle, searching for FILE_OBJECT, read FileName from FILE_OBJECT
   */
-static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
+static void *setinformation_cb(context_t *context)
 {
+    vmhdlr_t *handler = context->hdlr;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
     addr_t fileinfo_addr = 0;
     uint32_t fileinfo_class = 0;
@@ -90,8 +91,9 @@ done:
 }
 
 //TODO : too slow
-static void *createfile_cb(vmhdlr_t *handler, context_t *context)
+static void *createfile_cb(context_t *context)
 {
+    vmhdlr_t *handler = context->hdlr;
     addr_t objattr_addr = 0, io_status_addr = 0;
     uint32_t create = 0;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
@@ -148,7 +150,7 @@ done:
 }
 
 //Not used yet
-static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
+static void *setinformation_ret_cb(context_t *context)
 {
     return NULL;
 }
