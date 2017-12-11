@@ -12,6 +12,7 @@ AC_PROG_CC
 AC_PROG_RANLIB
 
 ## Checks for libraries.
+PKG_CHECK_MODULES([CHECK], [check >= 0.9.6])
 AC_SEARCH_LIBS([pthread_create], [pthread])
 AC_SEARCH_LIBS([g_slist_alloc], [glib-2.0]) 
 AC_SEARCH_LIBS([xc_interface_open], [xenctrl]) 

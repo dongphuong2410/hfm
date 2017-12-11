@@ -5,7 +5,6 @@
 #include <ctype.h>
 
 #include "policy.h"
-#include "log.h"
 
 char * _trim_left(char *str);
 severity_t _lookup_severity(const char *str);
@@ -20,13 +19,13 @@ int _check_valid(policy_t *policy);
   */
 GHashTable *get_policies(const char *policy_file)
 {
+    GHashTable *hashtable = NULL;
     FILE *fp = fopen(policy_file, "r");
     if (!fp) {
-        writelog(0, LV_ERROR, "Cannot read policy file");
         goto done;
     }
 
-    GHashTable *hashtable = g_hash_table_new(g_int_hash, g_int_equal);;
+    hashtable = g_hash_table_new(g_int_hash, g_int_equal);;
     char buff[STR_BUFF];
     int linecnt = 0;
     while (fgets(buff, STR_BUFF, fp)) {
@@ -48,7 +47,7 @@ GHashTable *get_policies(const char *policy_file)
             g_hash_table_insert(hashtable, &(new_policy->id), new_policy);
         }
         else {
-            writelog(0, LV_WARN, "Invalid policy statement at line %d\n", linecnt);
+            fprintf(stderr, "Invalid policy statement at line %d\n", linecnt);
             free(new_policy);
         }
     }
