@@ -13,7 +13,7 @@
 extern config_t *config;
 static filter_t *filter = NULL;
 
-static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path);
+static int _read_process_path(context_t *context, char *path);
 /**
   * Callback when the functions NtSetInformatonFile, ZwSetInformationFile is called
   */
@@ -74,13 +74,13 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
     }
     if (FILE_DISPOSITION_INFORMATION == fileinfo_class) {
         char filename[STR_BUFF] = "";
-        addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
-        hfm_read_filename_from_object(vmi, context, file_object, filename);
+        addr_t file_object = hfm_fileobj_from_handle(context, handle);
+        hfm_read_filename_from_object(context, file_object, filename);
         int policy_id = filter_match(filter, filename);
         if (policy_id >= 0) {
             uint8_t delete = hfm_read_8(context, fileinfo_addr + context->hdlr->offsets[FILE_DISPOSITION_INFORMATION__DELETE_FILE]);
             if (delete) {
-                send_output(vmi, context, MON_DELETE, policy_id, filename, "", file_object);
+                send_output(context, MON_DELETE, policy_id, filename, "", file_object);
             }
         }
     }
@@ -127,10 +127,10 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         int pathlen = 0;
 
         if (rootdir_addr) {
-            pathlen = _read_process_path(vmi, context, filepath);
+            pathlen = _read_process_path(context, filepath);
         }
 
-        int namelen = hfm_read_unicode(vmi, context, objectname_addr, filepath + pathlen);
+        int namelen = hfm_read_unicode(context, objectname_addr, filepath + pathlen);
 
         char *start_filepath = filepath;
         if (strstr(start_filepath, "\\??\\")) {
@@ -139,7 +139,7 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
         //Matching file path
         int policy_match = filter_match(filter, start_filepath);
         if (policy_match >= 0) {
-            send_output(vmi, context, MON_DELETE, policy_match, start_filepath, "", 0);
+            send_output(context, MON_DELETE, policy_match, start_filepath, "", 0);
         }
     }
 done:
@@ -161,10 +161,10 @@ void file_deleted_close(void)
     }
 }
 
-static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
+static int _read_process_path(context_t *context, char *path)
 {
     int len = 0;
-    addr_t process = hfm_get_current_process(vmi, context);
+    addr_t process = hfm_get_current_process(context);
     if (!process) goto done;
     addr_t peb = hfm_read_addr(context, process + context->hdlr->offsets[EPROCESS__PEB]);
     if (!peb) goto done;
@@ -172,7 +172,7 @@ static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path
     if (!process_parameters) goto done;
     len = 1;
     addr_t imagepath = process_parameters + context->hdlr->offsets[RTL_USER_PROCESS_PARAMETERS__IMAGE_PATH_NAME];
-    len += hfm_read_unicode(vmi, context, imagepath, path);
+    len += hfm_read_unicode(context, imagepath, path);
     if (len) {
         char *pos = strrchr(path, '\\');
         if (pos && pos != path) {

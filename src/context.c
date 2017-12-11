@@ -13,7 +13,7 @@
   * extract file
   * return 0 if success, 1 if fail
   */
-static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area, char *path);
+static int _extract_ca_file(context_t *ctx, addr_t control_area, char *path);
 
 addr_t hfm_read_addr(context_t *ctx, addr_t addr)
 {
@@ -61,7 +61,7 @@ size_t hfm_read(context_t *ctx, addr_t addr, void *buf, size_t count)
     return vmi_read(ctx->hdlr->vmi, &ctx->access_ctx, buf, count);
 }
 
-addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx)
+addr_t hfm_get_current_process(context_t *ctx)
 {
     addr_t process = 0;
     addr_t kpcr = 0, prcb = 0;
@@ -85,11 +85,11 @@ done:
     return process;
 }
 
-addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle)
+addr_t hfm_fileobj_from_handle(context_t *ctx, reg_t handle)
 {
     addr_t file_obj = 0;
     addr_t handle_obj = 0;
-    addr_t process = hfm_get_current_process(vmi, ctx);
+    addr_t process = hfm_get_current_process(ctx);
     if (!process) goto done;
     addr_t handletable = hfm_read_addr(ctx, process + ctx->hdlr->offsets[EPROCESS__OBJECT_TABLE]);
     if (!handletable) goto done;
@@ -169,7 +169,7 @@ done:
     return file_obj;
 }
 
-int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t file_object, char *filename)
+int hfm_read_filename_from_object(context_t *ctx, addr_t file_object, char *filename)
 {
     int filepath_len = 0;
     int drivename_len = 0;
@@ -182,7 +182,7 @@ int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t fil
 
     device_name_info_offset += ctx->hdlr->sizes[OBJECT_HEADER_NAME_INFO];
     addr_t device_name_info_addr = device_header - device_name_info_offset;
-    hfm_read_unicode(vmi, ctx, device_name_info_addr + ctx->hdlr->offsets[OBJECT_HEADER_NAME_INFO__NAME], drivename);
+    hfm_read_unicode(ctx, device_name_info_addr + ctx->hdlr->offsets[OBJECT_HEADER_NAME_INFO__NAME], drivename);
     drivename_len = strlen(drivename);
     GSList *it = NULL;
     for (it = ctx->hdlr->drives; it; it = it->next) {
@@ -196,7 +196,7 @@ int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t fil
 
     /* Find filepath from file object */
     char filepath[STR_BUFF] = "";
-    filepath_len = hfm_read_unicode(vmi, ctx, file_object + ctx->hdlr->offsets[FILE_OBJECT__FILE_NAME], filepath);
+    filepath_len = hfm_read_unicode(ctx, file_object + ctx->hdlr->offsets[FILE_OBJECT__FILE_NAME], filepath);
 
     /* Return the full path read : path = drivename + filepath */
     snprintf(filename, STR_BUFF, "%s%s", drivename, filepath);
@@ -204,7 +204,7 @@ done:
     return drivename_len + filepath_len;
 }
 
-int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buffer)
+int hfm_read_unicode(context_t *ctx, addr_t addr, char *buffer)
 {
     //TODO Rewrite the read_unicode function, not using vmi_convert_str_encoding to avoid dynamic allocation
     int ret = 0;
@@ -244,7 +244,7 @@ done:
     return ret;
 }
 
-int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object, char *path)
+int hfm_extract_file(context_t *ctx, addr_t object, char *path)
 {
     int count = 0;
     addr_t sop = 0;
@@ -252,27 +252,27 @@ int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object, char *pa
     sop = hfm_read_addr(ctx, object + ctx->hdlr->offsets[FILE_OBJECT__SECTION_OBJECT_POINTER]);
     datasection = hfm_read_addr(ctx, sop + ctx->hdlr->offsets[SECTION_OBJECT_POINTERS__DATA_SECTION_OBJECT]);
     if (datasection) {
-        if (!_extract_ca_file(vmi, ctx, datasection, path))
+        if (!_extract_ca_file(ctx, datasection, path))
             count++;
     }
     sharedcachemap = hfm_read_addr(ctx, sop + ctx->hdlr->offsets[SECTION_OBJECT_POINTERS__SHARED_CACHE_MAP]);
     //TODO: extraction from sharedcachedmap
     imagesection = hfm_read_addr(ctx, sop + ctx->hdlr->offsets[SECTION_OBJECT_POINTERS__IMAGE_SECTION_OBJECT]);
     if (imagesection && imagesection != datasection) {
-        if (!_extract_ca_file(vmi, ctx, imagesection, path))
+        if (!_extract_ca_file(ctx, imagesection, path))
             count++;
     }
     return count;
 }
 
-vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr)
+vmi_pid_t hfm_get_process_pid(context_t *ctx, addr_t process_addr)
 {
     vmi_pid_t pid;
     if (!ctx->process_base) {
         ctx->process_base = process_addr;
     }
     ctx->access_ctx.addr = ctx->process_base + ctx->hdlr->offsets[EPROCESS__UNIQUE_PROCESS_ID];
-    if (VMI_SUCCESS != vmi_read_32(vmi, &ctx->access_ctx, &pid)) {
+    if (VMI_SUCCESS != vmi_read_32(ctx->hdlr->vmi, &ctx->access_ctx, &pid)) {
         writelog(ctx->hdlr->logid, LV_ERROR, "Failed to get the pid of process %p", ctx->process_base);
         pid = -1;
     }
@@ -312,7 +312,7 @@ void hfm_extract_sid(context_t *context, addr_t sid_addr, char *sid)
     sid[pos-1] = '\0';  //Remove the last '-' character
 }
 
-void hfm_get_process_sid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr, char *out)
+void hfm_get_process_sid(context_t *ctx, addr_t process_addr, char *out)
 {
     out[0] = '\0';
     addr_t fast_ref = hfm_read_addr(ctx, process_addr + ctx->hdlr->offsets[EPROCESS__TOKEN]);
@@ -322,7 +322,7 @@ void hfm_get_process_sid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr
     hfm_extract_sid(ctx, sid_addr, out);
 }
 
-static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area, char *path)
+static int _extract_ca_file(context_t *ctx, addr_t control_area, char *path)
 {
     addr_t subsection = control_area + ctx->hdlr->sizes[CONTROL_AREA];
     addr_t segment = 0, test = 0, test2 = 0;
@@ -373,7 +373,7 @@ static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_a
                 break;
             if (ENTRY_PRESENT(1, pte)) {
                 uint8_t page[4096];
-                if (4096 != vmi_read_pa(vmi, VMI_BIT_MASK(12,48) & pte, page, 4096))
+                if (4096 != vmi_read_pa(ctx->hdlr->vmi, VMI_BIT_MASK(12,48) & pte, page, 4096))
                     continue;
                 if (!fseek(fp, fileoffset, SEEK_SET))
                     fwrite(page, 4096, 1, fp);

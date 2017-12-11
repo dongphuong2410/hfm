@@ -53,7 +53,7 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context);
   * Get current directory of process
   * @return Length of path
   */
-static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path);
+static int _read_process_path(context_t *context, char *path);
 
 hfm_status_t file_created_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
@@ -129,10 +129,10 @@ static void *createfile_cb(vmhdlr_t *handler, context_t *context)
     int pathlen = 0;
 
     if (rootdir_addr) {
-        pathlen = _read_process_path(vmi, context, filepath);
+        pathlen = _read_process_path(context, filepath);
     }
 
-    int namelen = hfm_read_unicode(vmi, context, objectname_addr, filepath + pathlen);
+    int namelen = hfm_read_unicode(context, objectname_addr, filepath + pathlen);
 
     char *start_filepath = filepath;
     if (strstr(start_filepath, "\\??\\")) {
@@ -175,7 +175,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
     int ret_status = context->regs->rax;
 
     if (information == FILE_CREATED || information == FILE_SUPERSEDED && NT_SUCCESS(context->regs->rax)) {
-        send_output(vmi, context, MON_CREATE, params->policy_id, params->filename, "", 0);
+        send_output(context, MON_CREATE, params->policy_id, params->filename, "", 0);
     }
     free(params);
 done:
@@ -255,10 +255,10 @@ static void *setinformation_ret_cb(vmhdlr_t *handler, context_t *context)
     return NULL;
 }
 
-static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path)
+static int _read_process_path(context_t *context, char *path)
 {
     int len = 0;
-    addr_t process = hfm_get_current_process(vmi, context);
+    addr_t process = hfm_get_current_process(context);
     if (!process) goto done;
     addr_t peb = hfm_read_addr(context, process + context->hdlr->offsets[EPROCESS__PEB]);
     if (!peb) goto done;
@@ -266,7 +266,7 @@ static int _read_process_path(vmi_instance_t vmi, context_t *context, char *path
     if (!process_parameters) goto done;
     len = 1;
     addr_t imagepath = process_parameters + context->hdlr->offsets[RTL_USER_PROCESS_PARAMETERS__IMAGE_PATH_NAME];
-    len += hfm_read_unicode(vmi, context, imagepath, path);
+    len += hfm_read_unicode(context, imagepath, path);
     if (len) {
         char *pos = strrchr(path, '\\');
         if (pos && pos != path) {

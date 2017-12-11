@@ -8,13 +8,13 @@
 
 extern config_t *config;
 
-void send_output(vmi_instance_t vmi, context_t *ctx, int action, int policy_id, char *filename, char *data, addr_t file_object)
+void send_output(context_t *ctx, int action, int policy_id, char *filename, char *data, addr_t file_object)
 {
     output_info_t output;
     vmhdlr_t *hdlr = ctx->hdlr;
-    addr_t cur_process = hfm_get_current_process(vmi, ctx);
-    output.pid = hfm_get_process_pid(vmi, ctx, cur_process);
-    hfm_get_process_sid(vmi, ctx, cur_process, output.sid);
+    addr_t cur_process = hfm_get_current_process(ctx);
+    output.pid = hfm_get_process_pid(ctx, cur_process);
+    hfm_get_process_sid(ctx, cur_process, output.sid);
     struct timeval now;
     gettimeofday(&now, NULL);
     output.time_sec = now.tv_sec;
@@ -33,7 +33,7 @@ void send_output(vmi_instance_t vmi, context_t *ctx, int action, int policy_id, 
         if (policy->options & POLICY_OPTIONS_EXTRACT) {
             char *basedir = config_get_str(config, "hfm-base");
             sprintf(output.extpath, "%s/%s/%s/%u_%u.file", basedir ? basedir : "", "extract", hdlr->name,  output.time_sec, output.time_usec);
-            int extracted = hfm_extract_file(vmi, ctx, file_object, output.extpath);
+            int extracted = hfm_extract_file(ctx, file_object, output.extpath);
             if (!extracted) {
                 output.extpath[0] = '\0';
             }

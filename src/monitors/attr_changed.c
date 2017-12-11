@@ -69,19 +69,16 @@ static void *setinformation_cb(vmhdlr_t *handler, context_t *context)
     if (FILE_BASIC_INFORMATION == fileinfo_class) {
         uint32_t file_attributes = hfm_read_32(context, fileinfo_addr + handler->offsets[FILE_BASIC_INFORMATION__FILE_ATTRIBUTES]);
         char filename[STR_BUFF] = "";
-        addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
-        hfm_read_filename_from_object(vmi, context, file_object, filename);
+        addr_t file_object = hfm_fileobj_from_handle(context, handle);
+        hfm_read_filename_from_object(context, file_object, filename);
         int policy_id = filter_match(filter, filename);
-        if (policy_id >= 0) {
-            printf("matched\n");
-        }
         if (file_attributes != 0) {
             char filename[STR_BUFF] = "";
-            addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
-            hfm_read_filename_from_object(vmi, context, file_object, filename);
+            addr_t file_object = hfm_fileobj_from_handle(context, handle);
+            hfm_read_filename_from_object(context, file_object, filename);
             int policy_id = filter_match(filter, filename);
             if (policy_id >= 0) {
-                send_output(vmi, context, MON_CHANGE_ATTR, policy_id, filename, "", 0);
+                send_output(context, MON_CHANGE_ATTR, policy_id, filename, "", 0);
             }
         }
     }

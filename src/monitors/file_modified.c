@@ -64,8 +64,8 @@ static void *writefile_cb(vmhdlr_t *handler, context_t *context)
     }
 
     char filename[STR_BUFF] = "";
-    addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
-    int len = hfm_read_filename_from_object(vmi, context, file_object, filename);
+    addr_t file_object = hfm_fileobj_from_handle(context, handle);
+    int len = hfm_read_filename_from_object(context, file_object, filename);
     int policy_id;
     if (filename[0] && (policy_id = filter_match(filter, filename)) >= 0) {
         params = (params_t *)calloc(1, sizeof(params_t));
@@ -86,7 +86,7 @@ static void *writefile_ret_cb(vmhdlr_t *handler, context_t *context)
     int status = context->regs->rax;
     uint64_t information = hfm_read_64(context, params->io_status_addr + context->hdlr->offsets[IO_STATUS_BLOCK__INFORMATION]);
     if (NT_SUCCESS(status)) {
-        send_output(vmi, context, MON_MODIFY_CONTENT, params->policy_id, params->filename, "", params->file_object);
+        send_output(context, MON_MODIFY_CONTENT, params->policy_id, params->filename, "", params->file_object);
     }
     free(params);
 done:

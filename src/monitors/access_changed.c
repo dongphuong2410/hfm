@@ -72,8 +72,8 @@ static void *setsecurity_cb(vmhdlr_t *handler, context_t *context)
         security_desc_addr = hfm_read_32(context, context->regs->rsp + 3 * sizeof(uint32_t));
     }
     char filename[STR_BUFF] = "";
-    addr_t file_object = hfm_fileobj_from_handle(vmi, context, handle);
-    hfm_read_filename_from_object(vmi, context, file_object, filename);
+    addr_t file_object = hfm_fileobj_from_handle(context, handle);
+    hfm_read_filename_from_object(context, file_object, filename);
     int policy_id = filter_match(filter, filename);
     if (policy_id  > 0) {
         params = (params_t *)calloc(1, sizeof(params_t));
@@ -88,11 +88,11 @@ done:
 
 static void *setsecurity_ret_cb(vmhdlr_t *handler, context_t *context)
 {
-    params_t *params = (params_t *)context->trap->extra;
     vmi_instance_t vmi = hfm_lock_and_get_vmi(handler);
+    params_t *params = (params_t *)context->trap->extra;
     int ret_status = context->regs->rax;
     if (STATUS_SUCCESS == ret_status) {
-        send_output(vmi, context, MON_CHANGE_ACCESS, params->policy_id, params->filename, params->detail, 0);
+        send_output(context, MON_CHANGE_ACCESS, params->policy_id, params->filename, params->detail, 0);
     }
     free(params);
 done:

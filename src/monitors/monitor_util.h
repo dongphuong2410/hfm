@@ -7,6 +7,6 @@
 /**
   * Write a new output
   */
-void send_output(vmi_instance_t vmi, context_t *ctx, int action, int policy_id, char *filename, char *data, addr_t file_object);
+void send_output(context_t *ctx, int action, int policy_id, char *filename, char *data, addr_t file_object);
 
 #endif

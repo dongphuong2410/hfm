@@ -52,68 +52,61 @@ size_t hfm_read(context_t *ctx, addr_t addr, void *buf, size_t count);
 
 /**
   * @brief Get current process address
-  * @param vmi vmi instance
   * @param ctx context
   * @return Address of process
   */
-addr_t hfm_get_current_process(vmi_instance_t vmi, context_t *ctx);
+addr_t hfm_get_current_process(context_t *ctx);
 
 /**
   * @brief Get file object address from handle
-  * @param vmi vmi instance
   * @param ctx context
   * @param handle File handle
   */
-addr_t hfm_fileobj_from_handle(vmi_instance_t vmi, context_t *ctx, reg_t handle);
+addr_t hfm_fileobj_from_handle(context_t *ctx, reg_t handle);
 
 /**
   * @brief Read filename of File object from file handler
-  * @param vmi vmi instance
   * @param ctx context
   * @param object File object address
   * @param filename Address of buffer to write filename to
   * @return Lengh of filename read
   */
-int hfm_read_filename_from_object(vmi_instance_t vmi, context_t *ctx, addr_t object, char *filename);
+int hfm_read_filename_from_object(context_t *ctx, addr_t object, char *filename);
 
 /**
   * @brief Extract file from the file object address
-  * @param vmi Vmi instance
   * @param ctx context
   * @param object File object address
   * @param path Path
   * @return Number of file extracted
   */
-int hfm_extract_file(vmi_instance_t vmi, context_t *ctx, addr_t object, char *path);
+int hfm_extract_file(context_t *ctx, addr_t object, char *path);
 
 /**
   * @brief Read and convert a unicode string at address
-  * @param vmi vmi instance
   * @param ctx context
   * @param addr Address of unicode string
   * @param buffer Buffer to write the result to
   * @return Lengh of unicode string read
   */
-int hfm_read_unicode(vmi_instance_t vmi, context_t *ctx, addr_t addr, char *buffer);
+int hfm_read_unicode(context_t *ctx, addr_t addr, char *buffer);
 
 /**
   * @brief Get process pid
-  * @param vmi vmi instance
   * @param ctx context
   * @param process_addr Process address
   * @return PID of process if operation succeeds, return -1 if fails
   */
-vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr);
+vmi_pid_t hfm_get_process_pid(context_t *ctx, addr_t process_addr);
 
 /**
   * @brief Get process owner's SID
-  * @param vmi vmi instance
   * @param ctx context
   * @param process_addr Process address
   * @param out Buffer to store the result
   * 
   */
-void hfm_get_process_sid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr, char *out);
+void hfm_get_process_sid(context_t *ctx, addr_t process_addr, char *out);
 
 /**
   * Extract SID
