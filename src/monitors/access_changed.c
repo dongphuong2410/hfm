@@ -37,15 +37,6 @@ static void *setsecurity_ret_cb(vmhdlr_t *handler, context_t *context);
   */
 static inline void _set_security_info_text(context_t *context, uint32_t info, addr_t sd_addr, char *buff);
 
-/**
-  * Extract SID
-  * @param[in] context Context
-  * @param[in] sid_addr SID address
-  * @param[out] sid SID text
-  * Reference : https://github.com/libyal/libfwnt/wiki/Security-Descriptor
-  */
-static void _extract_sid(context_t *context, addr_t sid_addr, char *sid);
-
 hfm_status_t access_changed_add_policy(vmhdlr_t *hdlr, policy_t *policy)
 {
     if (!filter) {
@@ -144,7 +135,7 @@ static inline void _set_security_info_text(context_t *context, uint32_t info, ad
         else {
             owner_addr = hfm_read_addr(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__OWNER]);
         }
-        _extract_sid(context, owner_addr, detail);
+        hfm_extract_sid(context, owner_addr, detail);
         pos += sprintf(buff + pos, "%s : %s", "Owner Changed;", detail);
     }
     if (info & GROUP_SECURITY_INFORMATION) {
@@ -157,7 +148,7 @@ static inline void _set_security_info_text(context_t *context, uint32_t info, ad
         else {
             group_addr = hfm_read_addr(context, sd_addr + context->hdlr->offsets[SECURITY_DESCRIPTOR__GROUP]);
         }
-        _extract_sid(context, group_addr, detail);
+        hfm_extract_sid(context, group_addr, detail);
         pos += sprintf(buff + pos, "%s : %s", "Group Changed;", detail);
     }
     if (info & DACL_SECURITY_INFORMATION) {
@@ -171,35 +162,3 @@ static inline void _set_security_info_text(context_t *context, uint32_t info, ad
     }
 }
 
-static void _extract_sid(context_t *context, addr_t sid_addr, char *sid)
-{
-    int i;
-    int pos = 0;
-
-    //First byte
-    uint8_t first_byte = hfm_read_8(context, sid_addr + 0);
-    if (first_byte >= 0 && first_byte <= 9)
-        pos += sprintf(sid, "S-%c-", first_byte + '0');
-    else {
-        writelog(context->hdlr->logid, LV_DEBUG, "Invalid SID");
-        return;
-    }
-    //Authority part
-    uint64_t authority = 0;
-    uint8_t bytes[6];
-    for (i = 0; i < 6; i++) {
-        bytes[i] = hfm_read_8(context, sid_addr + 2 + i);
-        authority += (((uint64_t)bytes[i]) << (5 - i)*8);
-    }
-    pos += sprintf(sid + pos, "%lu-", authority);
-
-    //Sub authorities
-    uint8_t sub_auth_no = hfm_read_8(context, sid_addr + 1);
-    for (i = 0; i < sub_auth_no; i++) {
-        uint32_t sub_auth = hfm_read_32(context, sid_addr + 8 + 4 * i);
-        pos += sprintf(sid + pos, "%u-", sub_auth);
-    }
-
-    //Finish extract SID
-    sid[pos-1] = '\0';  //Remove the last '-' character
-}

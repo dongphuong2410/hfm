@@ -114,4 +114,14 @@ vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx, addr_t process
   * 
   */
 void hfm_get_process_sid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr, char *out);
+
+/**
+  * Extract SID
+  * @param[in] context Context
+  * @param[in] sid_addr SID address
+  * @param[out] sid SID text
+  * Reference : https://github.com/libyal/libfwnt/wiki/Security-Descriptor
+  */
+void hfm_extract_sid(context_t *context, addr_t sid_addr, char *sid);
+
 #endif

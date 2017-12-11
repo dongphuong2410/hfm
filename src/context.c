@@ -279,9 +279,45 @@ vmi_pid_t hfm_get_process_pid(vmi_instance_t vmi, context_t *ctx, addr_t process
     return pid;
 }
 
+void hfm_extract_sid(context_t *context, addr_t sid_addr, char *sid)
+{
+    int i;
+    int pos = 0;
+
+    //First byte
+    uint8_t first_byte = hfm_read_8(context, sid_addr + 0);
+    if (first_byte >= 0 && first_byte <= 9)
+        pos += sprintf(sid, "S-%c-", first_byte + '0');
+    else {
+        writelog(context->hdlr->logid, LV_DEBUG, "Invalid SID");
+        return;
+    }
+    //Authority part
+    uint64_t authority = 0;
+    uint8_t bytes[6];
+    for (i = 0; i < 6; i++) {
+        bytes[i] = hfm_read_8(context, sid_addr + 2 + i);
+        authority += (((uint64_t)bytes[i]) << (5 - i)*8);
+    }
+    pos += sprintf(sid + pos, "%lu-", authority);
+
+    //Sub authorities
+    uint8_t sub_auth_no = hfm_read_8(context, sid_addr + 1);
+    for (i = 0; i < sub_auth_no; i++) {
+        uint32_t sub_auth = hfm_read_32(context, sid_addr + 8 + 4 * i);
+        pos += sprintf(sid + pos, "%u-", sub_auth);
+    }
+
+    //Finish extract SID
+    sid[pos-1] = '\0';  //Remove the last '-' character
+}
+
 void hfm_get_process_sid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr, char *out)
 {
     out[0] = '\0';
+    addr_t fast_ref = hfm_read_addr(ctx, process_addr + ctx->hdlr->offsets[EPROCESS__TOKEN]);
+    addr_t token_addr = fast_ref & ~0x7;
+    addr_t sid_addr = hfm_read_addr(ctx, token_addr + ctx->hdlr->offsets[TOKEN__USER_AND_GROUPS]);
 }
 
 static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area, char *path)
