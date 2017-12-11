@@ -12,6 +12,7 @@
 #include <clastic.h>
 
 #define PATH_MAX_LEN 1024           /**< Maximum len of file or directory path */
+#define SID_LEN 50
 
 typedef enum {
     OUT_CONSOLE,
@@ -27,6 +28,7 @@ typedef struct _output_info {
     int vmid;
     int policy_id;
     int action;
+    char sid[SID_LEN];
     char data[PATH_MAX_LEN];
     char filepath[PATH_MAX_LEN];
     char extpath[PATH_MAX_LEN];

@@ -44,6 +44,7 @@ void out_es_write(output_t *output, output_info_t *info)
     snprintf(query, 2048, "{\"time_sec\" : \"%u\",      \
                     \"time_usec\" : \"%u\",             \
                     \"pid\" : \"%d\",                   \
+                    \"sid\" : \"%s\",                   \
                     \"vmid\" : \"%d\",                  \
                     \"policy_id\" : \"%d\",             \
                     \"action\" : \"%d\",                \
@@ -53,6 +54,7 @@ void out_es_write(output_t *output, output_info_t *info)
                     info->time_sec,
                     info->time_usec,
                     info->pid,
+                    info->sid,
                     info->vmid,
                     info->policy_id,
                     info->action,

@@ -178,6 +178,7 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
         output_info_t output;
         addr_t cur_process = hfm_get_current_process(vmi, context);
         output.pid = hfm_get_process_pid(vmi, context, cur_process);
+        hfm_get_process_sid(vmi, context, cur_process, output.sid);
         struct timeval now;
         gettimeofday(&now, NULL);
         output.time_sec = now.tv_sec;

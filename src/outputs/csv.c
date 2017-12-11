@@ -16,10 +16,11 @@ void out_csv_init(output_t *output, const char *filepath)
 void out_csv_write(output_t *output, output_info_t *info)
 {
     if (output->fp) {
-        fprintf(output->fp, "%u,%u,%d,%d,%d,%d,%s,%s,%s\n",
+        fprintf(output->fp, "%u,%u,%d,%s,%d,%d,%d,%s,%s,%s\n",
                 info->time_sec,
                 info->time_usec,
                 info->pid,
+                info->sid,
                 info->vmid,
                 info->policy_id,
                 info->action,

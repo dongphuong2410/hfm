@@ -8,10 +8,11 @@ void out_console_init(void)
 
 void out_console_write(output_t *output, output_info_t *info)
 {
-    printf("time_sec : %u, time_usec : %u, pid : %d, vmid : %d, policy_id : %d, action : %d, filepath : %s, extpath : %s, data : %s\n",
+    printf("time_sec : %u, time_usec : %u, pid : %d, sid : %s, vmid : %d, policy_id : %d, action : %d, filepath : %s, extpath : %s, data : %s\n",
             info->time_sec,
             info->time_usec,
             info->pid,
+            info->sid,
             info->vmid,
             info->policy_id,
             info->action,
