@@ -8,7 +8,7 @@ AM_CFLAGS+= -DLOG_LEVEL=LV_INFO
 endif
 
 if DEBUG
-AM_CFLAGS+= -ggdb -O0
+AM_CFLAGS += -ggdb -O0
 endif
 
 SUBDIRS=monitors outputs

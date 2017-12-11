@@ -317,7 +317,9 @@ void hfm_get_process_sid(vmi_instance_t vmi, context_t *ctx, addr_t process_addr
     out[0] = '\0';
     addr_t fast_ref = hfm_read_addr(ctx, process_addr + ctx->hdlr->offsets[EPROCESS__TOKEN]);
     addr_t token_addr = fast_ref & ~0x7;
-    addr_t sid_addr = hfm_read_addr(ctx, token_addr + ctx->hdlr->offsets[TOKEN__USER_AND_GROUPS]);
+    addr_t usr_group_addr = hfm_read_addr(ctx, token_addr + ctx->hdlr->offsets[TOKEN__USER_AND_GROUPS]);
+    addr_t sid_addr = hfm_read_addr(ctx, usr_group_addr + ctx->hdlr->offsets[SID_AND_ATTRIBUTES__SID]);
+    hfm_extract_sid(ctx, sid_addr, out);
 }
 
 static int _extract_ca_file(vmi_instance_t vmi, context_t *ctx, addr_t control_area, char *path)
