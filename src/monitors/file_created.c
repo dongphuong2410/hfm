@@ -190,6 +190,8 @@ static void *createfile_ret_cb(vmhdlr_t *handler, context_t *context)
         output.extpath[0] = '\0';
         output.data[0] = '\0';
         out_write(handler->out, &output);
+
+        send_output(vmi, context, MON_CREATE, params->policy_id, params->filename, "");
     }
     free(params);
 done:

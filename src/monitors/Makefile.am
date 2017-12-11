@@ -6,5 +6,5 @@ AM_CFLAGS += -ggdb -O0
 endif
 
 noinst_LIBRARIES = libmon.a
-libmon_a_SOURCES = monitor.c file_created.c file_deleted.c file_modified.c owner_changed.c attr_changed.c access_changed.c file_filter.c fnmatch.c
+libmon_a_SOURCES = monitor.c file_created.c file_deleted.c file_modified.c owner_changed.c attr_changed.c access_changed.c file_filter.c fnmatch.c monitor_util.c
 
